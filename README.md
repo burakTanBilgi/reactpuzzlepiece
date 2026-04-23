@@ -5,6 +5,12 @@ puzzle pieces. Pieces are drawn with a single inline SVG path (no composite
 shapes, no internal seams), and can be clicked and edited at runtime — you
 can add or remove knobs on any side, and split neighbors into sub-pieces.
 
+Clicking a piece's **body** selects that piece. Clicking a **tab** flips
+which side owns that knob — the tab becomes part of the neighbor on the
+other side of the connection, and the neighbor's matching socket moves
+back onto the clicked piece. Click the same knob again from the new
+owner to flip it back.
+
 ## Visual rules
 
 - No `transform: scale` on hover.
@@ -79,20 +85,25 @@ component:
 import { PuzzleBoard, usePuzzleBoard } from './components/puzzle';
 
 export function Demo() {
-  const { pieces, selectedId, setSelectedId } = usePuzzleBoard();
+  const { pieces, selectedId, setSelectedId, flipKnob } = usePuzzleBoard();
 
   return (
     <PuzzleBoard
       pieces={pieces}
       selectedId={selectedId}
       onSelect={setSelectedId}
+      onKnobClick={flipKnob}
     />
   );
 }
 ```
 
-That's a fully interactive four-piece board with hover, selection, and a
-state machine for editing sides.
+That's a fully interactive four-piece board with hover, selection, and
+edits: clicking a piece's **body** selects it (via `onSelect`), and
+clicking a **tab** flips the knob's ownership across the connection (via
+`onKnobClick`). `flipKnob` from the hook is the default handler, but
+`onKnobClick` is just `(pieceId, side, pos) => void` so you can pass any
+handler you want — for example to navigate selection instead of flipping.
 
 ### 3. Drive edits from your UI
 
@@ -112,9 +123,13 @@ const {
 
   sideInfo,         // per-side metadata for the selected piece:
                     //   { top, right, bottom, left } each with
-                    //   { data, neighbors, maxCount, canCascade, partial }
+                    //   { data, count, type, neighbors, maxCount,
+                    //     canCascade, partial }
+                    // `count`/`type` are normalized from `data` and work
+                    // for both uniform and mixed sides.
 
-  setSideCount,     // (side, newCount) => void — the main edit action
+  setSideCount,     // (side, newCount) => void — slider/stepper edits
+  flipKnob,         // (pieceId, side, pos) => void — wire to onKnobClick
   reset,            // (optionalInitial?, optionalSelectedId?) => void
 } = usePuzzleBoard();
 ```
@@ -126,7 +141,7 @@ Hook up a slider (or any control) by calling `setSideCount`:
   type="range"
   min={0}
   max={sideInfo.right.maxCount}
-  value={sideInfo.right.data.count}
+  value={sideInfo.right.count}
   onChange={(e) => setSideCount('right', Number(e.target.value))}
 />
 ```
@@ -149,6 +164,13 @@ const board = usePuzzleBoard({
 A piece is just:
 
 ```ts
+type KnobType = 'tab' | 'socket' | 'flat';
+
+type Side =
+  | { count: number; type: KnobType }     // evenly-spaced, uniform
+  | Array<{ pos: number; type: KnobType }> // explicit positions; can mix types
+  | 'flat';                                // shorthand for no knobs
+
 type Piece = {
   id: string;
   x: number;           // top-left X
@@ -156,14 +178,15 @@ type Piece = {
   w: number;           // width  (must be > 2 * KNOB_R)
   h: number;           // height (must be > 2 * KNOB_R)
   label?: string;
-  sides: {
-    top?:    { count: number; type: 'tab' | 'socket' | 'flat' };
-    right?:  { count: number; type: 'tab' | 'socket' | 'flat' };
-    bottom?: { count: number; type: 'tab' | 'socket' | 'flat' };
-    left?:   { count: number; type: 'tab' | 'socket' | 'flat' };
-  };
+  sides: { top?: Side; right?: Side; bottom?: Side; left?: Side };
 };
 ```
+
+Most of the time you'll use the uniform `{ count, type }` form. Clicking
+a tab on a multi-knob side (`flipKnob`) can produce a mixed side that's
+stored as the array form; the renderer handles both seamlessly. Use the
+`sideCount(side)` and `sideType(side)` helpers when you need to read a
+side without caring about which form it's in.
 
 Pieces must fit together geometrically — a tab on one piece's side needs a
 matching socket at the same coordinates on the neighbor's opposite side.
@@ -178,6 +201,7 @@ function, so you can manage state yourself (Redux, Zustand, XState…):
 import {
   changeSide,
   splitNeighborsOnSide,
+  flipKnob,
   findNeighbors,
   coversNeighbors,
   maxKnobsForSide,
@@ -186,6 +210,8 @@ import {
 
 let pieces = initialFourPieces();
 pieces = changeSide(pieces, 'tl', 'right', 3, { cascade: true });
+// Flip the middle knob of TL's right edge onto its neighbor:
+pieces = flipKnob(pieces, 'tl', 'right', 0.5);
 ```
 
 And if you only want rendering, use the components directly with whatever
@@ -233,15 +259,54 @@ Geometry (pure, framework-free):
 
 - `computePiecePath(piece)` → SVG `d` string.
 - `computePieceBbox(piece)` → `{ minX, minY, maxX, maxY }`.
+- `computeKnobs(piece)` → `[{ side, type, pos, cx, cy }, …]`.
+- `knobHitCenter(side, cx, cy)` → `{ hx, hy }` for overlaying hit regions.
 - `normalizeSide(side)`, `evenlySpaced(count, type)`.
 - Constants: `KNOB_R`, `KNOB_D`, `FLAT`, `TAB`, `SOCKET`.
 
 Board (pure, framework-free):
 
 - `initialFourPieces(size?)`.
-- `findNeighbors`, `coversNeighbors`, `edgesMatch`, `piecesInRegion`.
-- `sideFor`, `maxKnobsForSide`, `resolveType`.
+- `findNeighbors`, `findNeighborAtKnob`, `coversNeighbors`, `edgesMatch`,
+  `piecesInRegion`.
+- `sideFor`, `sideCount`, `sideType`, `maxKnobsForSide`, `resolveType`.
 - `updatePiece`, `setPieceSide`.
-- `splitNeighborsOnSide`, `changeSide`.
+- `splitNeighborsOnSide`, `changeSide`, `flipKnob`.
 - Constants: `BIG`, `MIN_DIM`, `EPS`, `SIDES`, `OPPOSITE`.
 - Helpers: `oppositeType`, `makeId`.
+
+### Tab clicks flip knob ownership
+
+Every tab on a rendered piece gets an invisible circular hit region
+(`.piece__knob-hit`) positioned over its protrusion. Clicking it fires
+`onKnobClick(pieceId, side, pos)` on `PuzzleBoard`.
+
+The default handler (`flipKnob` from `usePuzzleBoard`) swaps the knob's
+ownership across the connection: whoever had the tab now has the socket,
+and vice versa. Concretely, if TL's right side has one tab that meets
+TR's left-side socket, clicking that tab produces a TL with a socket on
+the right and a TR with a tab on the left — the knob now belongs to TR.
+
+On multi-knob sides this operates on **just that one knob**, so a side
+can end up with mixed tab/socket knobs. The rendering, hit regions, and
+neighbor mating all keep working because normalized knob arrays are a
+first-class side form.
+
+If you want a different behavior (e.g. "click a tab to select the
+neighbor"), pass your own `onKnobClick` instead:
+
+```jsx
+<PuzzleBoard
+  pieces={pieces}
+  selectedId={selectedId}
+  onSelect={setSelectedId}
+  onKnobClick={(ownerId, side, pos) => {
+    const owner = pieces.find((p) => p.id === ownerId);
+    const neighbor = findNeighborAtKnob(pieces, owner, side, pos);
+    if (neighbor) setSelectedId(neighbor.id);
+  }}
+/>
+```
+
+Re-theme the hover tint on the hit region with the
+`--puzzle-knob-hit-hover` CSS variable.

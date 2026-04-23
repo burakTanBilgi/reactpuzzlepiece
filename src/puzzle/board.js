@@ -1,10 +1,16 @@
 // Pure state-manipulation helpers for a puzzle board.
-// The board is just an array of piece objects:
+// The board is an array of piece objects:
 //   { id, x, y, w, h, label, sides: { top?, right?, bottom?, left? } }
-// A side is { count, type } where type is 'tab' | 'socket' | 'flat'.
-// These functions are immutable — they return new arrays/objects.
+//
+// A side may be any of:
+//   - undefined / 'flat'                         → no knobs
+//   - { count, type }                            → evenly-spaced uniform knobs
+//   - [{ pos, type }, …]                         → mixed / explicit positions
+// Use `sideCount`/`sideType` to read any side form.
+//
+// All functions in this file are immutable — they return new arrays/objects.
 
-import { KNOB_D } from './geometry.js';
+import { KNOB_D, normalizeSide } from './geometry.js';
 
 export const BIG = 400;
 export const MIN_DIM = 80;
@@ -60,6 +66,47 @@ export function initialFourPieces(size = BIG) {
       },
     },
   ];
+}
+
+// --- Side-form helpers -------------------------------------------------------
+
+// Number of knobs on a side, regardless of storage form.
+export function sideCount(side) {
+  if (side == null || side === 'flat') return 0;
+  if (Array.isArray(side)) return side.length;
+  if (side === 'tab' || side === 'socket') return 1;
+  if (typeof side === 'object') return side.count ?? 0;
+  return 0;
+}
+
+// Dominant type on a side: 'tab', 'socket', 'flat', or 'mixed'.
+export function sideType(side) {
+  if (side == null || side === 'flat') return 'flat';
+  if (Array.isArray(side)) {
+    if (side.length === 0) return 'flat';
+    const first = side[0].type;
+    return side.every((k) => k.type === first) ? first : 'mixed';
+  }
+  if (side === 'tab' || side === 'socket') return side;
+  if (typeof side === 'object') {
+    if (!side.count) return 'flat';
+    return side.type ?? 'flat';
+  }
+  return 'flat';
+}
+
+// Collapse an explicit knob array to { count, type } when all knobs have the
+// same type and sit at evenly-spaced positions; otherwise keep the array.
+function collapseKnobs(knobs) {
+  if (knobs.length === 0) return { count: 0, type: 'flat' };
+  const first = knobs[0].type;
+  if (!knobs.every((k) => k.type === first)) return knobs;
+  const n = knobs.length;
+  const even = Array.from({ length: n }, (_, i) => (2 * i + 1) / (2 * n));
+  const sorted = [...knobs].sort((a, b) => a.pos - b.pos);
+  const allEven = sorted.every((k, i) => Math.abs(k.pos - even[i]) < 1e-4);
+  if (allEven) return { count: n, type: first };
+  return knobs;
 }
 
 // --- Queries -----------------------------------------------------------------
@@ -119,6 +166,24 @@ export function findNeighbors(pieces, piece, side) {
   return [];
 }
 
+// Given a piece, a side, and a normalized position (0..1) of a knob on that
+// side, return the neighbor that shares the connection at that knob (or null
+// if it's an outer edge).
+export function findNeighborAtKnob(pieces, piece, side, pos) {
+  const neighbors = findNeighbors(pieces, piece, side);
+  if (neighbors.length === 0) return null;
+  if (side === 'left' || side === 'right') {
+    const y = piece.y + pos * piece.h;
+    return (
+      neighbors.find((n) => n.y <= y + EPS && n.y + n.h >= y - EPS) ?? null
+    );
+  }
+  const x = piece.x + pos * piece.w;
+  return (
+    neighbors.find((n) => n.x <= x + EPS && n.x + n.w >= x - EPS) ?? null
+  );
+}
+
 // True if the piece's edge fully spans the combined extent of its neighbors.
 // Used to decide whether a cascade-split is allowed.
 export function coversNeighbors(piece, side, neighbors) {
@@ -163,15 +228,14 @@ export function setPieceSide(piece, side, newSide) {
   return { ...piece, sides: { ...piece.sides, [side]: newSide } };
 }
 
-// Pick a sensible knob type for the new count.
+// Pick a sensible knob type when the count on a side changes.
 export function resolveType(piece, side, neighbors, newCount) {
-  const current = sideFor(piece, side);
   if (newCount === 0) return 'flat';
-  if (current.type !== 'flat') return current.type;
+  const curType = sideType(sideFor(piece, side));
+  if (curType === 'tab' || curType === 'socket') return curType;
   if (neighbors.length > 0) {
-    const nb = neighbors[0];
-    const nbSide = sideFor(nb, OPPOSITE[side]);
-    if (nbSide.type !== 'flat') return oppositeType(nbSide.type);
+    const nbType = sideType(sideFor(neighbors[0], OPPOSITE[side]));
+    if (nbType === 'tab' || nbType === 'socket') return oppositeType(nbType);
   }
   return 'tab';
 }
@@ -213,7 +277,8 @@ export function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) 
     ? side === 'right' ? rightN : leftN
     : side === 'bottom' ? bottomN : topN;
   const farOrig = sideFor(farN, farSide);
-  const farHasKnobs = farOrig.type !== 'flat' && farOrig.count > 0;
+  const farOrigType = sideType(farOrig);
+  const farHasKnobs = farOrigType !== 'flat' && sideCount(farOrig) > 0;
 
   if (isVerticalSplit) {
     const h = (yMax - yMin) / newCount;
@@ -224,18 +289,18 @@ export function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) 
       const sides = { [mateSide]: { count: 1, type: oppType } };
       if (i === 0) {
         const topSide = sideFor(topN, 'top');
-        if (topSide.type !== 'flat') sides.top = topSide;
+        if (sideType(topSide) !== 'flat') sides.top = topSide;
       } else {
         sides.top = { count: 1, type: 'socket' };
       }
       if (i === newCount - 1) {
         const botSide = sideFor(bottomN, 'bottom');
-        if (botSide.type !== 'flat') sides.bottom = botSide;
+        if (sideType(botSide) !== 'flat') sides.bottom = botSide;
       } else {
         sides.bottom = { count: 1, type: 'tab' };
       }
       if (farHasKnobs) {
-        sides[farSide] = { count: 1, type: farOrig.type };
+        sides[farSide] = { count: 1, type: farOrigType };
       }
 
       subs.push({
@@ -257,18 +322,18 @@ export function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) 
       const sides = { [mateSide]: { count: 1, type: oppType } };
       if (i === 0) {
         const leftSide = sideFor(leftN, 'left');
-        if (leftSide.type !== 'flat') sides.left = leftSide;
+        if (sideType(leftSide) !== 'flat') sides.left = leftSide;
       } else {
         sides.left = { count: 1, type: 'socket' };
       }
       if (i === newCount - 1) {
         const rightSide = sideFor(rightN, 'right');
-        if (rightSide.type !== 'flat') sides.right = rightSide;
+        if (sideType(rightSide) !== 'flat') sides.right = rightSide;
       } else {
         sides.right = { count: 1, type: 'tab' };
       }
       if (farHasKnobs) {
-        sides[farSide] = { count: 1, type: farOrig.type };
+        sides[farSide] = { count: 1, type: farOrigType };
       }
 
       subs.push({
@@ -334,7 +399,7 @@ export function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) 
                 ...p.sides,
                 [nearSideOnFarFar]: {
                   count: newCount,
-                  type: oppositeType(farOrig.type),
+                  type: oppositeType(farOrigType),
                 },
               },
             }
@@ -353,7 +418,7 @@ export function changeSide(pieces, pieceId, side, newCount, { cascade = true } =
   if (!piece) return pieces;
 
   const current = sideFor(piece, side);
-  if (current.count === newCount) return pieces;
+  if (sideCount(current) === newCount) return pieces;
 
   const neighbors = findNeighbors(pieces, piece, side);
   const covers = coversNeighbors(piece, side, neighbors);
@@ -374,6 +439,76 @@ export function changeSide(pieces, pieceId, side, newCount, { cascade = true } =
         count: newCount,
         type: oppositeType(newType),
       })
+    );
+  }
+  return next;
+}
+
+// --- Knob flip ---------------------------------------------------------------
+
+// Translate a knob position on `piece`'s `side` into the local position along
+// `neighbor`'s opposite side (both in 0..1 along their respective edges).
+function mapKnobPosToNeighbor(piece, side, pos, neighbor) {
+  if (side === 'left' || side === 'right') {
+    const absY = piece.y + pos * piece.h;
+    return (absY - neighbor.y) / neighbor.h;
+  }
+  const absX = piece.x + pos * piece.w;
+  return (absX - neighbor.x) / neighbor.w;
+}
+
+// Flip the type of a specific knob on a side. Returns the new side and a
+// `flipped` flag. Returns the input side unchanged when no matching knob is
+// found or the knob is 'flat'.
+function flipKnobInSide(side, pos) {
+  const knobs = normalizeSide(side);
+  if (knobs.length === 0) return { newSide: side, flipped: false };
+
+  let bestIdx = 0;
+  let bestDist = Math.abs(knobs[0].pos - pos);
+  for (let i = 1; i < knobs.length; i++) {
+    const d = Math.abs(knobs[i].pos - pos);
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
+  }
+  // The nearest knob must actually be close (half an average gap).
+  const tol = 0.5 / knobs.length + 1e-3;
+  if (bestDist > tol) return { newSide: side, flipped: false };
+
+  const knob = knobs[bestIdx];
+  const newType = oppositeType(knob.type);
+  if (newType === knob.type || newType === 'flat') {
+    return { newSide: side, flipped: false };
+  }
+
+  const newKnobs = knobs.map((k, i) =>
+    i === bestIdx ? { pos: k.pos, type: newType } : { pos: k.pos, type: k.type }
+  );
+  return { newSide: collapseKnobs(newKnobs), flipped: true };
+}
+
+// Flip the ownership of a single knob: the piece that owned the tab now owns
+// the socket, and vice versa. Updates both sides of the connection. Does
+// nothing for outer-edge knobs (no neighbor).
+export function flipKnob(pieces, pieceId, side, pos) {
+  const piece = pieces.find((p) => p.id === pieceId);
+  if (!piece) return pieces;
+
+  const neighbor = findNeighborAtKnob(pieces, piece, side, pos);
+  if (!neighbor) return pieces;
+
+  const pieceResult = flipKnobInSide(sideFor(piece, side), pos);
+  if (!pieceResult.flipped) return pieces;
+
+  const nbPos = mapKnobPosToNeighbor(piece, side, pos, neighbor);
+  const nbSideName = OPPOSITE[side];
+  const nbResult = flipKnobInSide(sideFor(neighbor, nbSideName), nbPos);
+
+  let next = updatePiece(pieces, pieceId, (p) =>
+    setPieceSide(p, side, pieceResult.newSide)
+  );
+  if (nbResult.flipped) {
+    next = updatePiece(next, neighbor.id, (p) =>
+      setPieceSide(p, nbSideName, nbResult.newSide)
     );
   }
   return next;

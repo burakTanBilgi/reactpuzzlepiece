@@ -82,6 +82,41 @@ export function computePiecePath(piece) {
   return parts.join(' ');
 }
 
+// Describe every knob on a piece as absolute SVG coordinates, so consumers
+// can overlay hit regions, labels, etc. For each knob:
+//   { side, type, pos, cx, cy }
+// where (cx, cy) is the arc's center (on the piece's edge).
+export function computeKnobs(piece) {
+  const { x, y, w, h } = piece;
+  const knobs = [];
+  for (const k of normalizeSide(piece.sides?.top)) {
+    knobs.push({ side: 'top', type: k.type, pos: k.pos, cx: x + k.pos * w, cy: y });
+  }
+  for (const k of normalizeSide(piece.sides?.right)) {
+    knobs.push({ side: 'right', type: k.type, pos: k.pos, cx: x + w, cy: y + k.pos * h });
+  }
+  for (const k of normalizeSide(piece.sides?.bottom)) {
+    knobs.push({ side: 'bottom', type: k.type, pos: k.pos, cx: x + k.pos * w, cy: y + h });
+  }
+  for (const k of normalizeSide(piece.sides?.left)) {
+    knobs.push({ side: 'left', type: k.type, pos: k.pos, cx: x, cy: y + k.pos * h });
+  }
+  return knobs;
+}
+
+// How far along the outward-normal to offset a click/hit region so it sits
+// over the visible protrusion rather than straddling the piece edge.
+const HIT_OFFSET = KNOB_R * 0.5;
+
+// Center point for a hit region over a knob's visible protrusion
+// (tabs protrude outward; sockets' visible opening sits on the same point).
+export function knobHitCenter(side, cx, cy) {
+  if (side === 'top') return { hx: cx, hy: cy - HIT_OFFSET };
+  if (side === 'bottom') return { hx: cx, hy: cy + HIT_OFFSET };
+  if (side === 'left') return { hx: cx - HIT_OFFSET, hy: cy };
+  return { hx: cx + HIT_OFFSET, hy: cy };
+}
+
 // Bounding box including any outward-pointing tabs, used to pad the viewBox
 // so strokes on protruding knobs aren't clipped.
 export function computePieceBbox(piece) {

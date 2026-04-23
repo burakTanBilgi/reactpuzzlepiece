@@ -9,6 +9,8 @@ export { usePuzzleBoard } from './usePuzzleBoard.js';
 export {
   computePiecePath,
   computePieceBbox,
+  computeKnobs,
+  knobHitCenter,
   evenlySpaced,
   normalizeSide,
   KNOB_R,
@@ -29,6 +31,7 @@ export {
   initialFourPieces,
   sideFor,
   findNeighbors,
+  findNeighborAtKnob,
   coversNeighbors,
   edgesMatch,
   piecesInRegion,
@@ -38,4 +41,7 @@ export {
   updatePiece,
   setPieceSide,
   changeSide,
+  flipKnob,
+  sideCount,
+  sideType,
 } from './board.js';

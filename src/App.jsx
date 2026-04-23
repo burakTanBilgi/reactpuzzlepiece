@@ -14,6 +14,7 @@ export default function App() {
     setCascade,
     sideInfo,
     setSideCount,
+    flipKnob,
     reset,
   } = usePuzzleBoard();
 
@@ -33,8 +34,8 @@ export default function App() {
         <p className="stage__eyebrow">Prototype</p>
         <h1 className="stage__title">Puzzle Piece Playground</h1>
         <p className="stage__subtitle">
-          Click a piece, tweak its sides. Toggle splitting to grow clusters or
-          to keep counts in sync.
+          Click a piece to select it. Click a tab to flip which side owns it.
+          Tweak counts from the sidebar to grow clusters or reshape edges.
         </p>
         <div
           className={`logo-small ${bigLogoHovered ? 'luminate' : ''}`}
@@ -76,8 +77,8 @@ export default function App() {
               {SIDES.map((side) => {
                 const info = sideInfo[side];
                 if (!info) return null;
-                const { data, neighbors, maxCount, canCascade, partial } = info;
-                const typeLabel = data.type === 'flat' ? 'flat' : data.type;
+                const { count, type, neighbors, maxCount, canCascade, partial } = info;
+                const typeLabel = type;
                 let kind;
                 if (neighbors.length === 0) kind = 'outer';
                 else if (partial) kind = 'partial edge';
@@ -98,10 +99,10 @@ export default function App() {
                         type="range"
                         min={0}
                         max={maxCount}
-                        value={data.count}
+                        value={count}
                         onChange={(e) => setSideCount(side, Number(e.target.value))}
                       />
-                      <output className="controls__value">{data.count}</output>
+                      <output className="controls__value">{count}</output>
                     </div>
                     {partial && cascade && (
                       <p className="controls__warn">
@@ -127,7 +128,8 @@ export default function App() {
               With <em>Split neighbor(s)</em> on, changing a side rebuilds the
               piece across it into that many sub‑pieces. Off, the count just
               updates in place. Pieces can only split neighbors across edges
-              they fully cover.
+              they fully cover. Click any tab to flip ownership — the knob
+              becomes part of the piece on the other side.
             </p>
           </section>
         </aside>
@@ -137,6 +139,7 @@ export default function App() {
             pieces={pieces}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            onKnobClick={flipKnob}
           />
         </div>
       </div>

@@ -7,7 +7,20 @@ const STROKE_PAD = 4;
 
 // Renders every piece as a <path> inside a single <svg>, so the outlines
 // stay seamless and hover/selection can control z-order trivially.
-export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
+//
+// Props:
+//   pieces       — Piece[] from the board state
+//   selectedId   — id of the currently-selected piece (optional)
+//   onSelect     — called with a piece id when its body is clicked
+//   onKnobClick  — called with (pieceId, side, pos) when a tab is clicked.
+//                  Typical handler is `board.flipKnob` from usePuzzleBoard,
+//                  which flips tab/socket ownership across the connection.
+export default function PuzzleBoard({
+  pieces,
+  selectedId,
+  onSelect,
+  onKnobClick,
+}) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const enriched = useMemo(
@@ -55,6 +68,10 @@ export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
   const handleHoverEnd = (id) =>
     setHoveredId((current) => (current === id ? null : current));
 
+  const handleKnobClick = onKnobClick
+    ? (ownerId, side, pos) => onKnobClick(ownerId, side, pos)
+    : undefined;
+
   return (
     <svg
       className="puzzle-board"
@@ -73,6 +90,7 @@ export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
           onHoverStart={handleHoverStart}
           onHoverEnd={handleHoverEnd}
           onSelect={onSelect}
+          onKnobClick={handleKnobClick}
         />
       ))}
     </svg>

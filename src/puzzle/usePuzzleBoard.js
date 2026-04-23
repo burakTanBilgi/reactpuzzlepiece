@@ -4,9 +4,12 @@ import {
   changeSide,
   coversNeighbors,
   findNeighbors,
+  flipKnob,
   initialFourPieces,
   maxKnobsForSide,
+  sideCount,
   sideFor,
+  sideType,
 } from './board.js';
 
 // React hook that wraps the whole board state machine.
@@ -14,13 +17,14 @@ import {
 // Usage:
 //   const board = usePuzzleBoard();
 //   <PuzzleBoard pieces={board.pieces} selectedId={board.selectedId}
-//                onSelect={board.setSelectedId} />
+//                onSelect={board.setSelectedId}
+//                onKnobClick={board.flipKnob} />
 //   board.setSideCount('right', 3); // change the selected piece's right side
 //
 // Options:
-//   initial:       () => Piece[]  or  Piece[]   (starting layout)
-//   initialSelected: string                     (id to pre-select)
-//   initialCascade:  boolean                    (default: true)
+//   initial:         () => Piece[] | Piece[]   (starting layout)
+//   initialSelected: string                    (id to pre-select)
+//   initialCascade:  boolean                   (default: true)
 export function usePuzzleBoard({
   initial = initialFourPieces,
   initialSelected = 'tl',
@@ -47,6 +51,8 @@ export function usePuzzleBoard({
       const covers = coversNeighbors(selected, side, neighbors);
       info[side] = {
         data,
+        count: sideCount(data),
+        type: sideType(data),
         neighbors,
         maxCount: maxKnobsForSide(selected, side),
         canCascade: neighbors.length > 0 && covers,
@@ -66,6 +72,10 @@ export function usePuzzleBoard({
     [selectedId, cascade]
   );
 
+  const flipKnobAction = useCallback((pieceId, side, pos) => {
+    setPieces((current) => flipKnob(current, pieceId, side, pos));
+  }, []);
+
   const reset = useCallback(
     (nextInitial = initial, nextSelected = initialSelected) => {
       setPieces(typeof nextInitial === 'function' ? nextInitial() : nextInitial);
@@ -84,6 +94,7 @@ export function usePuzzleBoard({
     setCascade,
     sideInfo,
     setSideCount,
+    flipKnob: flipKnobAction,
     reset,
   };
 }
