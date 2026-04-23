@@ -4,12 +4,22 @@ const FLAT = 'flat';
 const TAB = 'tab';
 const SOCKET = 'socket';
 
+export function evenlySpaced(count, type) {
+  return Array.from({ length: count }, (_, i) => ({
+    pos: (2 * i + 1) / (2 * count),
+    type,
+  }));
+}
+
 function normalizeSide(side) {
   if (!side || side === FLAT) return [];
   if (side === TAB) return [{ pos: 0.5, type: TAB }];
   if (side === SOCKET) return [{ pos: 0.5, type: SOCKET }];
   if (Array.isArray(side)) {
     return side.map((k) => ({ pos: k.pos, type: k.type }));
+  }
+  if (typeof side === 'object' && side.count > 0 && side.type) {
+    return evenlySpaced(side.count, side.type);
   }
   return [];
 }
