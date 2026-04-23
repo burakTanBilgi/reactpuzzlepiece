@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import PuzzleBoard from './PuzzleBoard.jsx';
 import './App.css';
+import BigLogo from '/BigLogo.svg';
+import SmallLogo from '/SmallLogo.svg';
 
 const BIG = 400;
 const KNOB_D = 60;
@@ -340,6 +342,8 @@ export default function App() {
   const [pieces, setPieces] = useState(() => initialPieces());
   const [cascade, setCascade] = useState(true);
   const [selectedId, setSelectedId] = useState('tl');
+  const [bigLogoHovered, setBigLogoHovered] = useState(false);
+  const [smallLogoHovered, setSmallLogoHovered] = useState(false);
 
   const selected = useMemo(
     () => pieces.find((p) => p.id === selectedId) ?? null,
@@ -405,11 +409,25 @@ export default function App() {
   return (
     <main className="stage">
       <header className="stage__head">
+        <div
+          className={`logo-big ${smallLogoHovered ? 'luminate' : ''}`}
+          onMouseEnter={() => setBigLogoHovered(true)}
+          onMouseLeave={() => setBigLogoHovered(false)}
+        >
+          <img src={BigLogo} alt="Big Logo" />
+        </div>
         <p className="stage__eyebrow">Prototype</p>
         <h1 className="stage__title">Puzzle Piece Playground</h1>
         <p className="stage__subtitle">
           Click a piece, tweak its sides. Toggle splitting to grow clusters or to keep counts in sync.
         </p>
+        <div
+          className={`logo-small ${bigLogoHovered ? 'luminate' : ''}`}
+          onMouseEnter={() => setSmallLogoHovered(true)}
+          onMouseLeave={() => setSmallLogoHovered(false)}
+        >
+          <img src={SmallLogo} alt="Small Logo" />
+        </div>
       </header>
 
       <div className="stage__layout">
