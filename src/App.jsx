@@ -4,157 +4,300 @@ import './App.css';
 
 const BIG = 400;
 const KNOB_D = 60;
+const MIN_DIM = 80;
+const EPS = 0.01;
 
-const maxKnobs = (edgeLength) => Math.max(1, Math.floor(edgeLength / KNOB_D));
+const SIDES = ['top', 'right', 'bottom', 'left'];
+const OPPOSITE = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
 
-function buildPieces({ cols, rows, hTabs, vTabs }) {
-  const pieces = [];
+const oppositeType = (t) => (t === 'tab' ? 'socket' : t === 'socket' ? 'tab' : 'flat');
 
-  pieces.push({
-    id: 'tl',
-    x: 0,
-    y: 0,
-    w: BIG,
-    h: BIG,
-    label: 'TL',
-    sides: {
-      right: { count: hTabs, type: 'tab' },
-      bottom: { count: cols, type: 'tab' },
+let _idCounter = 0;
+const makeId = (prefix) => `${prefix}-${_idCounter++}`;
+
+function initialPieces() {
+  return [
+    {
+      id: 'tl',
+      x: 0, y: 0, w: BIG, h: BIG,
+      label: 'TL',
+      sides: {
+        right: { count: 1, type: 'tab' },
+        bottom: { count: 1, type: 'tab' },
+      },
     },
-  });
-
-  const trH = BIG / hTabs;
-  for (let i = 0; i < hTabs; i++) {
-    const sides = { left: 'socket' };
-    if (i > 0) sides.top = 'socket';
-    if (i === hTabs - 1) {
-      sides.bottom = { count: vTabs, type: 'tab' };
-    } else {
-      sides.bottom = 'tab';
-    }
-    pieces.push({
-      id: `tr-${i}`,
-      x: BIG,
-      y: i * trH,
-      w: BIG,
-      h: trH,
-      label: `T${i}`,
-      sides,
-    });
-  }
-
-  const brW = BIG / vTabs;
-  const brH = BIG / rows;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < vTabs; c++) {
-      const parity = (r + c) % 2;
-      const sides = {};
-      sides.top = r === 0 ? 'socket' : parity === 1 ? 'tab' : 'socket';
-      sides.left = c === 0 ? 'socket' : parity === 1 ? 'socket' : 'tab';
-      if (c < vTabs - 1) sides.right = parity === 0 ? 'tab' : 'socket';
-      if (r < rows - 1) sides.bottom = parity === 0 ? 'socket' : 'tab';
-
-      pieces.push({
-        id: `br-${r}-${c}`,
-        x: BIG + c * brW,
-        y: BIG + r * brH,
-        w: brW,
-        h: brH,
-        label: `R${r}${c}`,
-        sides,
-      });
-    }
-  }
-
-  const blW = BIG / cols;
-  const blH = BIG / rows;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const sides = { top: 'socket', right: 'tab' };
-      if (r < rows - 1) sides.bottom = 'tab';
-      if (c > 0) sides.left = 'socket';
-
-      pieces.push({
-        id: `bl-${r}-${c}`,
-        x: c * blW,
-        y: BIG + r * blH,
-        w: blW,
-        h: blH,
-        label: `L${r}${c}`,
-        sides,
-      });
-    }
-  }
-
-  return pieces;
+    {
+      id: 'tr',
+      x: BIG, y: 0, w: BIG, h: BIG,
+      label: 'TR',
+      sides: {
+        left: { count: 1, type: 'socket' },
+        bottom: { count: 1, type: 'tab' },
+      },
+    },
+    {
+      id: 'bl',
+      x: 0, y: BIG, w: BIG, h: BIG,
+      label: 'BL',
+      sides: {
+        top: { count: 1, type: 'socket' },
+        right: { count: 1, type: 'tab' },
+      },
+    },
+    {
+      id: 'br',
+      x: BIG, y: BIG, w: BIG, h: BIG,
+      label: 'BR',
+      sides: {
+        top: { count: 1, type: 'socket' },
+        left: { count: 1, type: 'socket' },
+      },
+    },
+  ];
 }
 
-function regionOf(id) {
-  if (id === 'tl') return 'tl';
-  if (id?.startsWith('tr-')) return 'tr';
-  if (id?.startsWith('br-')) return 'br';
-  if (id?.startsWith('bl-')) return 'bl';
-  return null;
-}
-
-const REGION_LABEL = {
-  tl: 'Top-Left region',
-  tr: 'Top-Right region',
-  br: 'Bottom-Right region',
-  bl: 'Bottom-Left region',
-};
-
-function getSideControls(region, edges, setters) {
-  const { cols, rows, hTabs, vTabs } = edges;
-  const { setCols, setRows, setHTabs, setVTabs } = setters;
-
-  if (region === 'tl') {
-    return [
-      { key: 'right', label: 'Right — tabs (→ TR splits)', value: hTabs, max: maxKnobs(BIG), onChange: setHTabs },
-      { key: 'bottom', label: 'Bottom — tabs (→ BL splits)', value: cols, max: maxKnobs(BIG), onChange: setCols },
-    ];
+function findNeighbors(pieces, piece, side) {
+  const pid = piece.id;
+  if (side === 'right') {
+    const x = piece.x + piece.w;
+    return pieces.filter(
+      (p) =>
+        p.id !== pid &&
+        Math.abs(p.x - x) < EPS &&
+        p.y < piece.y + piece.h - EPS &&
+        p.y + p.h > piece.y + EPS
+    );
   }
-  if (region === 'tr') {
-    return [
-      { key: 'left', label: 'Left — sockets from TL (TR splits)', value: hTabs, max: maxKnobs(BIG), onChange: setHTabs },
-      { key: 'bottom', label: 'Bottom — tabs (→ BR splits)', value: vTabs, max: maxKnobs(BIG), onChange: setVTabs },
-    ];
+  if (side === 'left') {
+    const x = piece.x;
+    return pieces.filter(
+      (p) =>
+        p.id !== pid &&
+        Math.abs(p.x + p.w - x) < EPS &&
+        p.y < piece.y + piece.h - EPS &&
+        p.y + p.h > piece.y + EPS
+    );
   }
-  if (region === 'br') {
-    return [
-      { key: 'top', label: 'Top — sockets from TR (BR cols)', value: vTabs, max: maxKnobs(BIG), onChange: setVTabs },
-      { key: 'left', label: 'Left — sockets from BL (BR rows)', value: rows, max: maxKnobs(BIG), onChange: setRows },
-    ];
+  if (side === 'bottom') {
+    const y = piece.y + piece.h;
+    return pieces.filter(
+      (p) =>
+        p.id !== pid &&
+        Math.abs(p.y - y) < EPS &&
+        p.x < piece.x + piece.w - EPS &&
+        p.x + p.w > piece.x + EPS
+    );
   }
-  if (region === 'bl') {
-    return [
-      { key: 'top', label: 'Top — sockets from TL (BL cols)', value: cols, max: maxKnobs(BIG), onChange: setCols },
-      { key: 'right', label: 'Right — tabs (→ BR rows)', value: rows, max: maxKnobs(BIG), onChange: setRows },
-    ];
+  if (side === 'top') {
+    const y = piece.y;
+    return pieces.filter(
+      (p) =>
+        p.id !== pid &&
+        Math.abs(p.y + p.h - y) < EPS &&
+        p.x < piece.x + piece.w - EPS &&
+        p.x + p.w > piece.x + EPS
+    );
   }
   return [];
 }
 
+function sideFor(piece, side) {
+  return piece.sides?.[side] ?? { count: 0, type: 'flat' };
+}
+
+function resolveType(piece, side, neighbors, newCount) {
+  const current = sideFor(piece, side);
+  if (newCount === 0) return 'flat';
+  if (current.type !== 'flat') return current.type;
+  if (neighbors.length > 0) {
+    const nb = neighbors[0];
+    const nbSide = sideFor(nb, OPPOSITE[side]);
+    if (nbSide.type !== 'flat') return oppositeType(nbSide.type);
+  }
+  return 'tab';
+}
+
+function maxKnobsForSide(piece, side) {
+  const edge = side === 'left' || side === 'right' ? piece.h : piece.w;
+  return Math.max(1, Math.floor(edge / KNOB_D));
+}
+
+function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
+  const piece = pieces.find((p) => p.id === pieceId);
+  if (!piece) return pieces;
+  const neighbors = findNeighbors(pieces, piece, side);
+  if (neighbors.length === 0) return pieces;
+
+  const xMin = Math.min(...neighbors.map((n) => n.x));
+  const xMax = Math.max(...neighbors.map((n) => n.x + n.w));
+  const yMin = Math.min(...neighbors.map((n) => n.y));
+  const yMax = Math.max(...neighbors.map((n) => n.y + n.h));
+
+  const topN = neighbors.find((n) => Math.abs(n.y - yMin) < EPS);
+  const bottomN = neighbors.find((n) => Math.abs(n.y + n.h - yMax) < EPS);
+  const leftN = neighbors.find((n) => Math.abs(n.x - xMin) < EPS);
+  const rightN = neighbors.find((n) => Math.abs(n.x + n.w - xMax) < EPS);
+
+  const mateSide = OPPOSITE[side];
+  const oppType = oppositeType(knobType);
+
+  const baseLabel = topN?.label || bottomN?.label || leftN?.label || rightN?.label || 'S';
+
+  const rest = pieces.filter((p) => !neighbors.some((n) => n.id === p.id));
+  const subs = [];
+
+  const isVerticalSplit = side === 'right' || side === 'left';
+
+  if (isVerticalSplit) {
+    const h = (yMax - yMin) / newCount;
+    const w = xMax - xMin;
+    if (h < MIN_DIM) return pieces;
+
+    for (let i = 0; i < newCount; i++) {
+      const sides = {
+        [mateSide]: { count: 1, type: oppType },
+      };
+      if (i === 0) {
+        const topSide = sideFor(topN, 'top');
+        if (topSide.type !== 'flat') sides.top = topSide;
+      } else {
+        sides.top = { count: 1, type: 'socket' };
+      }
+      if (i === newCount - 1) {
+        const botSide = sideFor(bottomN, 'bottom');
+        if (botSide.type !== 'flat') sides.bottom = botSide;
+      } else {
+        sides.bottom = { count: 1, type: 'tab' };
+      }
+      const farSide = side === 'right' ? 'right' : 'left';
+      const farN = side === 'right' ? rightN : leftN;
+      const farSideData = sideFor(farN, farSide);
+      if (farSideData.type !== 'flat' && newCount === 1) {
+        sides[farSide] = farSideData;
+      }
+
+      subs.push({
+        id: makeId('p'),
+        x: xMin,
+        y: yMin + i * h,
+        w,
+        h,
+        label: newCount === 1 ? baseLabel : `${baseLabel}${i}`,
+        sides,
+      });
+    }
+  } else {
+    const w = (xMax - xMin) / newCount;
+    const h = yMax - yMin;
+    if (w < MIN_DIM) return pieces;
+
+    for (let i = 0; i < newCount; i++) {
+      const sides = {
+        [mateSide]: { count: 1, type: oppType },
+      };
+      if (i === 0) {
+        const leftSide = sideFor(leftN, 'left');
+        if (leftSide.type !== 'flat') sides.left = leftSide;
+      } else {
+        sides.left = { count: 1, type: 'socket' };
+      }
+      if (i === newCount - 1) {
+        const rightSide = sideFor(rightN, 'right');
+        if (rightSide.type !== 'flat') sides.right = rightSide;
+      } else {
+        sides.right = { count: 1, type: 'tab' };
+      }
+      const farSide = side === 'bottom' ? 'bottom' : 'top';
+      const farN = side === 'bottom' ? bottomN : topN;
+      const farSideData = sideFor(farN, farSide);
+      if (farSideData.type !== 'flat' && newCount === 1) {
+        sides[farSide] = farSideData;
+      }
+
+      subs.push({
+        id: makeId('p'),
+        x: xMin + i * w,
+        y: yMin,
+        w,
+        h,
+        label: newCount === 1 ? baseLabel : `${baseLabel}${i}`,
+        sides,
+      });
+    }
+  }
+
+  return [...rest, ...subs];
+}
+
+function updatePiece(pieces, pieceId, updater) {
+  return pieces.map((p) => (p.id === pieceId ? updater(p) : p));
+}
+
+function setPieceSide(piece, side, newSide) {
+  return { ...piece, sides: { ...piece.sides, [side]: newSide } };
+}
+
 export default function App() {
-  const [cols, setCols] = useState(2);
-  const [rows, setRows] = useState(2);
-  const [hTabs, setHTabs] = useState(1);
-  const [vTabs, setVTabs] = useState(1);
+  const [pieces, setPieces] = useState(() => initialPieces());
+  const [cascade, setCascade] = useState(true);
   const [selectedId, setSelectedId] = useState('tl');
 
-  const pieces = useMemo(
-    () => buildPieces({ cols, rows, hTabs, vTabs }),
-    [cols, rows, hTabs, vTabs]
+  const selected = useMemo(
+    () => pieces.find((p) => p.id === selectedId) ?? null,
+    [pieces, selectedId]
   );
 
-  const selected = pieces.find((p) => p.id === selectedId);
-  const region = regionOf(selectedId);
+  const sideInfo = useMemo(() => {
+    if (!selected) return {};
+    const info = {};
+    for (const side of SIDES) {
+      const neighbors = findNeighbors(pieces, selected, side);
+      const data = sideFor(selected, side);
+      info[side] = {
+        data,
+        neighbors,
+        maxCount: maxKnobsForSide(selected, side),
+      };
+    }
+    return info;
+  }, [pieces, selected]);
 
-  const sideControls = getSideControls(
-    region,
-    { cols, rows, hTabs, vTabs },
-    { setCols, setRows, setHTabs, setVTabs }
-  );
+  const handleSideChange = (side, newCount) => {
+    if (!selected) return;
+    const piece = pieces.find((p) => p.id === selectedId);
+    if (!piece) return;
+
+    const current = sideFor(piece, side);
+    if (current.count === newCount) return;
+
+    const neighbors = findNeighbors(pieces, piece, side);
+    const newType = resolveType(piece, side, neighbors, newCount);
+    const newSide = { count: newCount, type: newType };
+
+    if (cascade && newCount > 0 && neighbors.length > 0) {
+      let next = splitNeighborsOnSide(pieces, selectedId, side, newCount, newType);
+      next = updatePiece(next, selectedId, (p) => setPieceSide(p, side, newSide));
+      setPieces(next);
+      return;
+    }
+
+    let next = updatePiece(pieces, selectedId, (p) => setPieceSide(p, side, newSide));
+    if (neighbors.length === 1) {
+      const nb = neighbors[0];
+      next = updatePiece(next, nb.id, (p) =>
+        setPieceSide(p, OPPOSITE[side], {
+          count: newCount,
+          type: oppositeType(newType),
+        })
+      );
+    }
+    setPieces(next);
+  };
+
+  const resetBoard = () => {
+    setPieces(initialPieces());
+    setSelectedId('tl');
+  };
 
   return (
     <main className="stage">
@@ -175,28 +318,52 @@ export default function App() {
             <p className="controls__hint">Click a piece to select it.</p>
           )}
 
-          {region && <div className="controls__region">{REGION_LABEL[region]}</div>}
+          <label className="controls__toggle">
+            <input
+              type="checkbox"
+              checked={cascade}
+              onChange={(e) => setCascade(e.target.checked)}
+            />
+            <span>Cascade: split neighbor on change</span>
+          </label>
 
-          {sideControls.map((ctrl) => (
-            <label key={ctrl.key} className="controls__field">
-              <span className="controls__label">{ctrl.label}</span>
-              <div className="controls__row">
-                <input
-                  type="range"
-                  min={1}
-                  max={ctrl.max}
-                  value={ctrl.value}
-                  onChange={(e) => ctrl.onChange(Number(e.target.value))}
-                />
-                <output className="controls__value">{ctrl.value}</output>
-              </div>
-            </label>
-          ))}
+          {selected &&
+            SIDES.map((side) => {
+              const info = sideInfo[side];
+              if (!info) return null;
+              const { data, neighbors, maxCount } = info;
+              const typeLabel = data.type === 'flat' ? '—' : data.type;
+              const kind = neighbors.length === 0 ? 'outer' : `${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}`;
+              return (
+                <label key={side} className="controls__field">
+                  <span className="controls__label">
+                    <span className="controls__label-side">
+                      {side[0].toUpperCase() + side.slice(1)}
+                    </span>
+                    <span className="controls__label-meta">{typeLabel} · {kind}</span>
+                  </span>
+                  <div className="controls__row">
+                    <input
+                      type="range"
+                      min={0}
+                      max={maxCount}
+                      value={data.count}
+                      onChange={(e) => handleSideChange(side, Number(e.target.value))}
+                    />
+                    <output className="controls__value">{data.count}</output>
+                  </div>
+                </label>
+              );
+            })}
 
           <hr className="controls__divider" />
+          <button type="button" className="controls__reset" onClick={resetBoard}>
+            Reset board
+          </button>
           <p className="controls__hint">
-            Adding a tab to a side splits the receiving neighbor into that many sub-pieces.
-            Each region stays {BIG} × {BIG}; sub-pieces shrink to fit.
+            Turn Cascade on to split the neighbor across the shared edge into
+            that many sub-pieces. Turn it off to change the count without
+            splitting. 0 knobs makes a side flat.
           </p>
         </aside>
 
