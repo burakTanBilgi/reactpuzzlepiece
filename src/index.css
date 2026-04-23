@@ -1,22 +1,53 @@
 :root {
-  --bg: #0d1117;
+  --bg: #0b0f17;
+  --bg-elev: #0f1420;
   --surface: #161b22;
-  --stroke-idle: #30363d;
-  --stroke-hover: #1274ec;
+  --surface-2: #1b222d;
+  --surface-3: #232b38;
+  --stroke-idle: #2a313c;
+  --stroke-soft: #3a414d;
+  --stroke-hover: #4f9cff;
+  --stroke-hover-soft: rgba(79, 156, 255, 0.35);
   --text: #e6edf3;
+  --text-muted: #8a94a6;
+  --text-dim: #5f6775;
+  --accent-tint: rgba(79, 156, 255, 0.08);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 * {
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
 }
 
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(79, 156, 255, 0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(79, 156, 255, 0.04), transparent 60%),
+    var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
 }

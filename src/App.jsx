@@ -102,7 +102,7 @@ function findNeighbors(pieces, piece, side) {
 }
 
 function sideFor(piece, side) {
-  return piece.sides?.[side] ?? { count: 0, type: 'flat' };
+  return piece?.sides?.[side] ?? { count: 0, type: 'flat' };
 }
 
 function resolveType(piece, side, neighbors, newCount) {
@@ -122,6 +122,37 @@ function maxKnobsForSide(piece, side) {
   return Math.max(1, Math.floor(edge / KNOB_D));
 }
 
+function coversNeighbors(piece, side, neighbors) {
+  if (neighbors.length === 0) return true;
+  if (side === 'left' || side === 'right') {
+    const nMin = Math.min(...neighbors.map((n) => n.y));
+    const nMax = Math.max(...neighbors.map((n) => n.y + n.h));
+    return piece.y <= nMin + EPS && piece.y + piece.h >= nMax - EPS;
+  }
+  const nMin = Math.min(...neighbors.map((n) => n.x));
+  const nMax = Math.max(...neighbors.map((n) => n.x + n.w));
+  return piece.x <= nMin + EPS && piece.x + piece.w >= nMax - EPS;
+}
+
+function edgesMatch(piece, neighbor, side) {
+  if (side === 'left' || side === 'right') {
+    return Math.abs(piece.y - neighbor.y) < EPS && Math.abs(piece.h - neighbor.h) < EPS;
+  }
+  return Math.abs(piece.x - neighbor.x) < EPS && Math.abs(piece.w - neighbor.w) < EPS;
+}
+
+function piecesInRegion(pieces, region, excludeId) {
+  const { xMin, yMin, xMax, yMax } = region;
+  return pieces.filter(
+    (p) =>
+      p.id !== excludeId &&
+      p.x >= xMin - EPS &&
+      p.y >= yMin - EPS &&
+      p.x + p.w <= xMax + EPS &&
+      p.y + p.h <= yMax + EPS
+  );
+}
+
 function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
   const piece = pieces.find((p) => p.id === pieceId);
   if (!piece) return pieces;
@@ -133,6 +164,9 @@ function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
   const yMin = Math.min(...neighbors.map((n) => n.y));
   const yMax = Math.max(...neighbors.map((n) => n.y + n.h));
 
+  const region = { xMin, yMin, xMax, yMax };
+  const toRemove = piecesInRegion(pieces, region, pieceId);
+
   const topN = neighbors.find((n) => Math.abs(n.y - yMin) < EPS);
   const bottomN = neighbors.find((n) => Math.abs(n.y + n.h - yMax) < EPS);
   const leftN = neighbors.find((n) => Math.abs(n.x - xMin) < EPS);
@@ -143,10 +177,21 @@ function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
 
   const baseLabel = topN?.label || bottomN?.label || leftN?.label || rightN?.label || 'S';
 
-  const rest = pieces.filter((p) => !neighbors.some((n) => n.id === p.id));
+  let rest = pieces.filter((p) => !toRemove.some((n) => n.id === p.id));
   const subs = [];
 
   const isVerticalSplit = side === 'right' || side === 'left';
+
+  const farSide = side;
+  const farN = isVerticalSplit
+    ? side === 'right'
+      ? rightN
+      : leftN
+    : side === 'bottom'
+      ? bottomN
+      : topN;
+  const farOrig = sideFor(farN, farSide);
+  const farHasKnobs = farOrig.type !== 'flat' && farOrig.count > 0;
 
   if (isVerticalSplit) {
     const h = (yMax - yMin) / newCount;
@@ -169,11 +214,8 @@ function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
       } else {
         sides.bottom = { count: 1, type: 'tab' };
       }
-      const farSide = side === 'right' ? 'right' : 'left';
-      const farN = side === 'right' ? rightN : leftN;
-      const farSideData = sideFor(farN, farSide);
-      if (farSideData.type !== 'flat' && newCount === 1) {
-        sides[farSide] = farSideData;
+      if (farHasKnobs) {
+        sides[farSide] = { count: 1, type: farOrig.type };
       }
 
       subs.push({
@@ -207,11 +249,8 @@ function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
       } else {
         sides.right = { count: 1, type: 'tab' };
       }
-      const farSide = side === 'bottom' ? 'bottom' : 'top';
-      const farN = side === 'bottom' ? bottomN : topN;
-      const farSideData = sideFor(farN, farSide);
-      if (farSideData.type !== 'flat' && newCount === 1) {
-        sides[farSide] = farSideData;
+      if (farHasKnobs) {
+        sides[farSide] = { count: 1, type: farOrig.type };
       }
 
       subs.push({
@@ -223,6 +262,66 @@ function splitNeighborsOnSide(pieces, pieceId, side, newCount, knobType) {
         label: newCount === 1 ? baseLabel : `${baseLabel}${i}`,
         sides,
       });
+    }
+  }
+
+  // Propagate far-side knob count to the "far-far" piece if it's a single piece
+  // whose near-edge matches the split region's far edge exactly.
+  if (farHasKnobs) {
+    let farFarPiece = null;
+    let nearSideOnFarFar = null;
+
+    if (isVerticalSplit) {
+      nearSideOnFarFar = OPPOSITE[farSide];
+      if (side === 'right') {
+        farFarPiece = rest.find(
+          (p) =>
+            Math.abs(p.x - xMax) < EPS &&
+            Math.abs(p.y - yMin) < EPS &&
+            Math.abs(p.y + p.h - yMax) < EPS
+        );
+      } else {
+        farFarPiece = rest.find(
+          (p) =>
+            Math.abs(p.x + p.w - xMin) < EPS &&
+            Math.abs(p.y - yMin) < EPS &&
+            Math.abs(p.y + p.h - yMax) < EPS
+        );
+      }
+    } else {
+      nearSideOnFarFar = OPPOSITE[farSide];
+      if (side === 'bottom') {
+        farFarPiece = rest.find(
+          (p) =>
+            Math.abs(p.y - yMax) < EPS &&
+            Math.abs(p.x - xMin) < EPS &&
+            Math.abs(p.x + p.w - xMax) < EPS
+        );
+      } else {
+        farFarPiece = rest.find(
+          (p) =>
+            Math.abs(p.y + p.h - yMin) < EPS &&
+            Math.abs(p.x - xMin) < EPS &&
+            Math.abs(p.x + p.w - xMax) < EPS
+        );
+      }
+    }
+
+    if (farFarPiece) {
+      rest = rest.map((p) =>
+        p.id === farFarPiece.id
+          ? {
+              ...p,
+              sides: {
+                ...p.sides,
+                [nearSideOnFarFar]: {
+                  count: newCount,
+                  type: oppositeType(farOrig.type),
+                },
+              },
+            }
+          : p
+      );
     }
   }
 
@@ -253,10 +352,13 @@ export default function App() {
     for (const side of SIDES) {
       const neighbors = findNeighbors(pieces, selected, side);
       const data = sideFor(selected, side);
+      const covers = coversNeighbors(selected, side, neighbors);
       info[side] = {
         data,
         neighbors,
         maxCount: maxKnobsForSide(selected, side),
+        canCascade: neighbors.length > 0 && covers,
+        partial: neighbors.length > 0 && !covers,
       };
     }
     return info;
@@ -271,10 +373,11 @@ export default function App() {
     if (current.count === newCount) return;
 
     const neighbors = findNeighbors(pieces, piece, side);
+    const covers = coversNeighbors(piece, side, neighbors);
     const newType = resolveType(piece, side, neighbors, newCount);
     const newSide = { count: newCount, type: newType };
 
-    if (cascade && newCount > 0 && neighbors.length > 0) {
+    if (cascade && newCount > 0 && neighbors.length > 0 && covers) {
       let next = splitNeighborsOnSide(pieces, selectedId, side, newCount, newType);
       next = updatePiece(next, selectedId, (p) => setPieceSide(p, side, newSide));
       setPieces(next);
@@ -282,7 +385,7 @@ export default function App() {
     }
 
     let next = updatePiece(pieces, selectedId, (p) => setPieceSide(p, side, newSide));
-    if (neighbors.length === 1) {
+    if (neighbors.length === 1 && edgesMatch(piece, neighbors[0], side)) {
       const nb = neighbors[0];
       next = updatePiece(next, nb.id, (p) =>
         setPieceSide(p, OPPOSITE[side], {
@@ -301,70 +404,99 @@ export default function App() {
 
   return (
     <main className="stage">
-      <h1 className="stage__title">Puzzle Piece Prototype</h1>
+      <header className="stage__head">
+        <p className="stage__eyebrow">Prototype</p>
+        <h1 className="stage__title">Puzzle Piece Playground</h1>
+        <p className="stage__subtitle">
+          Click a piece, tweak its sides. Toggle splitting to grow clusters or to keep counts in sync.
+        </p>
+      </header>
 
       <div className="stage__layout">
         <aside className="controls">
-          <h2 className="controls__title">Selected Piece</h2>
+          <section className="controls__section">
+            <h2 className="controls__title">Selected</h2>
+            {selected ? (
+              <div className="controls__selected">
+                <span className="controls__selected-label">{selected.label}</span>
+                <span className="controls__selected-meta">
+                  {Math.round(selected.w)} × {Math.round(selected.h)}
+                </span>
+              </div>
+            ) : (
+              <p className="controls__hint">Click a piece to select it.</p>
+            )}
 
-          {selected ? (
-            <div className="controls__selected">
-              <span className="controls__selected-label">{selected.label}</span>
-              <span className="controls__selected-meta">
-                {Math.round(selected.w)} × {Math.round(selected.h)}
-              </span>
-            </div>
-          ) : (
-            <p className="controls__hint">Click a piece to select it.</p>
+            <label className="controls__toggle">
+              <input
+                type="checkbox"
+                checked={cascade}
+                onChange={(e) => setCascade(e.target.checked)}
+              />
+              <span>Split neighbor(s)</span>
+            </label>
+          </section>
+
+          {selected && (
+            <section className="controls__section">
+              <h2 className="controls__title">Sides</h2>
+              {SIDES.map((side) => {
+                const info = sideInfo[side];
+                if (!info) return null;
+                const { data, neighbors, maxCount, canCascade, partial } = info;
+                const typeLabel = data.type === 'flat' ? 'flat' : data.type;
+                let kind;
+                if (neighbors.length === 0) kind = 'outer';
+                else if (partial) kind = 'partial edge';
+                else kind = `${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}`;
+                const willSplit = cascade && canCascade && data.count !== undefined;
+                return (
+                  <div key={side} className="controls__field">
+                    <div className="controls__label">
+                      <span className="controls__label-side">
+                        {side[0].toUpperCase() + side.slice(1)}
+                      </span>
+                      <span className="controls__label-meta">
+                        {typeLabel} · {kind}
+                      </span>
+                    </div>
+                    <div className="controls__row">
+                      <input
+                        type="range"
+                        min={0}
+                        max={maxCount}
+                        value={data.count}
+                        onChange={(e) => handleSideChange(side, Number(e.target.value))}
+                      />
+                      <output className="controls__value">{data.count}</output>
+                    </div>
+                    {partial && cascade && (
+                      <p className="controls__warn">
+                        Can't split — this piece only covers part of the shared edge.
+                      </p>
+                    )}
+                    {!partial && willSplit && neighbors.length > 0 && (
+                      <p className="controls__note">
+                        Changing this count will split the neighbor.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </section>
           )}
 
-          <label className="controls__toggle">
-            <input
-              type="checkbox"
-              checked={cascade}
-              onChange={(e) => setCascade(e.target.checked)}
-            />
-            <span>Cascade: split neighbor on change</span>
-          </label>
-
-          {selected &&
-            SIDES.map((side) => {
-              const info = sideInfo[side];
-              if (!info) return null;
-              const { data, neighbors, maxCount } = info;
-              const typeLabel = data.type === 'flat' ? '—' : data.type;
-              const kind = neighbors.length === 0 ? 'outer' : `${neighbors.length} neighbor${neighbors.length > 1 ? 's' : ''}`;
-              return (
-                <label key={side} className="controls__field">
-                  <span className="controls__label">
-                    <span className="controls__label-side">
-                      {side[0].toUpperCase() + side.slice(1)}
-                    </span>
-                    <span className="controls__label-meta">{typeLabel} · {kind}</span>
-                  </span>
-                  <div className="controls__row">
-                    <input
-                      type="range"
-                      min={0}
-                      max={maxCount}
-                      value={data.count}
-                      onChange={(e) => handleSideChange(side, Number(e.target.value))}
-                    />
-                    <output className="controls__value">{data.count}</output>
-                  </div>
-                </label>
-              );
-            })}
-
-          <hr className="controls__divider" />
-          <button type="button" className="controls__reset" onClick={resetBoard}>
-            Reset board
-          </button>
-          <p className="controls__hint">
-            Turn Cascade on to split the neighbor across the shared edge into
-            that many sub-pieces. Turn it off to change the count without
-            splitting. 0 knobs makes a side flat.
-          </p>
+          <section className="controls__section controls__section--foot">
+            <button type="button" className="controls__reset" onClick={resetBoard}>
+              Reset board
+            </button>
+            <p className="controls__hint">
+              With <em>Split neighbor(s)</em> on, changing a side rebuilds the
+              piece across it into that many sub‑pieces. Off, the count just
+              updates in place. Pieces can only split neighbors across edges
+              they fully cover.
+            </p>
+          </section>
         </aside>
 
         <div className="board-wrap">
