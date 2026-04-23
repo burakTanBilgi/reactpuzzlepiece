@@ -1,6 +1,5 @@
 .puzzle-piece {
-  position: relative;
-  display: inline-block;
+  position: absolute;
 }
 
 .puzzle-piece__svg {
@@ -31,10 +30,6 @@
 
 .puzzle-piece__label {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 200px;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -4,62 +4,89 @@ const BODY_W = 200;
 const BODY_H = 200;
 const KNOB_R = 30;
 
-function buildPath(type) {
-  const cy = BODY_H / 2;
-  const top = cy - KNOB_R;
-  const bot = cy + KNOB_R;
+const FLAT = 'flat';
+const TAB = 'tab';
+const SOCKET = 'socket';
 
-  if (type === 'tab-right') {
-    return [
-      `M 0 0`,
-      `L ${BODY_W} 0`,
-      `L ${BODY_W} ${top}`,
-      `A ${KNOB_R} ${KNOB_R} 0 0 1 ${BODY_W} ${bot}`,
-      `L ${BODY_W} ${BODY_H}`,
-      `L 0 ${BODY_H}`,
-      `Z`,
-    ].join(' ');
-  }
-
-  if (type === 'socket-left') {
-    return [
-      `M 0 0`,
-      `L ${BODY_W} 0`,
-      `L ${BODY_W} ${BODY_H}`,
-      `L 0 ${BODY_H}`,
-      `L 0 ${bot}`,
-      `A ${KNOB_R} ${KNOB_R} 0 0 0 0 ${top}`,
-      `L 0 0`,
-      `Z`,
-    ].join(' ');
-  }
-
-  return '';
+function arc(side, to) {
+  const sweep = side === TAB ? 1 : 0;
+  return `A ${KNOB_R} ${KNOB_R} 0 0 ${sweep} ${to}`;
 }
 
-function getViewBox(type) {
-  if (type === 'tab-right') {
-    return `0 0 ${BODY_W + KNOB_R} ${BODY_H}`;
+function buildPath({ top, right, bottom, left }, ox, oy) {
+  const x0 = ox;
+  const x1 = ox + BODY_W;
+  const y0 = oy;
+  const y1 = oy + BODY_H;
+  const cx = ox + BODY_W / 2;
+  const cy = oy + BODY_H / 2;
+
+  const parts = [`M ${x0} ${y0}`];
+
+  parts.push(`L ${cx - KNOB_R} ${y0}`);
+  if (top === FLAT) {
+    parts.push(`L ${cx + KNOB_R} ${y0}`);
+  } else {
+    parts.push(arc(top, `${cx + KNOB_R} ${y0}`));
   }
-  return `0 0 ${BODY_W} ${BODY_H}`;
+  parts.push(`L ${x1} ${y0}`);
+
+  parts.push(`L ${x1} ${cy - KNOB_R}`);
+  if (right === FLAT) {
+    parts.push(`L ${x1} ${cy + KNOB_R}`);
+  } else {
+    parts.push(arc(right, `${x1} ${cy + KNOB_R}`));
+  }
+  parts.push(`L ${x1} ${y1}`);
+
+  parts.push(`L ${cx + KNOB_R} ${y1}`);
+  if (bottom === FLAT) {
+    parts.push(`L ${cx - KNOB_R} ${y1}`);
+  } else {
+    parts.push(arc(bottom, `${cx - KNOB_R} ${y1}`));
+  }
+  parts.push(`L ${x0} ${y1}`);
+
+  parts.push(`L ${x0} ${cy + KNOB_R}`);
+  if (left === FLAT) {
+    parts.push(`L ${x0} ${cy - KNOB_R}`);
+  } else {
+    parts.push(arc(left, `${x0} ${cy - KNOB_R}`));
+  }
+  parts.push(`L ${x0} ${y0}`, 'Z');
+
+  return parts.join(' ');
 }
 
-function getSvgSize(type) {
-  if (type === 'tab-right') {
-    return { width: BODY_W + KNOB_R, height: BODY_H };
-  }
-  return { width: BODY_W, height: BODY_H };
+function normalizeSides(sides = {}) {
+  return {
+    top: sides.top ?? FLAT,
+    right: sides.right ?? FLAT,
+    bottom: sides.bottom ?? FLAT,
+    left: sides.left ?? FLAT,
+  };
 }
 
-export default function PuzzlePiece({ type, label }) {
-  const d = buildPath(type);
-  const viewBox = getViewBox(type);
-  const { width, height } = getSvgSize(type);
+export default function PuzzlePiece({ sides, label }) {
+  const s = normalizeSides(sides);
+
+  const bodyOffsetX = s.left === TAB ? KNOB_R : 0;
+  const bodyOffsetY = s.top === TAB ? KNOB_R : 0;
+  const svgWidth = BODY_W + bodyOffsetX + (s.right === TAB ? KNOB_R : 0);
+  const svgHeight = BODY_H + bodyOffsetY + (s.bottom === TAB ? KNOB_R : 0);
+
+  const d = buildPath(s, bodyOffsetX, bodyOffsetY);
+  const viewBox = `0 0 ${svgWidth} ${svgHeight}`;
 
   return (
     <div
-      className={`puzzle-piece puzzle-piece--${type}`}
-      style={{ width, height }}
+      className="puzzle-piece"
+      style={{
+        width: svgWidth,
+        height: svgHeight,
+        top: -bodyOffsetY,
+        left: -bodyOffsetX,
+      }}
     >
       <svg
         className="puzzle-piece__svg"
@@ -69,7 +96,17 @@ export default function PuzzlePiece({ type, label }) {
       >
         <path className="puzzle-piece__path" d={d} />
       </svg>
-      <span className="puzzle-piece__label">{label}</span>
+      <span
+        className="puzzle-piece__label"
+        style={{
+          top: bodyOffsetY,
+          left: bodyOffsetX,
+          width: BODY_W,
+          height: BODY_H,
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
