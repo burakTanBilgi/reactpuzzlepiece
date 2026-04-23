@@ -22,15 +22,3 @@
   font-size: 14px;
   color: #6e7681;
 }
-
-.puzzle-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 200px);
-  grid-template-rows: repeat(2, 200px);
-}
-
-.puzzle-grid__cell {
-  position: relative;
-  width: 200px;
-  height: 200px;
-}

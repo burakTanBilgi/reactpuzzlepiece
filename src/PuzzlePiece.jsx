@@ -1,112 +1,95 @@
-import './PuzzlePiece.css';
-
-const BODY_W = 200;
-const BODY_H = 200;
 const KNOB_R = 30;
 
 const FLAT = 'flat';
 const TAB = 'tab';
 const SOCKET = 'socket';
 
-function arc(side, to) {
-  const sweep = side === TAB ? 1 : 0;
-  return `A ${KNOB_R} ${KNOB_R} 0 0 ${sweep} ${to}`;
+function normalizeSide(side) {
+  if (!side || side === FLAT) return [];
+  if (side === TAB) return [{ pos: 0.5, type: TAB }];
+  if (side === SOCKET) return [{ pos: 0.5, type: SOCKET }];
+  if (Array.isArray(side)) {
+    return side.map((k) => ({ pos: k.pos, type: k.type }));
+  }
+  return [];
 }
 
-function buildPath({ top, right, bottom, left }, ox, oy) {
-  const x0 = ox;
-  const x1 = ox + BODY_W;
-  const y0 = oy;
-  const y1 = oy + BODY_H;
-  const cx = ox + BODY_W / 2;
-  const cy = oy + BODY_H / 2;
+function hasTab(side) {
+  return normalizeSide(side).some((k) => k.type === TAB);
+}
 
-  const parts = [`M ${x0} ${y0}`];
+function sweepFor(type) {
+  return type === TAB ? 1 : 0;
+}
 
-  parts.push(`L ${cx - KNOB_R} ${y0}`);
-  if (top === FLAT) {
-    parts.push(`L ${cx + KNOB_R} ${y0}`);
-  } else {
-    parts.push(arc(top, `${cx + KNOB_R} ${y0}`));
+export function computePiecePath(piece) {
+  const { x, y, w, h } = piece;
+  const top = normalizeSide(piece.sides?.top);
+  const right = normalizeSide(piece.sides?.right);
+  const bottom = normalizeSide(piece.sides?.bottom);
+  const left = normalizeSide(piece.sides?.left);
+
+  const parts = [`M ${x} ${y}`];
+
+  for (const k of top) {
+    const cx = x + k.pos * w;
+    parts.push(`L ${cx - KNOB_R} ${y}`);
+    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${cx + KNOB_R} ${y}`);
   }
-  parts.push(`L ${x1} ${y0}`);
+  parts.push(`L ${x + w} ${y}`);
 
-  parts.push(`L ${x1} ${cy - KNOB_R}`);
-  if (right === FLAT) {
-    parts.push(`L ${x1} ${cy + KNOB_R}`);
-  } else {
-    parts.push(arc(right, `${x1} ${cy + KNOB_R}`));
+  for (const k of right) {
+    const cy = y + k.pos * h;
+    parts.push(`L ${x + w} ${cy - KNOB_R}`);
+    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${x + w} ${cy + KNOB_R}`);
   }
-  parts.push(`L ${x1} ${y1}`);
+  parts.push(`L ${x + w} ${y + h}`);
 
-  parts.push(`L ${cx + KNOB_R} ${y1}`);
-  if (bottom === FLAT) {
-    parts.push(`L ${cx - KNOB_R} ${y1}`);
-  } else {
-    parts.push(arc(bottom, `${cx - KNOB_R} ${y1}`));
+  for (const k of [...bottom].reverse()) {
+    const cx = x + k.pos * w;
+    parts.push(`L ${cx + KNOB_R} ${y + h}`);
+    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${cx - KNOB_R} ${y + h}`);
   }
-  parts.push(`L ${x0} ${y1}`);
+  parts.push(`L ${x} ${y + h}`);
 
-  parts.push(`L ${x0} ${cy + KNOB_R}`);
-  if (left === FLAT) {
-    parts.push(`L ${x0} ${cy - KNOB_R}`);
-  } else {
-    parts.push(arc(left, `${x0} ${cy - KNOB_R}`));
+  for (const k of [...left].reverse()) {
+    const cy = y + k.pos * h;
+    parts.push(`L ${x} ${cy + KNOB_R}`);
+    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${x} ${cy - KNOB_R}`);
   }
-  parts.push(`L ${x0} ${y0}`, 'Z');
+  parts.push(`L ${x} ${y}`, 'Z');
 
   return parts.join(' ');
 }
 
-function normalizeSides(sides = {}) {
+export function computePieceBbox(piece) {
+  const { x, y, w, h, sides = {} } = piece;
+  const extL = hasTab(sides.left) ? KNOB_R : 0;
+  const extR = hasTab(sides.right) ? KNOB_R : 0;
+  const extT = hasTab(sides.top) ? KNOB_R : 0;
+  const extB = hasTab(sides.bottom) ? KNOB_R : 0;
   return {
-    top: sides.top ?? FLAT,
-    right: sides.right ?? FLAT,
-    bottom: sides.bottom ?? FLAT,
-    left: sides.left ?? FLAT,
+    minX: x - extL,
+    minY: y - extT,
+    maxX: x + w + extR,
+    maxY: y + h + extB,
   };
 }
 
-export default function PuzzlePiece({ sides, label }) {
-  const s = normalizeSides(sides);
-
-  const bodyOffsetX = s.left === TAB ? KNOB_R : 0;
-  const bodyOffsetY = s.top === TAB ? KNOB_R : 0;
-  const svgWidth = BODY_W + bodyOffsetX + (s.right === TAB ? KNOB_R : 0);
-  const svgHeight = BODY_H + bodyOffsetY + (s.bottom === TAB ? KNOB_R : 0);
-
-  const d = buildPath(s, bodyOffsetX, bodyOffsetY);
-  const viewBox = `0 0 ${svgWidth} ${svgHeight}`;
-
+export default function PuzzlePiece({ piece, path, isHovered, onHoverStart, onHoverEnd }) {
+  const { id, x, y, w, h, label } = piece;
   return (
-    <div
-      className="puzzle-piece"
-      style={{
-        width: svgWidth,
-        height: svgHeight,
-        top: -bodyOffsetY,
-        left: -bodyOffsetX,
-      }}
+    <g
+      className={`piece ${isHovered ? 'piece--hover' : ''}`}
+      onMouseEnter={() => onHoverStart(id)}
+      onMouseLeave={() => onHoverEnd(id)}
     >
-      <svg
-        className="puzzle-piece__svg"
-        viewBox={viewBox}
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <path className="puzzle-piece__path" d={d} />
-      </svg>
-      <span
-        className="puzzle-piece__label"
-        style={{
-          top: bodyOffsetY,
-          left: bodyOffsetX,
-          width: BODY_W,
-          height: BODY_H,
-        }}
-      >
-        {label}
-      </span>
-    </div>
+      <path d={path} className="piece__path" />
+      {label && (
+        <text x={x + w / 2} y={y + h / 2} className="piece__label">
+          {label}
+        </text>
+      )}
+    </g>
   );
 }
