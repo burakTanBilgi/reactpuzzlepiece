@@ -113,6 +113,14 @@
   margin: 4px 0;
 }
 
+.controls__region {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6e7681;
+  margin-top: -8px;
+}
+
 .board-wrap {
   display: flex;
   align-items: flex-start;

@@ -2,68 +2,85 @@ import { useMemo, useState } from 'react';
 import PuzzleBoard from './PuzzleBoard.jsx';
 import './App.css';
 
-const BIG_W = 400;
-const BIG_H = 400;
+const BIG = 400;
 const KNOB_D = 60;
 
 const maxKnobs = (edgeLength) => Math.max(1, Math.floor(edgeLength / KNOB_D));
 
 function buildPieces({ cols, rows, hTabs, vTabs }) {
-  const subW = BIG_W / cols;
-  const subH = BIG_H / rows;
+  const pieces = [];
 
-  const pieces = [
-    {
-      id: 'big-tl',
-      x: 0,
-      y: 0,
-      w: BIG_W,
-      h: BIG_H,
-      label: 'Big TL',
-      sides: {
-        right: { count: hTabs, type: 'tab' },
-        bottom: { count: cols, type: 'tab' },
-      },
+  pieces.push({
+    id: 'tl',
+    x: 0,
+    y: 0,
+    w: BIG,
+    h: BIG,
+    label: 'TL',
+    sides: {
+      right: { count: hTabs, type: 'tab' },
+      bottom: { count: cols, type: 'tab' },
     },
-    {
-      id: 'big-tr',
-      x: BIG_W,
-      y: 0,
-      w: BIG_W,
-      h: BIG_H,
-      label: 'Big TR',
-      sides: {
-        left: { count: hTabs, type: 'socket' },
-        bottom: { count: vTabs, type: 'tab' },
-      },
-    },
-    {
-      id: 'big-br',
-      x: BIG_W,
-      y: BIG_H,
-      w: BIG_W,
-      h: BIG_H,
-      label: 'Big BR',
-      sides: {
-        top: { count: vTabs, type: 'socket' },
-        left: { count: rows, type: 'socket' },
-      },
-    },
-  ];
+  });
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const sides = { top: 'socket', right: 'tab' };
-      if (row < rows - 1) sides.bottom = 'tab';
-      if (col > 0) sides.left = 'socket';
+  const trH = BIG / hTabs;
+  for (let i = 0; i < hTabs; i++) {
+    const sides = { left: 'socket' };
+    if (i > 0) sides.top = 'socket';
+    if (i === hTabs - 1) {
+      sides.bottom = { count: vTabs, type: 'tab' };
+    } else {
+      sides.bottom = 'tab';
+    }
+    pieces.push({
+      id: `tr-${i}`,
+      x: BIG,
+      y: i * trH,
+      w: BIG,
+      h: trH,
+      label: `T${i}`,
+      sides,
+    });
+  }
+
+  const brW = BIG / vTabs;
+  const brH = BIG / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < vTabs; c++) {
+      const parity = (r + c) % 2;
+      const sides = {};
+      sides.top = r === 0 ? 'socket' : parity === 1 ? 'tab' : 'socket';
+      sides.left = c === 0 ? 'socket' : parity === 1 ? 'socket' : 'tab';
+      if (c < vTabs - 1) sides.right = parity === 0 ? 'tab' : 'socket';
+      if (r < rows - 1) sides.bottom = parity === 0 ? 'socket' : 'tab';
 
       pieces.push({
-        id: `s-${row}-${col}`,
-        x: col * subW,
-        y: BIG_H + row * subH,
-        w: subW,
-        h: subH,
-        label: `S${row}${col}`,
+        id: `br-${r}-${c}`,
+        x: BIG + c * brW,
+        y: BIG + r * brH,
+        w: brW,
+        h: brH,
+        label: `R${r}${c}`,
+        sides,
+      });
+    }
+  }
+
+  const blW = BIG / cols;
+  const blH = BIG / rows;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const sides = { top: 'socket', right: 'tab' };
+      if (r < rows - 1) sides.bottom = 'tab';
+      if (c > 0) sides.left = 'socket';
+
+      pieces.push({
+        id: `bl-${r}-${c}`,
+        x: c * blW,
+        y: BIG + r * blH,
+        w: blW,
+        h: blH,
+        label: `L${r}${c}`,
         sides,
       });
     }
@@ -72,62 +89,47 @@ function buildPieces({ cols, rows, hTabs, vTabs }) {
   return pieces;
 }
 
-function getSideControls(selectedId, edges, setters) {
+function regionOf(id) {
+  if (id === 'tl') return 'tl';
+  if (id?.startsWith('tr-')) return 'tr';
+  if (id?.startsWith('br-')) return 'br';
+  if (id?.startsWith('bl-')) return 'bl';
+  return null;
+}
+
+const REGION_LABEL = {
+  tl: 'Top-Left region',
+  tr: 'Top-Right region',
+  br: 'Bottom-Right region',
+  bl: 'Bottom-Left region',
+};
+
+function getSideControls(region, edges, setters) {
   const { cols, rows, hTabs, vTabs } = edges;
   const { setCols, setRows, setHTabs, setVTabs } = setters;
 
-  if (selectedId === 'big-tl') {
+  if (region === 'tl') {
     return [
-      {
-        key: 'right',
-        label: 'Right — tabs (shared with Big TR)',
-        value: hTabs,
-        max: maxKnobs(BIG_H),
-        onChange: setHTabs,
-      },
-      {
-        key: 'bottom',
-        label: 'Bottom — tabs (shared with sub-cluster)',
-        value: cols,
-        max: maxKnobs(BIG_W),
-        onChange: setCols,
-      },
+      { key: 'right', label: 'Right — tabs (→ TR splits)', value: hTabs, max: maxKnobs(BIG), onChange: setHTabs },
+      { key: 'bottom', label: 'Bottom — tabs (→ BL splits)', value: cols, max: maxKnobs(BIG), onChange: setCols },
     ];
   }
-  if (selectedId === 'big-tr') {
+  if (region === 'tr') {
     return [
-      {
-        key: 'left',
-        label: 'Left — sockets (shared with Big TL)',
-        value: hTabs,
-        max: maxKnobs(BIG_H),
-        onChange: setHTabs,
-      },
-      {
-        key: 'bottom',
-        label: 'Bottom — tabs (shared with Big BR)',
-        value: vTabs,
-        max: maxKnobs(BIG_W),
-        onChange: setVTabs,
-      },
+      { key: 'left', label: 'Left — sockets from TL (TR splits)', value: hTabs, max: maxKnobs(BIG), onChange: setHTabs },
+      { key: 'bottom', label: 'Bottom — tabs (→ BR splits)', value: vTabs, max: maxKnobs(BIG), onChange: setVTabs },
     ];
   }
-  if (selectedId === 'big-br') {
+  if (region === 'br') {
     return [
-      {
-        key: 'top',
-        label: 'Top — sockets (shared with Big TR)',
-        value: vTabs,
-        max: maxKnobs(BIG_W),
-        onChange: setVTabs,
-      },
-      {
-        key: 'left',
-        label: 'Left — sockets (shared with sub-cluster)',
-        value: rows,
-        max: maxKnobs(BIG_H),
-        onChange: setRows,
-      },
+      { key: 'top', label: 'Top — sockets from TR (BR cols)', value: vTabs, max: maxKnobs(BIG), onChange: setVTabs },
+      { key: 'left', label: 'Left — sockets from BL (BR rows)', value: rows, max: maxKnobs(BIG), onChange: setRows },
+    ];
+  }
+  if (region === 'bl') {
+    return [
+      { key: 'top', label: 'Top — sockets from TL (BL cols)', value: cols, max: maxKnobs(BIG), onChange: setCols },
+      { key: 'right', label: 'Right — tabs (→ BR rows)', value: rows, max: maxKnobs(BIG), onChange: setRows },
     ];
   }
   return [];
@@ -138,7 +140,7 @@ export default function App() {
   const [rows, setRows] = useState(2);
   const [hTabs, setHTabs] = useState(1);
   const [vTabs, setVTabs] = useState(1);
-  const [selectedId, setSelectedId] = useState('big-tl');
+  const [selectedId, setSelectedId] = useState('tl');
 
   const pieces = useMemo(
     () => buildPieces({ cols, rows, hTabs, vTabs }),
@@ -146,14 +148,13 @@ export default function App() {
   );
 
   const selected = pieces.find((p) => p.id === selectedId);
+  const region = regionOf(selectedId);
 
   const sideControls = getSideControls(
-    selectedId,
+    region,
     { cols, rows, hTabs, vTabs },
     { setCols, setRows, setHTabs, setVTabs }
   );
-
-  const isSubSelected = selectedId?.startsWith('s-');
 
   return (
     <main className="stage">
@@ -174,6 +175,8 @@ export default function App() {
             <p className="controls__hint">Click a piece to select it.</p>
           )}
 
+          {region && <div className="controls__region">{REGION_LABEL[region]}</div>}
+
           {sideControls.map((ctrl) => (
             <label key={ctrl.key} className="controls__field">
               <span className="controls__label">{ctrl.label}</span>
@@ -190,17 +193,10 @@ export default function App() {
             </label>
           ))}
 
-          {isSubSelected && (
-            <p className="controls__hint">
-              Sub-pieces are shaped by the big pieces' tab counts. Select a big piece to adjust its
-              sides.
-            </p>
-          )}
-
           <hr className="controls__divider" />
           <p className="controls__hint">
-            Big pieces stay {BIG_W} × {BIG_H}. Adding tabs re-spaces them within the same edge length
-            — the sub-pieces below shrink to match.
+            Adding a tab to a side splits the receiving neighbor into that many sub-pieces.
+            Each region stays {BIG} × {BIG}; sub-pieces shrink to fit.
           </p>
         </aside>
 
