@@ -1,14 +1,22 @@
 import { useMemo, useState } from 'react';
-import PuzzlePiece, { computePiecePath, computePieceBbox } from './PuzzlePiece.jsx';
+import PuzzlePiece from './PuzzlePiece.jsx';
+import { computePieceBbox, computePiecePath } from './geometry.js';
 import './PuzzleBoard.css';
 
 const STROKE_PAD = 4;
 
+// Renders every piece as a <path> inside a single <svg>, so the outlines
+// stay seamless and hover/selection can control z-order trivially.
 export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const enriched = useMemo(
-    () => pieces.map((p) => ({ ...p, path: computePiecePath(p), bbox: computePieceBbox(p) })),
+    () =>
+      pieces.map((p) => ({
+        ...p,
+        path: computePiecePath(p),
+        bbox: computePieceBbox(p),
+      })),
     [pieces]
   );
 
@@ -29,6 +37,7 @@ export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
   const vbW = bbox.maxX - bbox.minX + STROKE_PAD * 2;
   const vbH = bbox.maxY - bbox.minY + STROKE_PAD * 2;
 
+  // Selected + hovered pieces render last so their stroke sits on top.
   const ordered = useMemo(() => {
     if (hoveredId == null && selectedId == null) return enriched;
     const promoteIds = [];

@@ -1,0 +1,61 @@
+/*
+ * Puzzle board styles.
+ *
+ * These rules use a few CSS custom properties so the module blends into
+ * whatever design system is consuming it. Each one has a fallback, so it
+ * works unmodified in a vanilla React app too. Override any variable on
+ * `:root` (or an ancestor) to re-theme:
+ *
+ *   --puzzle-fill, --puzzle-fill-hover, --puzzle-fill-selected
+ *   --puzzle-stroke, --puzzle-stroke-hover
+ *   --puzzle-label, --puzzle-label-selected
+ */
+
+.puzzle-board {
+  display: block;
+  overflow: visible;
+}
+
+.piece {
+  cursor: pointer;
+}
+
+.piece__path {
+  fill: var(--puzzle-fill, var(--surface, #161b22));
+  stroke: var(--puzzle-stroke, var(--stroke-soft, #3a414d));
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  transition: stroke 150ms ease, stroke-width 150ms ease, fill 150ms ease;
+}
+
+.piece--hover .piece__path {
+  stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
+  stroke-width: 2.5;
+  fill: var(--puzzle-fill-hover, var(--surface-2, #1b222d));
+}
+
+.piece--selected .piece__path {
+  stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
+  stroke-width: 2.5;
+  fill: var(--puzzle-fill-selected, var(--surface-3, #232b38));
+}
+
+.piece--selected.piece--hover .piece__path {
+  stroke-width: 3;
+}
+
+.piece__label {
+  fill: var(--puzzle-label, var(--text-muted, #8a94a6));
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+.piece--selected .piece__label {
+  fill: var(--puzzle-label-selected, var(--text, #e6edf3));
+}

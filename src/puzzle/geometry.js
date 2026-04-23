@@ -1,9 +1,15 @@
-const KNOB_R = 30;
+// Pure geometry helpers for puzzle pieces.
+// No React in this file — it can be used anywhere (tests, SSR, workers…).
 
-const FLAT = 'flat';
-const TAB = 'tab';
-const SOCKET = 'socket';
+export const KNOB_R = 30;
+export const KNOB_D = KNOB_R * 2;
 
+export const FLAT = 'flat';
+export const TAB = 'tab';
+export const SOCKET = 'socket';
+
+// Produce `count` evenly-spaced knob descriptors along a side.
+// pos is a fraction in [0, 1] from the side's origin.
 export function evenlySpaced(count, type) {
   return Array.from({ length: count }, (_, i) => ({
     pos: (2 * i + 1) / (2 * count),
@@ -11,7 +17,9 @@ export function evenlySpaced(count, type) {
   }));
 }
 
-function normalizeSide(side) {
+// Accept any of the supported side shapes and return a flat
+// [{ pos, type }] array of knob descriptors.
+export function normalizeSide(side) {
   if (!side || side === FLAT) return [];
   if (side === TAB) return [{ pos: 0.5, type: TAB }];
   if (side === SOCKET) return [{ pos: 0.5, type: SOCKET }];
@@ -32,6 +40,8 @@ function sweepFor(type) {
   return type === TAB ? 1 : 0;
 }
 
+// Build a single SVG `d` attribute for a piece.
+// Keeps the outline seamless — no internal lines at knob bases.
 export function computePiecePath(piece) {
   const { x, y, w, h } = piece;
   const top = normalizeSide(piece.sides?.top);
@@ -72,6 +82,8 @@ export function computePiecePath(piece) {
   return parts.join(' ');
 }
 
+// Bounding box including any outward-pointing tabs, used to pad the viewBox
+// so strokes on protruding knobs aren't clipped.
 export function computePieceBbox(piece) {
   const { x, y, w, h, sides = {} } = piece;
   const extL = hasTab(sides.left) ? KNOB_R : 0;
@@ -84,31 +96,4 @@ export function computePieceBbox(piece) {
     maxX: x + w + extR,
     maxY: y + h + extB,
   };
-}
-
-export default function PuzzlePiece({
-  piece,
-  path,
-  isHovered,
-  isSelected,
-  onHoverStart,
-  onHoverEnd,
-  onSelect,
-}) {
-  const { id, x, y, w, h, label } = piece;
-  return (
-    <g
-      className={`piece ${isHovered ? 'piece--hover' : ''} ${isSelected ? 'piece--selected' : ''}`}
-      onMouseEnter={() => onHoverStart(id)}
-      onMouseLeave={() => onHoverEnd(id)}
-      onClick={() => onSelect?.(id)}
-    >
-      <path d={path} className="piece__path" />
-      {label && (
-        <text x={x + w / 2} y={y + h / 2} className="piece__label">
-          {label}
-        </text>
-      )}
-    </g>
-  );
 }
