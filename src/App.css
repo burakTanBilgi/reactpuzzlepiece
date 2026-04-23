@@ -1,0 +1,33 @@
+.stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  padding: 32px;
+}
+
+.stage__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8b949e;
+}
+
+.stage__hint {
+  margin: 0;
+  font-size: 14px;
+  color: #6e7681;
+}
+
+.puzzle-row {
+  display: flex;
+  align-items: center;
+}
+
+.puzzle-row .puzzle-piece + .puzzle-piece {
+  margin-left: -30px;
+}
