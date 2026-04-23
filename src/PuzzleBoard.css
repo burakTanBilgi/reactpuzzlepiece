@@ -3,17 +3,31 @@
   overflow: visible;
 }
 
+.piece {
+  cursor: pointer;
+}
+
 .piece__path {
   fill: var(--surface);
   stroke: var(--stroke-idle);
   stroke-width: 1;
   stroke-linejoin: round;
-  transition: stroke 150ms ease, stroke-width 150ms ease;
+  transition: stroke 150ms ease, stroke-width 150ms ease, fill 150ms ease;
 }
 
 .piece--hover .piece__path {
   stroke: var(--stroke-hover);
   stroke-width: 3;
+}
+
+.piece--selected .piece__path {
+  stroke: var(--stroke-hover);
+  stroke-width: 3;
+  fill: #1b2a44;
+}
+
+.piece--selected.piece--hover .piece__path {
+  stroke-width: 4;
 }
 
 .piece__label {

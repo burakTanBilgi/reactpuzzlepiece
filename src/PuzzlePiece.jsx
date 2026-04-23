@@ -86,13 +86,22 @@ export function computePieceBbox(piece) {
   };
 }
 
-export default function PuzzlePiece({ piece, path, isHovered, onHoverStart, onHoverEnd }) {
+export default function PuzzlePiece({
+  piece,
+  path,
+  isHovered,
+  isSelected,
+  onHoverStart,
+  onHoverEnd,
+  onSelect,
+}) {
   const { id, x, y, w, h, label } = piece;
   return (
     <g
-      className={`piece ${isHovered ? 'piece--hover' : ''}`}
+      className={`piece ${isHovered ? 'piece--hover' : ''} ${isSelected ? 'piece--selected' : ''}`}
       onMouseEnter={() => onHoverStart(id)}
       onMouseLeave={() => onHoverEnd(id)}
+      onClick={() => onSelect?.(id)}
     >
       <path d={path} className="piece__path" />
       {label && (

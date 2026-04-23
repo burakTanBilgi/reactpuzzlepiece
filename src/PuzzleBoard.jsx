@@ -4,7 +4,7 @@ import './PuzzleBoard.css';
 
 const STROKE_PAD = 4;
 
-export default function PuzzleBoard({ pieces }) {
+export default function PuzzleBoard({ pieces, selectedId, onSelect }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   const enriched = useMemo(
@@ -30,12 +30,17 @@ export default function PuzzleBoard({ pieces }) {
   const vbH = bbox.maxY - bbox.minY + STROKE_PAD * 2;
 
   const ordered = useMemo(() => {
-    if (hoveredId == null) return enriched;
-    const out = enriched.filter((p) => p.id !== hoveredId);
-    const top = enriched.find((p) => p.id === hoveredId);
-    if (top) out.push(top);
+    if (hoveredId == null && selectedId == null) return enriched;
+    const promoteIds = [];
+    if (selectedId != null) promoteIds.push(selectedId);
+    if (hoveredId != null && hoveredId !== selectedId) promoteIds.push(hoveredId);
+    const out = enriched.filter((p) => !promoteIds.includes(p.id));
+    for (const id of promoteIds) {
+      const top = enriched.find((p) => p.id === id);
+      if (top) out.push(top);
+    }
     return out;
-  }, [enriched, hoveredId]);
+  }, [enriched, hoveredId, selectedId]);
 
   const handleHoverStart = (id) => setHoveredId(id);
   const handleHoverEnd = (id) =>
@@ -55,8 +60,10 @@ export default function PuzzleBoard({ pieces }) {
           piece={p}
           path={p.path}
           isHovered={hoveredId === p.id}
+          isSelected={selectedId === p.id}
           onHoverStart={handleHoverStart}
           onHoverEnd={handleHoverEnd}
+          onSelect={onSelect}
         />
       ))}
     </svg>
