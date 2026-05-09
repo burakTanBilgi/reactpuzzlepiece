@@ -1,15 +1,14 @@
-// Public API for the puzzle module.
-// Everything consumers need can be imported from `./puzzle`.
+// Public API for the puzzle rendering module.
+// State + project management lives in `src/grid/`.
 
 export { default as PuzzleBoard } from './PuzzleBoard.jsx';
 export { default as PuzzlePiece } from './PuzzlePiece.jsx';
-
-export { usePuzzleBoard } from './usePuzzleBoard.js';
 
 export {
   computePiecePath,
   computePieceBbox,
   computeKnobs,
+  computeActiveKnobs,
   knobHitCenter,
   evenlySpaced,
   normalizeSide,
@@ -18,30 +17,6 @@ export {
   FLAT,
   TAB,
   SOCKET,
+  EFFECTS,
+  EFFECT_NAMES,
 } from './geometry.js';
-
-export {
-  BIG,
-  MIN_DIM,
-  EPS,
-  SIDES,
-  OPPOSITE,
-  oppositeType,
-  makeId,
-  initialFourPieces,
-  sideFor,
-  findNeighbors,
-  findNeighborAtKnob,
-  coversNeighbors,
-  edgesMatch,
-  piecesInRegion,
-  maxKnobsForSide,
-  resolveType,
-  splitNeighborsOnSide,
-  updatePiece,
-  setPieceSide,
-  changeSide,
-  flipKnob,
-  sideCount,
-  sideType,
-} from './board.js';

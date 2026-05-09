@@ -11,6 +11,7 @@ const STROKE_PAD = 4;
 // Props:
 //   pieces       — Piece[] from the board state
 //   selectedId   — id of the currently-selected piece (optional)
+//   effect       — connector effect name: 'puzzle' | 'wave' | 'straight' (default: 'puzzle')
 //   onSelect     — called with a piece id when its body is clicked
 //   onKnobClick  — called with (pieceId, side, pos) when a tab is clicked.
 //                  Typical handler is `board.flipKnob` from usePuzzleBoard,
@@ -18,6 +19,8 @@ const STROKE_PAD = 4;
 export default function PuzzleBoard({
   pieces,
   selectedId,
+  effect = 'puzzle',
+  effectConfig,
   onSelect,
   onKnobClick,
 }) {
@@ -27,10 +30,10 @@ export default function PuzzleBoard({
     () =>
       pieces.map((p) => ({
         ...p,
-        path: computePiecePath(p),
-        bbox: computePieceBbox(p),
+        path: computePiecePath(p, pieces, effect, effectConfig),
+        bbox: computePieceBbox(p, pieces, effect, effectConfig),
       })),
-    [pieces]
+    [pieces, effect, effectConfig]
   );
 
   const bbox = useMemo(() => {
@@ -85,6 +88,8 @@ export default function PuzzleBoard({
           key={p.id}
           piece={p}
           path={p.path}
+          allPieces={pieces}
+          effect={effect}
           isHovered={hoveredId === p.id}
           isSelected={selectedId === p.id}
           onHoverStart={handleHoverStart}

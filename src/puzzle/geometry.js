@@ -1,6 +1,11 @@
 // Pure geometry helpers for puzzle pieces.
 // No React in this file — it can be used anywhere (tests, SSR, workers…).
 
+import { puzzleEffect } from './effects/puzzleEffect.js';
+import { waveEffect } from './effects/waveEffect.js';
+import { straightEffect } from './effects/straightEffect.js';
+import { effectForSegment, findEdgeSegments } from './board.js';
+
 export const KNOB_R = 30;
 export const KNOB_D = KNOB_R * 2;
 
@@ -8,8 +13,16 @@ export const FLAT = 'flat';
 export const TAB = 'tab';
 export const SOCKET = 'socket';
 
-// Produce `count` evenly-spaced knob descriptors along a side.
-// pos is a fraction in [0, 1] from the side's origin.
+export const EFFECTS = {
+  puzzle: puzzleEffect,
+  wave: waveEffect,
+  straight: straightEffect,
+};
+
+export const EFFECT_NAMES = Object.keys(EFFECTS);
+
+const POS_EPS = 1e-4;
+
 export function evenlySpaced(count, type) {
   return Array.from({ length: count }, (_, i) => ({
     pos: (2 * i + 1) / (2 * count),
@@ -17,8 +30,6 @@ export function evenlySpaced(count, type) {
   }));
 }
 
-// Accept any of the supported side shapes and return a flat
-// [{ pos, type }] array of knob descriptors.
 export function normalizeSide(side) {
   if (!side || side === FLAT) return [];
   if (side === TAB) return [{ pos: 0.5, type: TAB }];
@@ -36,56 +47,106 @@ function hasTab(side) {
   return normalizeSide(side).some((k) => k.type === TAB);
 }
 
-function sweepFor(type) {
-  return type === TAB ? 1 : 0;
-}
+// Build the path for one side, splitting into segments based on neighbors and
+// applying the effect configured for each segment.
+function buildSidePath({
+  piece,
+  allPieces,
+  sideName,
+  startA,
+  endA,
+  fixed,
+  axis,
+  pieceStartA,
+  pieceLength,
+  knobs,
+  outwardSign,
+  defaultEffect,
+  effectConfig,
+}) {
+  const dir = endA >= startA ? 1 : -1;
 
-// Build a single SVG `d` attribute for a piece.
-// Keeps the outline seamless — no internal lines at knob bases.
-export function computePiecePath(piece) {
-  const { x, y, w, h } = piece;
-  const top = normalizeSide(piece.sides?.top);
-  const right = normalizeSide(piece.sides?.right);
-  const bottom = normalizeSide(piece.sides?.bottom);
-  const left = normalizeSide(piece.sides?.left);
-
-  const parts = [`M ${x} ${y}`];
-
-  for (const k of top) {
-    const cx = x + k.pos * w;
-    parts.push(`L ${cx - KNOB_R} ${y}`);
-    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${cx + KNOB_R} ${y}`);
+  // Without pieces context, treat as one segment with the whole-side effect.
+  if (!allPieces) {
+    const effect = piece.sideEffects?.[sideName] || piece.effect || defaultEffect || 'puzzle';
+    const fx = EFFECTS[effect] || EFFECTS.puzzle;
+    return fx.buildSide(startA, endA, fixed, axis, knobs, pieceStartA, pieceLength, outwardSign, KNOB_R, effectConfig);
   }
-  parts.push(`L ${x + w} ${y}`);
 
-  for (const k of right) {
-    const cy = y + k.pos * h;
-    parts.push(`L ${x + w} ${cy - KNOB_R}`);
-    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${x + w} ${cy + KNOB_R}`);
+  // Per-side config shadows the global effectConfig for this side's rendering.
+  const sideConfig = piece.sideEffectConfigs?.[sideName] ?? effectConfig;
+
+  const segments = findEdgeSegments(allPieces, piece, sideName);
+  const ordered = dir > 0 ? segments : [...segments].reverse();
+  const parts = [];
+
+  for (const seg of ordered) {
+    const effect = effectForSegment(piece, sideName, seg.neighborId, defaultEffect);
+    const fx = EFFECTS[effect] || EFFECTS.puzzle;
+
+    const segStartAbs = pieceStartA + seg.startPos * pieceLength;
+    const segEndAbs = pieceStartA + seg.endPos * pieceLength;
+    const segStart = dir > 0 ? segStartAbs : segEndAbs;
+    const segEnd = dir > 0 ? segEndAbs : segStartAbs;
+    const segLen = Math.abs(segEnd - segStart);
+
+    // Reproject knobs from piece-relative pos to segment-relative pos.
+    const segKnobs = knobs
+      .filter((k) => k.pos >= seg.startPos - POS_EPS && k.pos <= seg.endPos + POS_EPS)
+      .map((k) => ({
+        pos: (k.pos - seg.startPos) / Math.max(POS_EPS, seg.endPos - seg.startPos),
+        type: k.type,
+      }));
+
+    parts.push(
+      fx.buildSide(segStart, segEnd, fixed, axis, segKnobs, segStart, segLen, outwardSign, KNOB_R, sideConfig)
+    );
   }
-  parts.push(`L ${x + w} ${y + h}`);
-
-  for (const k of [...bottom].reverse()) {
-    const cx = x + k.pos * w;
-    parts.push(`L ${cx + KNOB_R} ${y + h}`);
-    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${cx - KNOB_R} ${y + h}`);
-  }
-  parts.push(`L ${x} ${y + h}`);
-
-  for (const k of [...left].reverse()) {
-    const cy = y + k.pos * h;
-    parts.push(`L ${x} ${cy + KNOB_R}`);
-    parts.push(`A ${KNOB_R} ${KNOB_R} 0 0 ${sweepFor(k.type)} ${x} ${cy - KNOB_R}`);
-  }
-  parts.push(`L ${x} ${y}`, 'Z');
-
   return parts.join(' ');
 }
 
-// Describe every knob on a piece as absolute SVG coordinates, so consumers
-// can overlay hit regions, labels, etc. For each knob:
-//   { side, type, pos, cx, cy }
-// where (cx, cy) is the arc's center (on the piece's edge).
+// Build a single SVG `d` attribute for a piece. Each side may be split into
+// segments (one per neighbor), and each segment can use a different effect.
+export function computePiecePath(piece, allPieces, defaultEffect = 'puzzle', effectConfig) {
+  const { x, y, w, h } = piece;
+  const sidesNorm = {
+    top: normalizeSide(piece.sides?.top),
+    right: normalizeSide(piece.sides?.right),
+    bottom: normalizeSide(piece.sides?.bottom),
+    left: normalizeSide(piece.sides?.left),
+  };
+
+  const parts = [`M ${x} ${y}`];
+
+  parts.push(buildSidePath({
+    piece, allPieces, sideName: 'top',
+    startA: x, endA: x + w, fixed: y, axis: 'x',
+    pieceStartA: x, pieceLength: w, knobs: sidesNorm.top,
+    outwardSign: -1, defaultEffect, effectConfig,
+  }));
+  parts.push(buildSidePath({
+    piece, allPieces, sideName: 'right',
+    startA: y, endA: y + h, fixed: x + w, axis: 'y',
+    pieceStartA: y, pieceLength: h, knobs: sidesNorm.right,
+    outwardSign: +1, defaultEffect, effectConfig,
+  }));
+  parts.push(buildSidePath({
+    piece, allPieces, sideName: 'bottom',
+    startA: x + w, endA: x, fixed: y + h, axis: 'x',
+    pieceStartA: x, pieceLength: w, knobs: sidesNorm.bottom,
+    outwardSign: +1, defaultEffect, effectConfig,
+  }));
+  parts.push(buildSidePath({
+    piece, allPieces, sideName: 'left',
+    startA: y + h, endA: y, fixed: x, axis: 'y',
+    pieceStartA: y, pieceLength: h, knobs: sidesNorm.left,
+    outwardSign: -1, defaultEffect, effectConfig,
+  }));
+
+  parts.push('Z');
+  return parts.join(' ');
+}
+
 export function computeKnobs(piece) {
   const { x, y, w, h } = piece;
   const knobs = [];
@@ -104,12 +165,24 @@ export function computeKnobs(piece) {
   return knobs;
 }
 
-// How far along the outward-normal to offset a click/hit region so it sits
-// over the visible protrusion rather than straddling the piece edge.
+// Active knobs respect per-segment effect: a knob sitting in a wave/straight
+// segment is hidden, but a knob in a puzzle segment on the same side stays.
+export function computeActiveKnobs(piece, allPieces, defaultEffect = 'puzzle') {
+  return computeKnobs(piece).filter((k) => {
+    if (!allPieces) {
+      const effect = piece.sideEffects?.[k.side] || piece.effect || defaultEffect;
+      return !EFFECTS[effect]?.hidesKnobs;
+    }
+    const segments = findEdgeSegments(allPieces, piece, k.side);
+    const seg = segments.find((s) => k.pos >= s.startPos - POS_EPS && k.pos <= s.endPos + POS_EPS);
+    if (!seg) return false;
+    const effect = effectForSegment(piece, k.side, seg.neighborId, defaultEffect);
+    return !EFFECTS[effect]?.hidesKnobs;
+  });
+}
+
 const HIT_OFFSET = KNOB_R * 0.5;
 
-// Center point for a hit region over a knob's visible protrusion
-// (tabs protrude outward; sockets' visible opening sits on the same point).
 export function knobHitCenter(side, cx, cy) {
   if (side === 'top') return { hx: cx, hy: cy - HIT_OFFSET };
   if (side === 'bottom') return { hx: cx, hy: cy + HIT_OFFSET };
@@ -117,18 +190,25 @@ export function knobHitCenter(side, cx, cy) {
   return { hx: cx + HIT_OFFSET, hy: cy };
 }
 
-// Bounding box including any outward-pointing tabs, used to pad the viewBox
-// so strokes on protruding knobs aren't clipped.
-export function computePieceBbox(piece) {
+// Bounding box including effect-specific extents.
+export function computePieceBbox(piece, allPieces, defaultEffect = 'puzzle', effectConfig) {
   const { x, y, w, h, sides = {} } = piece;
-  const extL = hasTab(sides.left) ? KNOB_R : 0;
-  const extR = hasTab(sides.right) ? KNOB_R : 0;
-  const extT = hasTab(sides.top) ? KNOB_R : 0;
-  const extB = hasTab(sides.bottom) ? KNOB_R : 0;
+  const padForSide = (side) => {
+    let pad = 0;
+    const segments = allPieces
+      ? findEdgeSegments(allPieces, piece, side)
+      : [{ neighborId: null }];
+    for (const seg of segments) {
+      const effect = effectForSegment(piece, side, seg.neighborId, defaultEffect);
+      if (effect === 'wave') pad = Math.max(pad, (effectConfig?.amplitude ?? 12) + 2);
+      else if (effect === 'puzzle' && hasTab(sides[side])) pad = Math.max(pad, KNOB_R);
+    }
+    return pad;
+  };
   return {
-    minX: x - extL,
-    minY: y - extT,
-    maxX: x + w + extR,
-    maxY: y + h + extB,
+    minX: x - padForSide('left'),
+    minY: y - padForSide('top'),
+    maxX: x + w + padForSide('right'),
+    maxY: y + h + padForSide('bottom'),
   };
 }

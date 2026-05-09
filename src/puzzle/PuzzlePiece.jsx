@@ -1,4 +1,4 @@
-import { KNOB_R, TAB, computeKnobs, knobHitCenter } from './geometry.js';
+import { KNOB_R, TAB, computeActiveKnobs, knobHitCenter } from './geometry.js';
 
 // Single puzzle piece rendered as an <svg><g> with one <path>.
 // Drop it inside a parent <svg> (or use <PuzzleBoard>).
@@ -12,6 +12,8 @@ const HIT_R = KNOB_R * 0.75;
 export default function PuzzlePiece({
   piece,
   path,
+  allPieces,
+  effect = 'puzzle',
   isHovered,
   isSelected,
   onHoverStart,
@@ -20,7 +22,7 @@ export default function PuzzlePiece({
   onKnobClick,
 }) {
   const { id, x, y, w, h, label } = piece;
-  const knobs = computeKnobs(piece);
+  const knobs = computeActiveKnobs(piece, allPieces, effect);
 
   return (
     <g
