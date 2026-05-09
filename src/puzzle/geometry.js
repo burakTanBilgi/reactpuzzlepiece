@@ -73,9 +73,6 @@ function buildSidePath({
     return fx.buildSide(startA, endA, fixed, axis, knobs, pieceStartA, pieceLength, outwardSign, KNOB_R, effectConfig);
   }
 
-  // Per-side config shadows the global effectConfig for this side's rendering.
-  const sideConfig = piece.sideEffectConfigs?.[sideName] ?? effectConfig;
-
   const segments = findEdgeSegments(allPieces, piece, sideName);
   const ordered = dir > 0 ? segments : [...segments].reverse();
   const parts = [];
@@ -84,22 +81,33 @@ function buildSidePath({
     const effect = effectForSegment(piece, sideName, seg.neighborId, defaultEffect);
     const fx = EFFECTS[effect] || EFFECTS.puzzle;
 
+    // Per-segment config shadows per-side, which shadows global.
+    const segConfig =
+      piece.edgeEffectConfigs?.[sideName]?.[seg.neighborId ?? '__outer'] ??
+      piece.sideEffectConfigs?.[sideName] ??
+      effectConfig;
+
     const segStartAbs = pieceStartA + seg.startPos * pieceLength;
     const segEndAbs = pieceStartA + seg.endPos * pieceLength;
     const segStart = dir > 0 ? segStartAbs : segEndAbs;
     const segEnd = dir > 0 ? segEndAbs : segStartAbs;
     const segLen = Math.abs(segEnd - segStart);
 
-    // Reproject knobs from piece-relative pos to segment-relative pos.
+    // Pick the knob whose position is INSIDE this segment (strict, no epsilon
+    // on segment boundaries — boundary-point knobs are an artifact of single
+    // whole-side knobs and would render twice).
     const segKnobs = knobs
-      .filter((k) => k.pos >= seg.startPos - POS_EPS && k.pos <= seg.endPos + POS_EPS)
+      .filter((k) =>
+        k.pos > seg.startPos + POS_EPS &&
+        k.pos < seg.endPos - POS_EPS
+      )
       .map((k) => ({
         pos: (k.pos - seg.startPos) / Math.max(POS_EPS, seg.endPos - seg.startPos),
         type: k.type,
       }));
 
     parts.push(
-      fx.buildSide(segStart, segEnd, fixed, axis, segKnobs, segStart, segLen, outwardSign, KNOB_R, sideConfig)
+      fx.buildSide(segStart, segEnd, fixed, axis, segKnobs, segStart, segLen, outwardSign, KNOB_R, segConfig)
     );
   }
   return parts.join(' ');
