@@ -1,0 +1,89 @@
+.page-grid {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.page-grid__canvas {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(214, 139, 84, 0.06), transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(149, 117, 205, 0.04), transparent 60%),
+    var(--bg);
+  padding: 24px;
+}
+
+/* === Color picker === */
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.color-swatch {
+  appearance: none;
+  border: 1px solid var(--stroke-idle);
+  border-radius: 6px;
+  width: 100%;
+  aspect-ratio: 1;
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.color-swatch:hover {
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: var(--shadow-sm);
+}
+
+.color-swatch--active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--primary-2);
+}
+
+.color-swatch--clear {
+  background:
+    linear-gradient(135deg, transparent 47%, var(--danger-2) 47%, var(--danger-2) 53%, transparent 53%),
+    var(--surface-2);
+}
+
+.color-swatch--custom {
+  background: linear-gradient(135deg,
+    #d68b54 0%, #e6a378 20%, #5fb68f 50%, #6b9bd1 75%, #a98ec4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.color-swatch--custom input[type="color"] {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* === Row/column delete chips (in side panel) === */
+.delete-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.delete-target {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(200, 112, 112, 0.18);
+  color: var(--danger-2);
+  border: 1px solid var(--danger-2);
+  font-variant-numeric: tabular-nums;
+}

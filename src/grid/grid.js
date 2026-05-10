@@ -166,3 +166,50 @@ export function isAnchor(grid, r, c) {
   return (r === 0 || grid.groups[r - 1][c] !== id) &&
          (c === 0 || grid.groups[r][c - 1] !== id);
 }
+
+// --- Row/column deletion ---------------------------------------------------
+
+// Delete the rows whose indexes are listed in `rowIdxs` (0-based).
+// Any merged group whose remaining cells become non-rectangular is split into
+// singletons. Returns null if the deletion would leave fewer than MIN_GRID rows.
+export function deleteRows(grid, rowIdxs) {
+  const drop = new Set(rowIdxs);
+  const remaining = grid.groups.filter((_, r) => !drop.has(r));
+  if (remaining.length < MIN_GRID) return null;
+  const next = { ...grid, rows: remaining.length, groups: remaining.map((r) => r.slice()) };
+  return healMergedGroups(next);
+}
+
+// Delete the columns whose indexes are listed in `colIdxs` (0-based).
+export function deleteCols(grid, colIdxs) {
+  const drop = new Set(colIdxs);
+  const cols = grid.cols - drop.size;
+  if (cols < MIN_GRID) return null;
+  const groups = grid.groups.map((row) => row.filter((_, c) => !drop.has(c)));
+  return healMergedGroups({ ...grid, cols, groups });
+}
+
+// After mutation, re-check every multi-cell group: if the remaining cells no
+// longer form a rectangle, break the group into singletons.
+function healMergedGroups(grid) {
+  const counts = new Map();
+  for (const row of grid.groups) for (const id of row) counts.set(id, (counts.get(id) || 0) + 1);
+  const groups = grid.groups.map((row) => row.slice());
+  for (let r = 0; r < grid.rows; r++) {
+    for (let c = 0; c < grid.cols; c++) {
+      const id = groups[r][c];
+      if (counts.get(id) === 1) continue;
+      const cells = [];
+      for (let r2 = 0; r2 < grid.rows; r2++)
+        for (let c2 = 0; c2 < grid.cols; c2++)
+          if (groups[r2][c2] === id) cells.push([r2, c2]);
+      if (!isRectangular(cells)) {
+        for (const [r2, c2] of cells) groups[r2][c2] = `r${r2}c${c2}-${nextGroupId()}`;
+        // Recompute counts touched here only matters for the not-equal check above;
+        // the singleton ids are unique so subsequent checks on this loop position
+        // will just see count = 1.
+      }
+    }
+  }
+  return { ...grid, groups };
+}

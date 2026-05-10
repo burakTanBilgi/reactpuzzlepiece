@@ -1,51 +1,65 @@
 import { useEffect, useRef, useState } from 'react';
 import { groupBoundsMap, rectFill } from '../../grid/grid.js';
 
-const CELL_PX = 64;        // visual cell size in the grid editor
+const CELL_PX = 64;
+const HEADER_PX = 22;     // size of row/column number gutter
 const PADDING = 16;
 
-// Renders the grid as squares. Tracks selection internally and reports it via
-// `onSelectionChange`. Supports:
-//   - Drag-select (mouse down on an empty cell, drag to expand a rectangle)
-//   - Shift/Ctrl+click to add or remove a single cell from the selection
-//   - Plain click clears the selection and selects just that cell
-export default function GridCanvas({ grid, selection, onSelectionChange, pieceColors }) {
+// Grid editor canvas: renders the grid as a set of rounded rectangles plus a
+// header strip (row numbers on the left, column numbers on top) where each
+// header is a hit target for "delete this row/column".
+//
+// Cell selection:
+//   - Click + drag: rectangular box-select
+//   - Shift / Ctrl: toggle individual cells
+//
+// Header drag-to-mark:
+//   - Click a header → marks that row/col for deletion
+//   - Drag across headers → marks each one passed over
+//   - Pointer release → calls onDeleteRows / onDeleteCols with the marks
+export default function GridCanvas({
+  grid,
+  selection,
+  onSelectionChange,
+  pieceColors,
+  onDeleteRows,
+  onDeleteCols,
+}) {
   const svgRef = useRef(null);
-  const [drag, setDrag] = useState(null); // { startCell:[r,c], curCell:[r,c], baseSelection: Set }
+  const [drag, setDrag] = useState(null);          // cell drag-select state
+  const [hdrDrag, setHdrDrag] = useState(null);    // { axis: 'row'|'col', marks: Set<number> }
 
-  const w = grid.cols * CELL_PX + PADDING * 2;
-  const h = grid.rows * CELL_PX + PADDING * 2;
+  const gridW = grid.cols * CELL_PX;
+  const gridH = grid.rows * CELL_PX;
+  const w = gridW + HEADER_PX + PADDING * 2;
+  const h = gridH + HEADER_PX + PADDING * 2;
+  const gx = PADDING + HEADER_PX;
+  const gy = PADDING + HEADER_PX;
 
   const bounds = groupBoundsMap(grid);
-
-  // --- Selection helpers as Sets of "r,c" strings ---
   const selSet = new Set(selection.map(([r, c]) => `${r},${c}`));
 
   const cellAt = (clientX, clientY) => {
     const rect = svgRef.current.getBoundingClientRect();
-    const x = (clientX - rect.left) - PADDING;
-    const y = (clientY - rect.top) - PADDING;
+    const x = (clientX - rect.left) - gx;
+    const y = (clientY - rect.top) - gy;
     const c = Math.floor(x / CELL_PX);
     const r = Math.floor(y / CELL_PX);
     if (r < 0 || r >= grid.rows || c < 0 || c >= grid.cols) return null;
     return [r, c];
   };
 
+  // --- Cell drag-select ----
   const onCellPointerDown = (e, r, c) => {
     if (e.button !== 0) return;
     e.preventDefault();
-
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
-      // Toggle this cell in the selection.
       const key = `${r},${c}`;
       const next = new Set(selSet);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) next.delete(key); else next.add(key);
       onSelectionChange([...next].map((s) => s.split(',').map(Number)));
       return;
     }
-
-    // Start a drag-select beginning at this cell.
     setDrag({ startCell: [r, c], curCell: [r, c] });
     onSelectionChange([[r, c]]);
     e.currentTarget.setPointerCapture?.(e.pointerId);
@@ -70,46 +84,128 @@ export default function GridCanvas({ grid, selection, onSelectionChange, pieceCo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag?.startCell?.[0], drag?.startCell?.[1], drag?.curCell?.[0], drag?.curCell?.[1]]);
 
-  // --- Group outlines ---
-  // Render one rectangle per merged group instead of per cell.
+  // --- Header drag-to-mark + delete ----
+  const headerAt = (clientX, clientY) => {
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    // Row header strip (left of grid, vertically aligned with rows)
+    if (x >= PADDING && x < PADDING + HEADER_PX && y >= gy && y < gy + gridH) {
+      return { axis: 'row', idx: Math.floor((y - gy) / CELL_PX) };
+    }
+    // Column header strip (above grid, horizontally aligned with cols)
+    if (y >= PADDING && y < PADDING + HEADER_PX && x >= gx && x < gx + gridW) {
+      return { axis: 'col', idx: Math.floor((x - gx) / CELL_PX) };
+    }
+    return null;
+  };
+
+  const onHeaderPointerDown = (e, axis, idx) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setHdrDrag({ axis, marks: new Set([idx]) });
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  useEffect(() => {
+    if (!hdrDrag) return;
+    const move = (e) => {
+      const hit = headerAt(e.clientX, e.clientY);
+      if (!hit || hit.axis !== hdrDrag.axis) return;
+      setHdrDrag((d) => {
+        if (!d) return d;
+        if (d.marks.has(hit.idx)) return d;
+        const marks = new Set(d.marks); marks.add(hit.idx);
+        return { ...d, marks };
+      });
+    };
+    const up = () => {
+      setHdrDrag((d) => {
+        if (!d) return null;
+        const idxs = [...d.marks].sort((a, b) => a - b);
+        if (d.axis === 'row') onDeleteRows?.(idxs);
+        else onDeleteCols?.(idxs);
+        return null;
+      });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hdrDrag?.axis]);
+
+  // --- Build render data ----
   const groupRects = [];
   for (const [id, b] of bounds) {
     groupRects.push({
       id,
-      x: PADDING + b.cMin * CELL_PX,
-      y: PADDING + b.rMin * CELL_PX,
+      x: gx + b.cMin * CELL_PX,
+      y: gy + b.rMin * CELL_PX,
       w: (b.cMax - b.cMin + 1) * CELL_PX,
       h: (b.rMax - b.rMin + 1) * CELL_PX,
       isMerged: (b.cMax > b.cMin) || (b.rMax > b.rMin),
       fill: pieceColors?.[id],
-      label: b.cMax > b.cMin || b.rMax > b.rMin ? `${b.cMax - b.cMin + 1}×${b.rMax - b.rMin + 1}` : '',
+      label: b.cMax > b.cMin || b.rMax > b.rMin
+        ? `${b.cMax - b.cMin + 1}×${b.rMax - b.rMin + 1}` : '',
     });
   }
 
-  // --- Selection overlay (shown above cells) ---
   const selRects = selection.map(([r, c]) => ({
     key: `${r},${c}`,
-    x: PADDING + c * CELL_PX,
-    y: PADDING + r * CELL_PX,
+    x: gx + c * CELL_PX,
+    y: gy + r * CELL_PX,
   }));
 
-  // --- Cell pointer-down hit grid (one per cell) ---
-  const cells = [];
-  for (let r = 0; r < grid.rows; r++) {
-    for (let c = 0; c < grid.cols; c++) {
-      cells.push({ r, c });
-    }
-  }
+  const rowHeaders = Array.from({ length: grid.rows }, (_, r) => r);
+  const colHeaders = Array.from({ length: grid.cols }, (_, c) => c);
+  const isMarked = (axis, idx) =>
+    hdrDrag && hdrDrag.axis === axis && hdrDrag.marks.has(idx);
 
   return (
     <div className="grid-canvas-wrap">
-      <svg
-        ref={svgRef}
-        className="grid-canvas"
-        width={w}
-        height={h}
-        viewBox={`0 0 ${w} ${h}`}
-      >
+      <svg ref={svgRef} className="grid-canvas" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+        {/* Column-number headers */}
+        {colHeaders.map((c) => {
+          const x = gx + c * CELL_PX;
+          const marked = isMarked('col', c);
+          return (
+            <g key={`ch-${c}`}>
+              <rect
+                x={x} y={PADDING} width={CELL_PX} height={HEADER_PX}
+                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''}`}
+                onPointerDown={(e) => onHeaderPointerDown(e, 'col', c)}
+              />
+              <text
+                x={x + CELL_PX / 2} y={PADDING + HEADER_PX / 2}
+                className="grid-canvas__header"
+              >{c + 1}</text>
+            </g>
+          );
+        })}
+
+        {/* Row-number headers */}
+        {rowHeaders.map((r) => {
+          const y = gy + r * CELL_PX;
+          const marked = isMarked('row', r);
+          return (
+            <g key={`rh-${r}`}>
+              <rect
+                x={PADDING} y={y} width={HEADER_PX} height={CELL_PX}
+                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''}`}
+                onPointerDown={(e) => onHeaderPointerDown(e, 'row', r)}
+              />
+              <text
+                x={PADDING + HEADER_PX / 2} y={y + CELL_PX / 2}
+                className="grid-canvas__header"
+              >{r + 1}</text>
+            </g>
+          );
+        })}
+
         {/* Group fills */}
         {groupRects.map((g) => (
           <rect
@@ -146,19 +242,21 @@ export default function GridCanvas({ grid, selection, onSelectionChange, pieceCo
           </text>
         ))}
 
-        {/* Cell hit areas (transparent) */}
-        {cells.map(({ r, c }) => (
-          <rect
-            key={`hit-${r}-${c}`}
-            x={PADDING + c * CELL_PX}
-            y={PADDING + r * CELL_PX}
-            width={CELL_PX}
-            height={CELL_PX}
-            fill="transparent"
-            style={{ cursor: 'pointer' }}
-            onPointerDown={(e) => onCellPointerDown(e, r, c)}
-          />
-        ))}
+        {/* Cell hit areas */}
+        {Array.from({ length: grid.rows }).flatMap((_, r) =>
+          Array.from({ length: grid.cols }, (_, c) => (
+            <rect
+              key={`hit-${r}-${c}`}
+              x={gx + c * CELL_PX}
+              y={gy + r * CELL_PX}
+              width={CELL_PX}
+              height={CELL_PX}
+              fill="transparent"
+              style={{ cursor: 'pointer' }}
+              onPointerDown={(e) => onCellPointerDown(e, r, c)}
+            />
+          ))
+        )}
       </svg>
     </div>
   );

@@ -3,6 +3,7 @@ import { MAX_GRID, MIN_GRID, isRectangular } from '../../grid/grid.js';
 import { importTableText } from '../../grid/import.js';
 import GridCanvas from '../components/GridCanvas.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
+import SliderRow from '../components/SliderRow.jsx';
 
 // Curated palette — warm, sophisticated, mode-agnostic.
 const PALETTE = [
@@ -11,7 +12,10 @@ const PALETTE = [
 ];
 
 export default function GridEditorPage({ project }) {
-  const { project: p, setGrid, merge, unmerge, setPieceColor, replaceGrid } = project;
+  const {
+    project: p, setGrid, merge, unmerge, setPieceColor, replaceGrid,
+    removeRows, removeCols,
+  } = project;
   const [selection, setSelection] = useState([]);
   const [showImport, setShowImport] = useState(false);
   const fileRef = useRef(null);
@@ -201,8 +205,9 @@ export default function GridEditorPage({ project }) {
           <ul className="tip-list">
             <li>Drag from any cell to box-select.</li>
             <li>Shift-click to add or remove individual cells.</li>
-            <li>Merged groups show their dimensions in the canvas.</li>
-            <li>Use the Edges page to style connectors.</li>
+            <li><strong>Click a row/column number</strong> to delete it. Drag across multiple to delete in bulk.</li>
+            <li>Merged groups show their dimensions.</li>
+            <li>Click any number value to type it directly.</li>
           </ul>
         </section>
       </aside>
@@ -213,6 +218,8 @@ export default function GridEditorPage({ project }) {
           selection={selection}
           onSelectionChange={setSelection}
           pieceColors={p.pieceColors}
+          onDeleteRows={(idxs) => { removeRows(idxs); setSelection([]); }}
+          onDeleteCols={(idxs) => { removeCols(idxs); setSelection([]); }}
         />
       </div>
 
@@ -226,15 +233,3 @@ export default function GridEditorPage({ project }) {
   );
 }
 
-function SliderRow({ label, min, max, value, onChange }) {
-  return (
-    <label className="slider-control">
-      <span className="slider-control__label">{label}</span>
-      <input
-        type="range" min={min} max={max} step={1} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-      <output className="slider-control__value">{value}</output>
-    </label>
-  );
-}

@@ -1,0 +1,74 @@
+.grid-canvas-wrap {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.grid-canvas {
+  display: block;
+}
+
+.grid-canvas__group {
+  fill: var(--surface-2);
+  stroke: var(--stroke-idle);
+  stroke-width: 1.5;
+  transition: fill 150ms ease, stroke 150ms ease;
+}
+
+.grid-canvas__group--merged {
+  fill: rgba(214, 139, 84, 0.08);
+  stroke: var(--stroke-soft);
+}
+
+.grid-canvas__selected {
+  fill: rgba(214, 139, 84, 0.22);
+  stroke: var(--primary-2);
+  stroke-width: 2;
+}
+
+.grid-canvas__label {
+  fill: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  user-select: none;
+}
+
+/* Row/column headers (numbers + delete buttons) */
+.grid-canvas__header {
+  fill: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+}
+
+.grid-canvas__header-hit {
+  fill: transparent;
+  cursor: pointer;
+  transition: fill 120ms ease;
+}
+
+.grid-canvas__header-hit:hover {
+  fill: rgba(214, 139, 84, 0.10);
+}
+
+.grid-canvas__header-hit.is-marked {
+  fill: rgba(200, 112, 112, 0.18);
+}
+
+.grid-canvas__delete {
+  fill: var(--danger-2);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: all;
+}
+
+.grid-canvas__header-hit:hover + .grid-canvas__delete,
+.grid-canvas__delete:hover,
+.grid-canvas__delete.is-marked {
+  opacity: 1;
+}

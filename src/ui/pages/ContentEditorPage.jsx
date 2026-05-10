@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import ContentCanvas from '../components/ContentCanvas.jsx';
+import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
 
 const FIT_OPTIONS = [
@@ -113,7 +114,7 @@ export default function ContentEditorPage({ project }) {
                   <SliderRow
                     label="Size"
                     min={8} max={64} step={1}
-                    value={content.fontSize || Math.min(selected.w, selected.h) / 8}
+                    value={Math.round(content.fontSize || Math.min(selected.w, selected.h) / 8)}
                     onChange={(v) => updatePieceContent(selected.id, { fontSize: v })}
                   />
                   <div className="form-row">
@@ -203,13 +204,3 @@ export default function ContentEditorPage({ project }) {
   );
 }
 
-function SliderRow({ label, min, max, step, value, onChange }) {
-  return (
-    <label className="slider-control">
-      <span className="slider-control__label">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(Number(e.target.value))} />
-      <output className="slider-control__value">{Math.round(value)}</output>
-    </label>
-  );
-}

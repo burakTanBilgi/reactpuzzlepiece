@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { mergeCells, resizeGrid, unmergeCells } from './grid.js';
+import { deleteCols, deleteRows, mergeCells, resizeGrid, unmergeCells } from './grid.js';
 import { compileProject, listSharedEdges } from './compile.js';
 import {
   deleteProject as deleteFromStore,
@@ -61,6 +61,24 @@ export function useProject() {
   const unmerge = useCallback((cellRefs) => {
     mutateGrid((g) => unmergeCells(g, cellRefs));
   }, [mutateGrid]);
+
+  const removeRows = useCallback((rowIdxs) => {
+    if (!rowIdxs?.length) return;
+    setProject((p) => {
+      if (!p) return p;
+      const next = deleteRows(p.grid, rowIdxs);
+      return next ? { ...p, grid: next } : p;
+    });
+  }, []);
+
+  const removeCols = useCallback((colIdxs) => {
+    if (!colIdxs?.length) return;
+    setProject((p) => {
+      if (!p) return p;
+      const next = deleteCols(p.grid, colIdxs);
+      return next ? { ...p, grid: next } : p;
+    });
+  }, []);
 
   const setDefaultEdgeEffect = useCallback((effect, config) => {
     mutateEdges((e) => ({ ...e, default: { effect, ...(config ? { config } : {}) } }));
@@ -208,6 +226,8 @@ export function useProject() {
     setGrid,
     merge,
     unmerge,
+    removeRows,
+    removeCols,
     setDefaultEdgeEffect,
     setDefaultEdgeConfig,
     setEdgeEffect,

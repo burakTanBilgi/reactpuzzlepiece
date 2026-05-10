@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { EFFECT_NAMES } from '../../puzzle';
 import { listOuterEdges } from '../../grid/compile.js';
 import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
+import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
@@ -258,17 +259,6 @@ export default function EdgeEditorPage({ project }) {
         />
       </ViewPanel>
     </div>
-  );
-}
-
-function SliderRow({ label, min, max, step, value, format, onChange }) {
-  return (
-    <label className="slider-control">
-      <span className="slider-control__label">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(Number(e.target.value))} />
-      <output className="slider-control__value">{format ? format(value) : value}</output>
-    </label>
   );
 }
 

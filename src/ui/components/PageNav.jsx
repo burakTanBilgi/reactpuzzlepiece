@@ -19,16 +19,18 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
           </>
         )}
       </div>
+
+      <button
+        type="button"
+        className="page-nav__theme"
+        onClick={onToggleTheme}
+        title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+        aria-label="Toggle theme"
+      >
+        <span aria-hidden>{isDark ? '☾' : '☀'}</span>
+      </button>
+
       <nav className="page-nav__tabs">
-        <button
-          type="button"
-          className="page-nav__theme"
-          onClick={onToggleTheme}
-          title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-          aria-label="Toggle theme"
-        >
-          <span aria-hidden>{isDark ? '☀' : '☾'}</span>
-        </button>
         {PAGES.map((p) => (
           <button
             key={p.id}

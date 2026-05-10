@@ -1,0 +1,109 @@
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background: color-mix(in srgb, var(--bg-elev) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--stroke-idle);
+  z-index: 10;
+}
+
+.page-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-right: auto;
+}
+
+.page-nav__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--primary-2), var(--accent-2));
+  color: white;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(214, 139, 84, 0.35);
+}
+
+.page-nav__title {
+  background: linear-gradient(135deg, var(--text), var(--primary-3));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-nav__sep { color: var(--text-dim); margin: 0 4px; }
+.page-nav__project { color: var(--text-muted); font-weight: 400; font-size: 13px; }
+
+/* Theme toggle — standalone button next to the tab strip */
+.page-nav__theme {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 200ms ease, border-color 200ms ease, background 200ms ease, transform 300ms ease;
+  font-family: inherit;
+}
+
+.page-nav__theme:hover {
+  color: var(--primary-2);
+  border-color: var(--primary-2);
+  background: var(--primary-tint);
+  transform: rotate(20deg);
+}
+
+.page-nav__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+  height: 32px;
+  align-items: center;
+}
+
+.page-nav__tab {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 0 12px;
+  height: 24px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  font-family: inherit;
+}
+
+.page-nav__tab:hover { color: var(--text); background: var(--surface-2); }
+
+.page-nav__tab--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  box-shadow: 0 2px 8px rgba(184, 96, 42, 0.5);
+  font-weight: 600;
+}
+
+.page-nav__icon { font-size: 14px; }

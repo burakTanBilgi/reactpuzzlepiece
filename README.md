@@ -1,312 +1,270 @@
-# React Puzzle Piece Playground
+# Puzzle Studio
 
-An interactive Vite + React prototype for experimenting with jigsaw-style
-puzzle pieces. Pieces are drawn with a single inline SVG path (no composite
-shapes, no internal seams), and can be clicked and edited at runtime — you
-can add or remove knobs on any side, and split neighbors into sub-pieces.
+A visual design tool for grid-based layouts where sections are separated by stylized connectors — puzzle tabs/sockets, waves, or straight lines. Build a grid, merge cells into pieces, style every edge, fill cells with text or images, and export the result as JSON, a single React file, or a full module bundle.
 
-Clicking a piece's **body** selects that piece. Clicking a **tab** flips
-which side owns that knob — the tab becomes part of the neighbor on the
-other side of the connection, and the neighbor's matching socket moves
-back onto the clicked piece. Click the same knob again from the new
-owner to flip it back.
+Built with React 18 + Vite. Zero runtime dependencies beyond React.
 
-## Visual rules
+## What's in the app
 
-- No `transform: scale` on hover.
-- No drop-shadow, box-shadow, or glow effects.
-- The hover/selection state is a continuous neon outline that traces the
-  entire outer shape, including around every tab and inside every socket.
-- The outline is seamless — there are no internal lines at the bases of
-  tabs or sockets, because each piece is a **single inline SVG path**.
+Four pages, switched in-app (no router):
 
-## Project layout
+| Page        | What it does                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| **Home**    | Project library, JSON import, **export menu** (JSON · single-file React · full ZIP).      |
+| **Grid**    | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete. |
+| **Edges**   | Click any edge in the canvas to override its effect (puzzle / wave / straight) and per-edge wave/inversion config. |
+| **Content** | Click any piece to fill it with text or an image (cover / contain / stretch).             |
 
-```
-src/
-  puzzle/                 ← all puzzle functionality lives here
-    geometry.js           ← pure SVG path + bounding-box math
-    board.js              ← pure state helpers (neighbors, splits, changes)
-    usePuzzleBoard.js     ← React hook bundling the whole state machine
-    PuzzlePiece.jsx       ← <g><path/></g> for a single piece
-    PuzzleBoard.jsx       ← <svg> that lays out every piece
-    PuzzleBoard.css       ← piece + board styling (themable via CSS vars)
-    index.js              ← public API re-exports
-  App.jsx                 ← demo UI that drives the hook
-  App.css
-  index.css
-  main.jsx
-```
+Other niceties:
 
-Every file inside `src/puzzle/` is self-contained; nothing in the folder
-imports from outside the folder. That makes it easy to reason about the
-puzzle logic in isolation, and easy to copy into another project.
+- **Light/dark theme** toggle (top of the nav). Choice persists.
+- **Typeable numeric inputs** — every slider value is also a text field; click and type.
+- **Auto-save** to `localStorage`; refresh restores your last project.
+- All content is clipped to the puzzle outline — text and images respect the piece shape.
 
-## Run
+## Install & run
 
 ```bash
 npm install
-npm run dev
+npm run dev      # Vite dev server
+npm run build    # Output to /build (not /dist)
+npm run preview  # Preview production build
 ```
 
-Then open the URL Vite prints (usually http://localhost:5173).
+Deployed on Netlify with SPA redirects (see `netlify.toml`).
 
-To build for production:
+## Project structure
 
-```bash
-npm run build
+```
+src/
+  main.jsx                    React entry
+  index.css                   Theme tokens (dark default + [data-theme='light'])
+
+  puzzle/                     Self-contained rendering module — no outside imports
+    geometry.js                 Pure SVG path math
+    board.js                    Neighbor + segment helpers
+    effects/                    puzzle, wave, straight effect strategies
+    PuzzleBoard.jsx             <svg> root component
+    PuzzlePiece.jsx             One piece + clipped content
+    PuzzleBoard.css             Themeable styles
+    index.js                    Public API
+
+  grid/                       Data model + state + I/O
+    grid.js                     Cell-grid helpers, merge/unmerge, row/col delete
+    compile.js                  Project → Piece[]
+    storage.js                  localStorage + JSON import/export
+    import.js                   CSV/TSV/paste → grid + content
+    export.js                   Single-file JSX + module ZIP exports
+    zip.js                      Minimal pure-JS ZIP encoder
+    useProject.js               React hook: state + auto-save
+
+  ui/                         App shell, pages, components, styles
+    App.jsx                     Page switcher + theme state
+    components/                 PageNav, GridCanvas, EdgeEditorCanvas, etc.
+    pages/                      LandingPage, GridEditorPage, EdgeEditorPage, ContentEditorPage
+    styles/                     App.css (shell), ui-kit.css, side-tools.css
 ```
 
-## Deploy
+The `src/puzzle/` folder has **no imports from outside itself** — it's a portable drop-in module. Everything else is the studio that wraps around it.
 
-A `netlify.toml` is included at the repo root. Point Netlify at this repo
-and it will run `npm run build` and publish the `build/` output. SPA
-redirects are configured so client-side routing works out of the box.
+## Data model
+
+A *project* is the persistent unit. Pieces are derived from it on demand by `compileProject` — never mutated directly.
+
+```ts
+type Project = {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+
+  grid: {
+    rows: number;            // 1..50
+    cols: number;            // 1..50
+    cellSize: number;        // px
+    groups: string[][];      // groupId per cell; same id = merged
+  };
+
+  edges: {
+    default: { effect: 'puzzle' | 'wave' | 'straight'; config?: object };
+    byEdge:  { [pairKey: string]: { effect; config? } };  // overrides
+  };
+
+  pieceColors:  { [groupId: string]: string };            // '#hex'
+  pieceContent: { [groupId: string]: ContentSpec };
+};
+
+type ContentSpec =
+  | { type: 'text';  text: string;
+      align?: 'left' | 'center' | 'right';
+      fontSize?: number; fontWeight?: number; color?: string }
+  | { type: 'image'; src: string;                          // data: URL
+      fit?: 'cover' | 'contain' | 'fill' };
+```
+
+Edge keys:
+
+- Shared edge between two pieces: `edgeKey(idA, idB)` → `"idA||idB"` (sorted lexicographically).
+- Outer edge: `"pieceId||outer-{top|right|bottom|left}"`.
+
+## Importing data (Grid → Import)
+
+The Grid editor accepts CSV, TSV, or pasted spreadsheet data:
+
+```
+Logo            Theme   Language   About            How It Works            Sign In            Sign Up
+Build Your Custom ERP                                       No Coding Required
+Step 1                  Step 2                              Step 3
+```
+
+- **Auto-detect** — any tabs in the input → TSV; otherwise CSV (with quoted-field handling).
+- **Auto-merge horizontal runs** — each non-empty cell extends rightward over consecutive empty cells, producing a layout-shaped grid. Toggle off in the dialog if you want a 1:1 import.
+- Each non-empty cell becomes a piece with `{ type: 'text', text }`.
+
+## Exporting (Home → Export)
+
+Three options:
+
+1. **JSON** — re-importable project state. Drop it back into the studio anytime.
+2. **Single-file React** — generates one self-contained `.jsx` file with paths precomputed and all content baked in. Drop into any React 18+ project. Bundled with a README in a small ZIP.
+3. **Module bundle (ZIP)** — ships the entire `puzzle/` source folder plus your `project.json`, a wrapper component, a standalone `compileProject.js`, and a README. Use this when you want the full rendering API in your app.
+
+The ZIP encoder ([`src/grid/zip.js`](./src/grid/zip.js)) is hand-rolled (~80 lines, no compression) so the studio adds no third-party deps.
 
 ---
 
-## Integrating the puzzle pieces into another React project
+## Using the `puzzle` module in your own React app
 
-The `src/puzzle/` folder is a drop-in module. You don't need anything else
-from this repo to use it.
+The `src/puzzle/` folder is a drop-in module. You don't need anything else from this repo to use it.
 
 ### 1. Copy the folder
 
-Copy `src/puzzle/` into your own project — for example to
-`src/components/puzzle/` — and make sure you have React 18+ installed.
-There are no other runtime dependencies.
+Copy `src/puzzle/` into your own project, e.g. `src/components/puzzle/`. React 18+ is the only requirement.
 
-### 2. Import and render
+### 2. Render pieces
 
-The quickest path is the `usePuzzleBoard` hook plus the `PuzzleBoard`
-component:
+You bring the piece data — typically by calling `compileProject` on a project JSON exported from the studio:
 
 ```jsx
-import { PuzzleBoard, usePuzzleBoard } from './components/puzzle';
+import { PuzzleBoard } from './components/puzzle';
+import { compileProject } from './grid/compile.js';
+import projectData from './my-puzzle.json';
 
-export function Demo() {
-  const { pieces, selectedId, setSelectedId, flipKnob } = usePuzzleBoard();
+const pieces = compileProject(projectData);
+const effect = projectData.edges.default.effect;
+const config = projectData.edges.default.config;
 
-  return (
-    <PuzzleBoard
-      pieces={pieces}
-      selectedId={selectedId}
-      onSelect={setSelectedId}
-      onKnobClick={flipKnob}
-    />
-  );
+export function MyPuzzle() {
+  return <PuzzleBoard pieces={pieces} effect={effect} effectConfig={config} />;
 }
 ```
 
-That's a fully interactive four-piece board with hover, selection, and
-edits: clicking a piece's **body** selects it (via `onSelect`), and
-clicking a **tab** flips the knob's ownership across the connection (via
-`onKnobClick`). `flipKnob` from the hook is the default handler, but
-`onKnobClick` is just `(pieceId, side, pos) => void` so you can pass any
-handler you want — for example to navigate selection instead of flipping.
-
-### 3. Drive edits from your UI
-
-Everything the hook exposes:
-
-```js
-const {
-  pieces,           // current Piece[] (source of truth)
-  setPieces,        // escape hatch if you need to replace the array
-
-  selectedId,       // id of the selected piece, or null
-  setSelectedId,    // click-to-select handler for <PuzzleBoard/>
-  selected,         // the selected Piece object (or null)
-
-  cascade,          // bool: should side edits split neighbors?
-  setCascade,
-
-  sideInfo,         // per-side metadata for the selected piece:
-                    //   { top, right, bottom, left } each with
-                    //   { data, count, type, neighbors, maxCount,
-                    //     canCascade, partial }
-                    // `count`/`type` are normalized from `data` and work
-                    // for both uniform and mixed sides.
-
-  setSideCount,     // (side, newCount) => void — slider/stepper edits
-  flipKnob,         // (pieceId, side, pos) => void — wire to onKnobClick
-  reset,            // (optionalInitial?, optionalSelectedId?) => void
-} = usePuzzleBoard();
-```
-
-Hook up a slider (or any control) by calling `setSideCount`:
+Or render a static set of pieces directly (no project needed):
 
 ```jsx
-<input
-  type="range"
-  min={0}
-  max={sideInfo.right.maxCount}
-  value={sideInfo.right.count}
-  onChange={(e) => setSideCount('right', Number(e.target.value))}
+const pieces = [
+  { id: 'a', x: 0,   y: 0, w: 200, h: 200, label: 'A',
+    sides: { right: { count: 1, type: 'tab' }, bottom: { count: 1, type: 'tab' } } },
+  { id: 'b', x: 200, y: 0, w: 200, h: 200, label: 'B',
+    sides: { left:  { count: 1, type: 'socket' }, bottom: { count: 1, type: 'tab' } } },
+  // …
+];
+
+<PuzzleBoard pieces={pieces} effect="puzzle" />
+```
+
+### 3. Handle interaction
+
+`PuzzleBoard` accepts:
+
+```jsx
+<PuzzleBoard
+  pieces={pieces}
+  selectedId={selectedId}              // optional — for highlight
+  effect="puzzle"                      // 'puzzle' | 'wave' | 'straight'
+  effectConfig={{ amplitude: 12 }}     // wave config
+  onSelect={(id) => setSelectedId(id)} // body click
+  onKnobClick={(ownerId, side, pos) => {/* tab click */}}
 />
 ```
 
-### 4. Customize the starting layout
+### 4. Public API (`puzzle/index.js`)
 
-Pass anything that describes your starting pieces:
+Components:
 
-```jsx
-import { usePuzzleBoard, initialFourPieces } from './components/puzzle';
+- **`PuzzleBoard`** — renders the whole board as one `<svg>`.
+- **`PuzzlePiece`** — single piece as `<g>`; useful if you compose your own SVG.
 
-const board = usePuzzleBoard({
-  // a function is called once on mount, or pass an array directly
-  initial: () => initialFourPieces(/* sideSize */ 300),
-  initialSelected: 'tl',
-  initialCascade: true,
-});
-```
+Geometry (pure, framework-free):
 
-A piece is just:
+- `computePiecePath(piece, allPieces, effect, config)` → SVG `d` string.
+- `computeSidePath(piece, allPieces, side, effect, config)` → single side path.
+- `computePieceBbox(piece, allPieces, effect, config)` → `{ minX, minY, maxX, maxY }` including knob/wave extent.
+- `computeKnobs(piece)` / `computeActiveKnobs(piece, allPieces, effect)` — knob positions.
+- `knobHitCenter(side, cx, cy)` — for overlaying click hit-regions.
+- `normalizeSide(side)`, `evenlySpaced(count, type)`, `buildSidePath(opts)`.
+- Constants: `KNOB_R`, `KNOB_D`, `FLAT`, `TAB`, `SOCKET`, `EFFECTS`, `EFFECT_NAMES`.
+
+### 5. Piece shape
 
 ```ts
 type KnobType = 'tab' | 'socket' | 'flat';
 
 type Side =
-  | { count: number; type: KnobType }     // evenly-spaced, uniform
-  | Array<{ pos: number; type: KnobType }> // explicit positions; can mix types
-  | 'flat';                                // shorthand for no knobs
+  | { count: number; type: KnobType }       // N evenly-spaced uniform knobs
+  | Array<{ pos: number; type: KnobType }>  // explicit positions; can mix
+  | 'flat';                                  // shorthand for no knobs
 
 type Piece = {
   id: string;
-  x: number;           // top-left X
-  y: number;           // top-left Y
-  w: number;           // width  (must be > 2 * KNOB_R)
-  h: number;           // height (must be > 2 * KNOB_R)
+  x: number; y: number;       // top-left in SVG coordinate space
+  w: number; h: number;       // dimensions; min 60px (= 2 * KNOB_R) per side
   label?: string;
+  fill?: string;              // optional CSS color override
+  content?: ContentSpec;      // optional text/image content (clipped to outline)
   sides: { top?: Side; right?: Side; bottom?: Side; left?: Side };
+
+  // Per-segment effect lookups (compiled by compileProject; optional otherwise)
+  edgeEffects?:        { [side]: { [neighborId]: 'puzzle' | 'wave' | 'straight' } };
+  edgeEffectConfigs?:  { [side]: { [neighborId]: object } };
 };
 ```
 
-Most of the time you'll use the uniform `{ count, type }` form. Clicking
-a tab on a multi-knob side (`flipKnob`) can produce a mixed side that's
-stored as the array form; the renderer handles both seamlessly. Use the
-`sideCount(side)` and `sideType(side)` helpers when you need to read a
-side without caring about which form it's in.
-
-Pieces must fit together geometrically — a tab on one piece's side needs a
-matching socket at the same coordinates on the neighbor's opposite side.
-`initialFourPieces` shows a minimal valid example.
-
-### 5. Skip the hook if you want
-
-The hook is optional. Every piece of logic is also exported as a pure
-function, so you can manage state yourself (Redux, Zustand, XState…):
-
-```js
-import {
-  changeSide,
-  splitNeighborsOnSide,
-  flipKnob,
-  findNeighbors,
-  coversNeighbors,
-  maxKnobsForSide,
-  initialFourPieces,
-} from './components/puzzle';
-
-let pieces = initialFourPieces();
-pieces = changeSide(pieces, 'tl', 'right', 3, { cascade: true });
-// Flip the middle knob of TL's right edge onto its neighbor:
-pieces = flipKnob(pieces, 'tl', 'right', 0.5);
-```
-
-And if you only want rendering, use the components directly with whatever
-state source you like:
-
-```jsx
-import { PuzzleBoard } from './components/puzzle';
-
-<PuzzleBoard pieces={myPieces} selectedId={myId} onSelect={selectPiece} />
-```
+For matching pieces to interlock cleanly, a tab on one side must meet a socket on the neighboring piece's opposite side at the same coordinates.
 
 ### 6. Theming
 
-`PuzzleBoard.css` reads a few CSS custom properties with sensible fallbacks.
-Override any of them on any ancestor (usually `:root`) to re-theme:
+`PuzzleBoard.css` reads CSS custom properties (with sensible fallbacks). Override on `:root` (or any ancestor) to re-theme:
 
 ```css
 :root {
-  --puzzle-fill:            #1a1a1f;
-  --puzzle-fill-hover:      #22232a;
-  --puzzle-fill-selected:   #2a2c36;
-  --puzzle-stroke:          #40444d;
-  --puzzle-stroke-hover:    #8ab4f8;
-  --puzzle-label:           #aab1bd;
-  --puzzle-label-selected:  #ffffff;
+  --puzzle-fill:           #1f1d28;
+  --puzzle-fill-hover:     #2a2434;
+  --puzzle-fill-selected:  #332c3f;
+  --puzzle-stroke:         #423a4f;
+  --puzzle-stroke-hover:   #e6a378;
+  --puzzle-label:          #9d96a8;
+  --puzzle-label-selected: #ede8de;
+  --puzzle-content:        #ede8de;
 }
 ```
 
-The stylesheet only targets `.puzzle-board`, `.piece`, `.piece__path`, and
-`.piece__label`, so it won't collide with anything else in your app.
+The stylesheet only targets `.puzzle-board`, `.piece`, `.piece__path`, `.piece__label`, `.piece__content`, and `.piece__knob-hit`, so it won't collide with anything else in your app.
 
-### 7. Public API reference
+## Visual rules
 
-Components:
+- No `transform: scale` on hover.
+- No drop-shadow / box-shadow / glow on pieces.
+- Selection state is a continuous outline that traces the entire outer shape — including around every tab and inside every socket.
+- The outline is seamless: there are no internal lines at the bases of tabs/sockets, because each piece is a **single inline SVG path**.
 
-- `PuzzleBoard` — renders the whole board as one `<svg>`.
-- `PuzzlePiece` — renders one piece as a `<g>`; use it directly if you
-  want to compose your own `<svg>`.
+## Conventions (for contributors)
 
-React hook:
+- **No TypeScript** — plain JS + JSDoc where types matter.
+- **No external UI libraries**, **no state management libraries** — `useState` / `useMemo` / `useCallback` only.
+- **Minimal dependencies** — only `react` / `react-dom`. The ZIP encoder, CSV parser, and theme system are all hand-rolled.
+- **Co-located CSS** for portable modules (e.g. `puzzle/PuzzleBoard.css`); shared studio styles split into per-component / per-page sheets, all imported from `ui/styles/App.css`.
+- **Immutable state** — every grid mutation returns a new grid.
+- Comments only when the *why* is non-obvious.
 
-- `usePuzzleBoard(options?)` — state machine for a full board.
-
-Geometry (pure, framework-free):
-
-- `computePiecePath(piece)` → SVG `d` string.
-- `computePieceBbox(piece)` → `{ minX, minY, maxX, maxY }`.
-- `computeKnobs(piece)` → `[{ side, type, pos, cx, cy }, …]`.
-- `knobHitCenter(side, cx, cy)` → `{ hx, hy }` for overlaying hit regions.
-- `normalizeSide(side)`, `evenlySpaced(count, type)`.
-- Constants: `KNOB_R`, `KNOB_D`, `FLAT`, `TAB`, `SOCKET`.
-
-Board (pure, framework-free):
-
-- `initialFourPieces(size?)`.
-- `findNeighbors`, `findNeighborAtKnob`, `coversNeighbors`, `edgesMatch`,
-  `piecesInRegion`.
-- `sideFor`, `sideCount`, `sideType`, `maxKnobsForSide`, `resolveType`.
-- `updatePiece`, `setPieceSide`.
-- `splitNeighborsOnSide`, `changeSide`, `flipKnob`.
-- Constants: `BIG`, `MIN_DIM`, `EPS`, `SIDES`, `OPPOSITE`.
-- Helpers: `oppositeType`, `makeId`.
-
-### Tab clicks flip knob ownership
-
-Every tab on a rendered piece gets an invisible circular hit region
-(`.piece__knob-hit`) positioned over its protrusion. Clicking it fires
-`onKnobClick(pieceId, side, pos)` on `PuzzleBoard`.
-
-The default handler (`flipKnob` from `usePuzzleBoard`) swaps the knob's
-ownership across the connection: whoever had the tab now has the socket,
-and vice versa. Concretely, if TL's right side has one tab that meets
-TR's left-side socket, clicking that tab produces a TL with a socket on
-the right and a TR with a tab on the left — the knob now belongs to TR.
-
-On multi-knob sides this operates on **just that one knob**, so a side
-can end up with mixed tab/socket knobs. The rendering, hit regions, and
-neighbor mating all keep working because normalized knob arrays are a
-first-class side form.
-
-If you want a different behavior (e.g. "click a tab to select the
-neighbor"), pass your own `onKnobClick` instead:
-
-```jsx
-<PuzzleBoard
-  pieces={pieces}
-  selectedId={selectedId}
-  onSelect={setSelectedId}
-  onKnobClick={(ownerId, side, pos) => {
-    const owner = pieces.find((p) => p.id === ownerId);
-    const neighbor = findNeighborAtKnob(pieces, owner, side, pos);
-    if (neighbor) setSelectedId(neighbor.id);
-  }}
-/>
-```
-
-Re-theme the hover tint on the hit region with the
-`--puzzle-knob-hit-hover` CSS variable.
+For deeper notes see [`CLAUDE.md`](./CLAUDE.md), [`src/puzzle/CLAUDE.md`](./src/puzzle/CLAUDE.md), [`src/grid/CLAUDE.md`](./src/grid/CLAUDE.md), and [`src/ui/CLAUDE.md`](./src/ui/CLAUDE.md).

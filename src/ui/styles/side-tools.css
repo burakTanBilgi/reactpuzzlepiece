@@ -1,0 +1,18 @@
+/* Sidebar layout shared by Grid / Edges / Content editor pages. */
+
+.side-tools {
+  width: 280px;
+  flex-shrink: 0;
+  padding: 18px 16px;
+  border-right: 1px solid var(--stroke-idle);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (max-width: 720px) {
+  .side-tools { width: 240px; }
+}

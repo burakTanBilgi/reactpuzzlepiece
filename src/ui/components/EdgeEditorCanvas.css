@@ -1,0 +1,60 @@
+.edge-canvas {
+  position: relative;
+  display: inline-block;
+}
+
+.edge-canvas__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.edge-hit__hit {
+  /* near-zero alpha so SVG hit-tests this rect */
+  fill: rgba(0, 0, 0, 0.001);
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.edge-hit__line {
+  stroke: transparent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0;
+  pointer-events: none;
+  transition: stroke 180ms ease, stroke-width 180ms ease, opacity 180ms ease, filter 180ms ease;
+  opacity: 0;
+}
+
+/* Hover: subtle warm tint, no glow */
+.edge-hit__hit:hover ~ .edge-hit__line {
+  stroke: var(--primary-3);
+  stroke-width: 3;
+  opacity: 0.55;
+}
+
+/* Override marker: dashed accent line, subdued */
+.edge-hit--override .edge-hit__line {
+  stroke: var(--accent-2);
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+  opacity: 0.45;
+}
+
+.edge-hit--override .edge-hit__hit:hover ~ .edge-hit__line {
+  stroke: var(--accent-2);
+  opacity: 0.85;
+}
+
+/* Selected: clean amber stroke with soft glow */
+.edge-hit--selected .edge-hit__line,
+.edge-hit--selected .edge-hit__hit:hover ~ .edge-hit__line {
+  stroke: var(--primary-2);
+  stroke-width: 4;
+  stroke-dasharray: 0;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px var(--primary-tint))
+          drop-shadow(0 0 8px var(--primary-tint));
+}
