@@ -11,7 +11,7 @@ export function edgeKey(idA, idB) {
 // --- Compile -----------------------------------------------------------------
 
 export function compileProject(project) {
-  const { grid, edges } = project;
+  const { grid, edges, pieceColors, pieceContent } = project;
   const cellSize = grid.cellSize;
   const bounds = groupBoundsMap(grid);
 
@@ -26,6 +26,8 @@ export function compileProject(project) {
       w: (b.cMax - b.cMin + 1) * cellSize,
       h: (b.rMax - b.rMin + 1) * cellSize,
       label: prettyLabel(id),
+      fill: pieceColors?.[id],
+      content: pieceContent?.[id],
       sides: {},
       sideEffects: {},
       sideEffectConfigs: {},

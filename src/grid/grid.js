@@ -3,7 +3,7 @@
 // All functions are immutable — they return new grids/maps.
 
 export const MIN_GRID = 1;
-export const MAX_GRID = 10;
+export const MAX_GRID = 50;
 export const DEFAULT_CELL_SIZE = 200;
 
 export const clampGridSize = (n) =>

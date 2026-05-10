@@ -1,11 +1,7 @@
 import { KNOB_R, TAB, computeActiveKnobs, knobHitCenter } from './geometry.js';
 
-// Single puzzle piece rendered as an <svg><g> with one <path>.
-// Drop it inside a parent <svg> (or use <PuzzleBoard>).
-//
-// Tabs get a small invisible `<circle>` hit-region on top so clicks on a tab
-// can be routed to the neighbor across the connection. That's what
-// `onKnobClick(pieceId, side, pos)` is for; the board ties it to selection.
+// Single puzzle piece rendered as <g> with one <path> for the outline,
+// plus optional content (text/image) clipped to that path.
 
 const HIT_R = KNOB_R * 0.75;
 
@@ -21,8 +17,10 @@ export default function PuzzlePiece({
   onSelect,
   onKnobClick,
 }) {
-  const { id, x, y, w, h, label } = piece;
+  const { id, x, y, w, h, label, fill, content } = piece;
   const knobs = computeActiveKnobs(piece, allPieces, effect);
+  const clipId = `pc-clip-${id}`;
+  const hasContent = !!content && (content.text || content.src);
 
   return (
     <g
@@ -31,12 +29,27 @@ export default function PuzzlePiece({
       onMouseLeave={() => onHoverEnd?.(id)}
       onClick={() => onSelect?.(id)}
     >
-      <path d={path} className="piece__path" />
-      {label && (
+      <defs>
+        {hasContent && (
+          <clipPath id={clipId}>
+            <path d={path} />
+          </clipPath>
+        )}
+      </defs>
+      <path d={path} className="piece__path" style={fill ? { fill } : undefined} />
+
+      {hasContent && (
+        <g clipPath={`url(#${clipId})`} pointerEvents="none">
+          <PieceContent piece={piece} />
+        </g>
+      )}
+
+      {!hasContent && label && (
         <text x={x + w / 2} y={y + h / 2} className="piece__label">
           {label}
         </text>
       )}
+
       {onKnobClick &&
         knobs
           .filter((k) => k.type === TAB)
@@ -58,4 +71,79 @@ export default function PuzzlePiece({
           })}
     </g>
   );
+}
+
+// Render text or image content inside a piece. Image fit options mirror
+// the SVG `preserveAspectRatio` attribute:
+//   cover → xMidYMid slice  · fills, may crop
+//   contain → xMidYMid meet · fits whole image, may letterbox
+//   fill → none             · stretches to bounds
+//   none → xMidYMid meet at natural size (we still meet for safety)
+function PieceContent({ piece }) {
+  const { x, y, w, h, content } = piece;
+  const PAD = 18;
+
+  if (content.type === 'image' && content.src) {
+    const fit = content.fit || 'cover';
+    const par =
+      fit === 'cover'   ? 'xMidYMid slice' :
+      fit === 'contain' ? 'xMidYMid meet'  :
+      fit === 'fill'    ? 'none'           :
+                          'xMidYMid meet';
+    return (
+      <image
+        href={content.src}
+        x={x} y={y} width={w} height={h}
+        preserveAspectRatio={par}
+      />
+    );
+  }
+
+  // Text content. Wrap manually since SVG <text> doesn't auto-wrap.
+  const text = content.text || '';
+  const fontSize = content.fontSize || Math.min(w, h) / 8;
+  const align = content.align || 'center';
+  const color = content.color || 'var(--text, #e6edf3)';
+  const fontWeight = content.fontWeight || 500;
+
+  const lines = wrapText(text, w - PAD * 2, fontSize);
+  const lineH = fontSize * 1.25;
+  const totalH = lines.length * lineH;
+  const startY = y + h / 2 - totalH / 2 + lineH * 0.7;
+  const tx = align === 'left' ? x + PAD : align === 'right' ? x + w - PAD : x + w / 2;
+  const anchor = align === 'left' ? 'start' : align === 'right' ? 'end' : 'middle';
+
+  return (
+    <text
+      className="piece__content"
+      style={{ fontSize, fontWeight, fill: color }}
+      textAnchor={anchor}
+    >
+      {lines.map((line, i) => (
+        <tspan key={i} x={tx} y={startY + i * lineH}>{line}</tspan>
+      ))}
+    </text>
+  );
+}
+
+// Greedy word wrap — approximate width using fontSize * 0.55 per char.
+function wrapText(text, maxWidth, fontSize) {
+  const charW = fontSize * 0.55;
+  const maxChars = Math.max(1, Math.floor(maxWidth / charW));
+  const out = [];
+  for (const para of text.split('\n')) {
+    if (para === '') { out.push(''); continue; }
+    const words = para.split(/\s+/);
+    let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (next.length <= maxChars) line = next;
+      else {
+        if (line) out.push(line);
+        line = word.length <= maxChars ? word : word.slice(0, maxChars);
+      }
+    }
+    if (line) out.push(line);
+  }
+  return out;
 }

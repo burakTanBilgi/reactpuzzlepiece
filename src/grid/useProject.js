@@ -111,6 +111,59 @@ export function useProject() {
     mutateEdges((e) => ({ ...e, byEdge: {} }));
   }, [mutateEdges]);
 
+  const setPieceColor = useCallback((pieceId, color) => {
+    setProject((p) => {
+      if (!p) return p;
+      const colors = { ...(p.pieceColors || {}) };
+      if (color == null) delete colors[pieceId];
+      else colors[pieceId] = color;
+      return { ...p, pieceColors: colors };
+    });
+  }, []);
+
+  const clearPieceColors = useCallback(() => {
+    setProject((p) => (p ? { ...p, pieceColors: {} } : p));
+  }, []);
+
+  const setPieceContent = useCallback((pieceId, content) => {
+    setProject((p) => {
+      if (!p) return p;
+      const all = { ...(p.pieceContent || {}) };
+      if (content == null) delete all[pieceId];
+      else all[pieceId] = content;
+      return { ...p, pieceContent: all };
+    });
+  }, []);
+
+  const updatePieceContent = useCallback((pieceId, patch) => {
+    setProject((p) => {
+      if (!p) return p;
+      const all = { ...(p.pieceContent || {}) };
+      const cur = all[pieceId] || {};
+      all[pieceId] = { ...cur, ...patch };
+      return { ...p, pieceContent: all };
+    });
+  }, []);
+
+  const clearPieceContent = useCallback(() => {
+    setProject((p) => (p ? { ...p, pieceContent: {} } : p));
+  }, []);
+
+  // Replace the entire grid (used by CSV/TSV import).
+  const replaceGrid = useCallback((grid, content) => {
+    setProject((p) => {
+      if (!p) return p;
+      return {
+        ...p,
+        grid,
+        // Reset edges/colors/content since piece IDs are new.
+        edges: { default: p.edges?.default ?? { effect: 'puzzle' }, byEdge: {} },
+        pieceColors: {},
+        pieceContent: content || {},
+      };
+    });
+  }, []);
+
   // --- Project lifecycle ---
   const openProject = useCallback((id) => {
     const list = loadProjects();
@@ -161,6 +214,12 @@ export function useProject() {
     setEdgeConfig,
     clearEdgeOverride,
     resetEdgeOverrides,
+    setPieceColor,
+    clearPieceColors,
+    setPieceContent,
+    updatePieceContent,
+    clearPieceContent,
+    replaceGrid,
     openProject,
     createNew,
     removeProject,

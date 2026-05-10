@@ -17,6 +17,7 @@ export default function PreviewSvg({ project, maxSize = 180 }) {
       id: p.id,
       d: computePiecePath(p, pieces, defaultEffect, defaultConfig),
       bbox: computePieceBbox(p, pieces, defaultEffect, defaultConfig),
+      fill: p.fill,
     }));
     const bbox = enriched.reduce(
       (a, p) => ({
@@ -55,8 +56,8 @@ export default function PreviewSvg({ project, maxSize = 180 }) {
     >
       {paths.map((p) => (
         <path key={p.id} d={p.d}
-          fill="rgba(66, 133, 244, 0.18)"
-          stroke="rgba(149, 162, 198, 0.9)"
+          fill={p.fill || 'var(--surface-2)'}
+          stroke="var(--stroke-soft)"
           strokeWidth="2"
           strokeLinejoin="round"
         />

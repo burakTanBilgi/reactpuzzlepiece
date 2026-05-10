@@ -1,93 +1,102 @@
-# CLAUDE.md — React Puzzle Piece
+# CLAUDE.md — React Puzzle Piece (Puzzle Studio)
 
 ## Project Purpose
 
-A React + Vite web application for designing grid-based layouts where sections are separated by stylized connectors (default: puzzle piece tabs/sockets). Intended as a visual design tool for building website layouts that can be exported as SVG, JSON, or React components.
+A React + Vite design tool for grid-based layouts where sections are separated by stylized connectors (puzzle tabs/sockets, wave, straight). You build a grid, merge cells into pieces, style edges, fill cells with text/images, and export as JSON, a single React file, or a full ZIP module.
 
 ## Architecture
 
 ```
 src/
-  main.jsx              — ReactDOM entry
-  App.jsx               — Top-level shell: wires usePuzzleBoard → PuzzleBoard + controls UI
-  App.css               — Layout, sidebar, toolbar styles
-  index.css             — Global CSS variables, dark theme base
-  puzzle/               — Self-contained module (zero imports from outside)
-    geometry.js         — Pure SVG path math (no React)
-    board.js            — Pure immutable board state helpers
-    usePuzzleBoard.js   — React hook: state machine over board helpers
-    PuzzleBoard.jsx     — <svg> root rendering all pieces
-    PuzzlePiece.jsx     — <g><path/></g> for one piece
-    PuzzleBoard.css     — Themeable CSS custom properties
-    index.js            — Public API re-exports
-  utils/                — (planned) import/export utilities
+  main.jsx                    — ReactDOM entry
+  index.css                   — Theme tokens (light/dark via [data-theme])
+  puzzle/                     — Self-contained rendering module (no outside imports)
+    geometry.js               — SVG path math (pure)
+    board.js                  — neighbor + segment helpers (pure)
+    effects/                  — puzzle, wave, straight effect strategies
+    PuzzleBoard.jsx           — root <svg>
+    PuzzlePiece.jsx           — one piece + clipped content
+    PuzzleBoard.css           — themeable CSS
+    index.js                  — public API
+    CLAUDE.md                 — module-specific notes
+  grid/                       — Data model + state + I/O
+    grid.js                   — cell-grid helpers (MAX_GRID = 50)
+    compile.js                — Project → Piece[]
+    storage.js                — localStorage + JSON import/export
+    import.js                 — CSV/TSV/paste → grid + content
+    export.js                 — single-file JSX + module ZIP exports
+    zip.js                    — minimal pure-JS ZIP encoder (no deps)
+    useProject.js             — React hook: state + auto-save
+    CLAUDE.md
+  ui/                         — App shell + pages + components
+    App.jsx                   — page switcher + theme state
+    components/               — PageNav, PreviewSvg, ImportDialog, etc.
+    pages/                    — Landing / Grid / Edges / Content
+    styles/App.css            — page layouts, modals, etc.
+    CLAUDE.md
 ```
 
-The `src/puzzle/` folder is a **portable drop-in module** — no imports from outside itself, works in any React 18+ project.
+The `src/puzzle/` folder is a **portable drop-in module** — no imports from outside itself, works in any React 18+ project. It is also shipped verbatim by the "Module bundle (ZIP)" export.
 
 ## Data Model
 
 ```js
-// KnobType
-'tab' | 'socket' | 'flat'
-
-// Side (three supported shapes)
-'flat'                                   // no knobs
-{ count: number; type: KnobType }        // N evenly-spaced uniform knobs
-Array<{ pos: number; type: KnobType }>   // explicit mixed knobs (pos ∈ [0,1])
-
-// Piece
+// Project (the persistent unit)
 {
-  id: string,
-  x: number, y: number,    // top-left in SVG coordinate space
-  w: number, h: number,    // dimensions (min 80px each axis)
-  label?: string,
-  fill?: string,           // CSS color for piece background (planned)
-  content?: {              // rich content inside piece (planned)
-    type: 'text' | 'image',
-    value: string,         // text content or image data URL
-    style?: object,
+  id, name, createdAt, updatedAt,
+  grid: { rows, cols, cellSize, groups: string[][] },   // groupId per cell
+  edges: {
+    default: { effect, config? },                       // 'puzzle' | 'wave' | 'straight'
+    byEdge:  { [pairKey]: { effect, config? } },        // per-edge overrides
   },
-  sides: {
-    top?: Side,
-    right?: Side,
-    bottom?: Side,
-    left?: Side,
-  }
+  pieceColors:  { [groupId]: '#hex' },
+  pieceContent: { [groupId]: ContentSpec },
+}
+
+// ContentSpec
+type ContentSpec =
+  | { type: 'text',  text: string, align?, fontSize?, fontWeight?, color? }
+  | { type: 'image', src: string /* data: URL */, fit?: 'cover'|'contain'|'fill' };
+
+// Piece (derived via compileProject)
+{
+  id, x, y, w, h, label?, fill?, content?,
+  sides: { top?, right?, bottom?, left? },
+  edgeEffects, edgeEffectConfigs,
 }
 ```
 
 ## Key Invariants
 
-- All board mutation functions in `board.js` are **pure**: take a `pieces` array, return a new array. Never mutate in place.
-- Adjacency is **computed geometrically** (`findNeighbors` in `board.js`) — no explicit grid structure.
-- Pieces are rendered as a single closed SVG `<path>` computed by `computePiecePath` in `geometry.js`.
-- `KNOB_R = 30` — all pieces must be at least `2 * KNOB_R = 60px` wide/tall. Hard minimum is `MIN_DIM = 80`.
-- Tab vs socket: tabs protrude outward (arc `sweep-flag=1`), sockets indent inward (`sweep-flag=0`).
-- `collapseKnobs` normalizes an explicit knob array back to `{ count, type }` when all knobs are uniform.
+- All grid mutation functions in `grid.js` are **pure**: take a grid, return a new grid.
+- Pieces are derived from a Project via `compileProject` — never mutated directly.
+- Adjacency is computed geometrically in `puzzle/board.js#findNeighbors`.
+- `KNOB_R = 30` — pieces must be ≥ `2 * KNOB_R = 60px` per side.
+- Tab vs socket: tabs protrude outward (`sweep-flag=1`), sockets indent inward (`sweep-flag=0`).
+- All theme colors are CSS custom properties in `src/index.css`. The light theme is `[data-theme='light']`.
 
 ## Conventions
 
-- **No TypeScript** — plain JS + JSDoc comments where types need documenting.
-- **No external UI libraries** — custom CSS only.
-- **No state management libraries** — plain `useState` / `useMemo` / `useCallback`.
-- **Immutable state** — every board helper returns a new array/object.
-- **Minimal dependencies** — add a package only when it provides non-trivial value (e.g. `xlsx` for Excel parsing).
-- Comments only when the *why* is non-obvious; never narrate what the code does.
+- **No TypeScript** — plain JS + JSDoc where types matter.
+- **No external UI libraries**, **no state management libraries** — `useState`/`useMemo`/`useCallback` only.
+- **Minimal dependencies** — only `react`/`react-dom`. The ZIP encoder, CSV parser, and theme system are all hand-rolled to keep deps slim.
+- **Co-located CSS** for portable modules (`puzzle/PuzzleBoard.css`); shared UI styles in `ui/styles/App.css`.
+- Comments only when the *why* is non-obvious.
 
-## Feature Roadmap
+## Pages (state-based routing)
 
-See [PLAN.md](./PLAN.md) for the full phased implementation plan.
+| Page    | What it does                                                           |
+| ------- | ---------------------------------------------------------------------- |
+| Home    | Project library, JSON import, **export menu** (JSON / single-file / ZIP) |
+| Grid    | Cell grid: drag-select, merge/unmerge, resize, color, **paste/CSV import** |
+| Edges   | Click any edge to override its effect (puzzle/wave/straight) + config  |
+| Content | Click any piece to fill with text or image (cover/contain/stretch)     |
 
-| Phase | Feature | Status |
-|---|---|---|
-| 1 | CLAUDE.md + PLAN.md | ✅ Done |
-| 2 | Effect/Connector System (puzzle, wave, straight…) | Planned |
-| 3 | Piece Content (text + images clipped to shape) | Planned |
-| 4 | UI/UX Redesign (toolbar, dual sidebars, themes) | Planned |
-| 5 | Excel Import (merged cells → merged pieces) | Planned |
-| 6 | Export: JSON (bidirectional), SVG, React component | Planned |
-| 7 | Mobile readiness (Pointer Events, pinch-to-zoom) | Future |
+## Export options
+
+- **JSON** — re-importable project state (`storage.js#exportJSON`).
+- **Single-file React** (`export.js#exportSingleFileJSX`) — generates one `.jsx` with paths precomputed and content baked in. Zero deps beyond React. Bundled with a README in a small ZIP.
+- **Module bundle (ZIP)** (`export.js#exportModuleZip`) — ships the full `puzzle/` folder + `project.json` + a wrapper component + standalone `compileProject.js` + README. Drop-in for serious integration.
 
 ## Build & Dev
 

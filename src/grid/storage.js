@@ -20,6 +20,8 @@ export function newProject(name = 'Untitled') {
       default: { effect: 'puzzle' },
       byEdge: {},
     },
+    pieceColors: {},
+    pieceContent: {},
   };
 }
 

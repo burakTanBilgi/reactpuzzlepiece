@@ -1,74 +1,122 @@
+/* === Theme tokens ===
+ * Warm, sophisticated palette: terracotta + sage on cream/charcoal.
+ * Easy on the eyes; distinctive without being garish.
+ */
+
 :root {
-  --bg: #0b0f17;
-  --bg-elev: #0f1420;
-  --surface: #161b22;
-  --surface-2: #1b222d;
-  --surface-3: #232b38;
+  /* Dark theme (default) */
+  --bg:           #15121b;
+  --bg-elev:      #1c1824;
+  --surface:      #221d2c;
+  --surface-2:   #2a2434;
+  --surface-3:   #332c3f;
 
-  --blue-1: #1a73e8;
-  --blue-2: #4285f4;
-  --blue-3: #8ab4f8;
+  /* Primary: warm amber/peach — the signature accent */
+  --primary-1:   #d68b54;
+  --primary-2:   #e6a378;
+  --primary-3:   #f0bf9c;
+  --primary-tint: rgba(230, 163, 120, 0.12);
 
-  --green-1: #34a853;
-  --green-2: #5cb96e;
-  --green-3: #81c995;
+  /* Secondary: sage mint — for puzzle effects, success */
+  --accent-1:    #5fb68f;
+  --accent-2:    #7fc9a6;
+  --accent-3:    #a3dcc1;
+  --accent-tint: rgba(127, 201, 166, 0.12);
 
-  --red-1: #ea4335;
-  --red-2: #f25757;
-  --red-3: #fcc2c2;
+  /* Status colors (muted) */
+  --warn-1:      #d4a056;
+  --warn-2:      #e3b574;
+  --danger-1:    #c87070;
+  --danger-2:    #d68f8f;
 
-  --yellow-1: #fbbc04;
-  --yellow-2: #fddb66;
-  --yellow-3: #ffe990;
+  /* Lines & strokes */
+  --stroke-idle:    #322b3c;
+  --stroke-soft:    #423a4f;
+  --stroke-hover:   var(--primary-2);
+  --stroke-hover-soft: rgba(230, 163, 120, 0.30);
 
-  --stroke-idle: #2a313c;
-  --stroke-soft: #3a414d;
-  --stroke-hover: var(--blue-2);
-  --stroke-hover-soft: rgba(66, 133, 244, 0.35);
+  /* Text */
+  --text:        #ede8de;
+  --text-muted:  #9d96a8;
+  --text-dim:    #6a637a;
 
-  --text: #e6edf3;
-  --text-muted: #8a94a6;
-  --text-dim: #5f6775;
-
-  --accent-tint: rgba(66, 133, 244, 0.08);
-
+  /* Radii & shadows */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+  /* Body backdrop tints (radial gradients) */
+  --backdrop-tint-1: rgba(230, 163, 120, 0.06);
+  --backdrop-tint-2: rgba(127, 201, 166, 0.04);
+
+  color-scheme: dark;
 }
 
-* {
-  box-sizing: border-box;
+/* Light theme — warm cream + terracotta */
+:root[data-theme='light'] {
+  --bg:          #f8f3ec;
+  --bg-elev:     #fdf9f3;
+  --surface:     #ffffff;
+  --surface-2:   #f4ede2;
+  --surface-3:   #ebe2d3;
+
+  --primary-1:   #b8602a;
+  --primary-2:   #cc7541;
+  --primary-3:   #e0936a;
+  --primary-tint: rgba(184, 96, 42, 0.10);
+
+  --accent-1:    #3d7762;
+  --accent-2:    #5e9281;
+  --accent-3:    #8bb5a4;
+  --accent-tint: rgba(61, 119, 98, 0.10);
+
+  --warn-1:      #b88029;
+  --warn-2:      #d49c44;
+  --danger-1:    #b85050;
+  --danger-2:    #d07070;
+
+  --stroke-idle:    #e2d8c8;
+  --stroke-soft:    #c9beac;
+  --stroke-hover:   var(--primary-1);
+  --stroke-hover-soft: rgba(184, 96, 42, 0.28);
+
+  --text:        #2a251f;
+  --text-muted:  #6b6358;
+  --text-dim:    #948a7c;
+
+  --shadow-sm: 0 1px 2px rgba(74, 55, 32, 0.08);
+  --shadow-md: 0 8px 24px rgba(74, 55, 32, 0.12);
+  --shadow-lg: 0 20px 40px rgba(74, 55, 32, 0.18);
+
+  --backdrop-tint-1: rgba(184, 96, 42, 0.06);
+  --backdrop-tint-2: rgba(61, 119, 98, 0.05);
+
+  color-scheme: light;
 }
 
-html,
-body,
-#root {
+* { box-sizing: border-box; }
+
+html, body, #root {
   height: 100%;
   margin: 0;
 }
 
 body {
   background:
-    radial-gradient(1200px 600px at 85% -10%, rgba(66, 133, 244, 0.06), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(66, 133, 244, 0.04), transparent 60%),
+    radial-gradient(1200px 600px at 85% -10%, var(--backdrop-tint-1), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, var(--backdrop-tint-2), transparent 60%),
     var(--bg);
   color: var(--text);
   font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-feature-settings: "ss01", "cv11";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background 250ms ease, color 250ms ease;
 }
 
-button {
-  font-family: inherit;
-}
+button { font-family: inherit; }

@@ -232,6 +232,7 @@ export function computeSidePath(piece, allPieces, sideName, defaultEffect = 'puz
   return `M ${startPoint} ${sidePath}`;
 }
 
+
 export function computePieceBbox(piece, allPieces, defaultEffect = 'puzzle', effectConfig) {
   const { x, y, w, h, sides = {} } = piece;
   const padForSide = (side) => {

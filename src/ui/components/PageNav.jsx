@@ -2,9 +2,11 @@ const PAGES = [
   { id: 'landing', label: 'Home', icon: '◇' },
   { id: 'grid',    label: 'Grid', icon: '⊞' },
   { id: 'edges',   label: 'Edges', icon: '∿' },
+  { id: 'content', label: 'Content', icon: '✎' },
 ];
 
-export default function PageNav({ page, onNav, projectName }) {
+export default function PageNav({ page, onNav, projectName, theme, onToggleTheme }) {
+  const isDark = theme === 'dark';
   return (
     <header className="page-nav">
       <div className="page-nav__brand">
@@ -18,6 +20,15 @@ export default function PageNav({ page, onNav, projectName }) {
         )}
       </div>
       <nav className="page-nav__tabs">
+        <button
+          type="button"
+          className="page-nav__theme"
+          onClick={onToggleTheme}
+          title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+          aria-label="Toggle theme"
+        >
+          <span aria-hidden>{isDark ? '☀' : '☾'}</span>
+        </button>
         {PAGES.map((p) => (
           <button
             key={p.id}

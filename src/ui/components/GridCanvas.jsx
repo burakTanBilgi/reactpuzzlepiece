@@ -9,7 +9,7 @@ const PADDING = 16;
 //   - Drag-select (mouse down on an empty cell, drag to expand a rectangle)
 //   - Shift/Ctrl+click to add or remove a single cell from the selection
 //   - Plain click clears the selection and selects just that cell
-export default function GridCanvas({ grid, selection, onSelectionChange }) {
+export default function GridCanvas({ grid, selection, onSelectionChange, pieceColors }) {
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null); // { startCell:[r,c], curCell:[r,c], baseSelection: Set }
 
@@ -81,6 +81,7 @@ export default function GridCanvas({ grid, selection, onSelectionChange }) {
       w: (b.cMax - b.cMin + 1) * CELL_PX,
       h: (b.rMax - b.rMin + 1) * CELL_PX,
       isMerged: (b.cMax > b.cMin) || (b.rMax > b.rMin),
+      fill: pieceColors?.[id],
       label: b.cMax > b.cMin || b.rMax > b.rMin ? `${b.cMax - b.cMin + 1}×${b.rMax - b.rMin + 1}` : '',
     });
   }
@@ -115,6 +116,7 @@ export default function GridCanvas({ grid, selection, onSelectionChange }) {
             key={g.id}
             x={g.x} y={g.y} width={g.w} height={g.h}
             className={`grid-canvas__group ${g.isMerged ? 'grid-canvas__group--merged' : ''}`}
+            style={g.fill ? { fill: g.fill } : undefined}
             rx="6" ry="6"
           />
         ))}

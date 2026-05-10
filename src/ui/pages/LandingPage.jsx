@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
+import { exportSingleFileJSX, exportModuleZip } from '../../grid/export.js';
 
 export default function LandingPage({ project, onNav }) {
   const {
@@ -14,6 +15,7 @@ export default function LandingPage({ project, onNav }) {
   } = project;
   const fileRef = useRef(null);
   const [editingName, setEditingName] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
@@ -70,9 +72,39 @@ export default function LandingPage({ project, onNav }) {
             <button type="button" className="action-btn action-btn--ghost" onClick={() => fileRef.current?.click()}>
               ↑ Import
             </button>
-            <button type="button" className="action-btn action-btn--ghost" onClick={exportCurrent}>
-              ↓ Export
-            </button>
+            <div className="export-menu">
+              <button
+                type="button"
+                className="action-btn action-btn--ghost"
+                onClick={() => setExportOpen((v) => !v)}
+              >
+                ↓ Export ▾
+              </button>
+              {exportOpen && (
+                <>
+                  <div className="export-menu__backdrop" onClick={() => setExportOpen(false)} />
+                  <div className="export-menu__panel">
+                    <button type="button" className="export-menu__item"
+                      onClick={() => { exportCurrent(); setExportOpen(false); }}>
+                      <strong>JSON</strong>
+                      <span>Project file (re-importable)</span>
+                    </button>
+                    <button type="button" className="export-menu__item"
+                      onClick={() => { exportSingleFileJSX(p); setExportOpen(false); }}
+                      disabled={!p}>
+                      <strong>Single-file React</strong>
+                      <span>One .jsx + README — drop into any React 18+ project</span>
+                    </button>
+                    <button type="button" className="export-menu__item"
+                      onClick={() => { exportModuleZip(p); setExportOpen(false); }}
+                      disabled={!p}>
+                      <strong>Module bundle (ZIP)</strong>
+                      <span>Full puzzle/ folder + project.json + README</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
