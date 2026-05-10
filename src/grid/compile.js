@@ -32,6 +32,22 @@ function collectBackgrounds(backgrounds, b, cellSize) {
   return out.length ? out : undefined;
 }
 
+// --- Effect resolution -------------------------------------------------------
+
+// Chain (highest priority first):
+//   per-edge (byEdge[pairKey]) > inner/outer layer > default
+//
+// `kind` is 'inner' for shared-edge segments and 'outer' for outer edges.
+export function resolveEdge(edges, pairKey, kind) {
+  const ov = edges?.byEdge?.[pairKey];
+  const layer = kind === 'inner' ? edges?.inner : edges?.outer;
+  const def = edges?.default;
+  return {
+    effect: ov?.effect ?? layer?.effect ?? def?.effect ?? 'puzzle',
+    config: ov?.config ?? layer?.config ?? def?.config,
+  };
+}
+
 // --- Compile -----------------------------------------------------------------
 
 export function compileProject(project) {
@@ -63,9 +79,6 @@ export function compileProject(project) {
     piecesById.set(id, piece);
   }
 
-  const defaultEffect = edges?.default?.effect ?? 'puzzle';
-  const defaultConfig = edges?.default?.config;
-
   // 2. For each piece, compute each side from its neighbor segments.
   for (const piece of pieces) {
     const b = bounds.get(piece.id);
@@ -75,9 +88,7 @@ export function compileProject(project) {
       if (segs.length === 0) {
         // No neighbors on this side → outer edge. Apply effect with single knob or flat.
         const outerKey = `${piece.id}||outer-${side}`;
-        const override = edges?.byEdge?.[outerKey];
-        const effect = override?.effect ?? defaultEffect;
-        const config = override?.config ?? defaultConfig;
+        const { effect, config } = resolveEdge(edges, outerKey, 'outer');
 
         // For outer edges, apply the effect (puzzle/wave/straight)
         // Puzzle: single centered tab or socket depending on side convention
@@ -98,7 +109,7 @@ export function compileProject(project) {
         if (config) piece.edgeEffectConfigs[side]['__outer'] = config;
         continue;
       }
-      assignSide(piece, side, segs, edges, defaultEffect, defaultConfig);
+      assignSide(piece, side, segs, edges);
     }
   }
 
@@ -187,16 +198,16 @@ function knobTypeForSide(side) {
   return (side === 'right' || side === 'bottom') ? 'tab' : 'socket';
 }
 
-function assignSide(piece, side, segs, edges, defaultEffect, defaultConfig) {
+function assignSide(piece, side, segs, edges) {
   const baseKnobType = knobTypeForSide(side);
 
-  // One knob per segment, centered on that segment. Check inversion per-segment.
+  // One knob per segment, centered on that segment. Honor the inverted flag
+  // following the same chain as effect/config: per-edge > inner > default.
   const knobs = segs.map((s) => {
     const pairKey = edgeKey(piece.id, s.neighborId);
-    const override = edges?.byEdge?.[pairKey];
+    const { config } = resolveEdge(edges, pairKey, 'inner');
     let knobType = baseKnobType;
-    // Flip this segment's knob if inverted
-    if (override?.config?.inverted) {
+    if (config?.inverted) {
       knobType = knobType === 'tab' ? 'socket' : 'tab';
     }
     return { pos: s.midPos, type: knobType };
@@ -216,10 +227,7 @@ function assignSide(piece, side, segs, edges, defaultEffect, defaultConfig) {
 
   for (const s of segs) {
     const pairKey = edgeKey(piece.id, s.neighborId);
-    const override = edges?.byEdge?.[pairKey];
-    const effect = override?.effect ?? defaultEffect;
-    const config = override?.config ?? defaultConfig;
-
+    const { effect, config } = resolveEdge(edges, pairKey, 'inner');
     piece.edgeEffects[side][s.neighborId] = effect;
     if (config) piece.edgeEffectConfigs[side][s.neighborId] = config;
   }

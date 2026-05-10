@@ -3,6 +3,7 @@
 State-based routing (no react-router). `App.jsx` owns the page state, the theme, and passes `project` (from `useProject`) to all pages.
 
 ## Pages
+- `DocsPage` — interactive tutorial. Sidebar of sections (`components/docs/*Section.jsx`) with live demos in `components/docs/demos/`. Default landing tab on first visit.
 - `ProjectsPage` — project library + JSON import. Opening a project tile auto-navigates to `Preview`.
 - `PreviewPage` — large preview of the current project, rename input, navigation buttons to Grid and Edit, and the **export menu** (JSON / single-file / ZIP).
 - `GridEditorPage` — cell grid wrapped in `ViewPanel` for pan/zoom: drag-select, merge/unmerge, resize, color picker, **CSV/TSV paste & file import**, click/drag row & column headers to delete, and **multi-piece background images** (upload or Ctrl+V → fills the current selection).

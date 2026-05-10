@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useProject } from '../grid/useProject.js';
 import PageNav from './components/PageNav.jsx';
+import DocsPage from './pages/DocsPage.jsx';
 import ProjectsPage from './pages/ProjectsPage.jsx';
 import PreviewPage from './pages/PreviewPage.jsx';
 import GridEditorPage from './pages/GridEditorPage.jsx';
@@ -20,10 +21,22 @@ function loadTheme() {
   } catch { return 'dark'; }
 }
 
+// On first load, land on Docs (the new "what is this app?" tutorial). After
+// the user has visited any page, remember it across reloads.
+const PAGE_KEY = 'hakoniwa:lastPage';
+function loadInitialPage() {
+  try { return localStorage.getItem(PAGE_KEY) || 'docs'; }
+  catch { return 'docs'; }
+}
+
 export default function App() {
-  const [page, setPage] = useState('preview');
+  const [page, setPage] = useState(loadInitialPage);
   const project = useProject();
   const [theme, setTheme] = useState(loadTheme);
+
+  useEffect(() => {
+    try { localStorage.setItem(PAGE_KEY, page); } catch { /* ignore */ }
+  }, [page]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -42,6 +55,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
       <main className="app__page">
+        {page === 'docs'     && <DocsPage     onNav={setPage} />}
         {page === 'projects' && <ProjectsPage project={project} onNav={setPage} />}
         {page === 'preview'  && <PreviewPage  project={project} onNav={setPage} />}
         {page === 'grid'     && <GridEditorPage project={project} />}

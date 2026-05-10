@@ -129,6 +129,30 @@ export function useProject() {
     mutateEdges((e) => ({ ...e, byEdge: {} }));
   }, [mutateEdges]);
 
+  // --- Inner/Outer layer overrides ---
+  // `kind` = 'inner' | 'outer'
+
+  const setLayerEffect = useCallback((kind, effect, config) => {
+    mutateEdges((e) => ({
+      ...e,
+      [kind]: { effect, ...(config ? { config } : {}) },
+    }));
+  }, [mutateEdges]);
+
+  const setLayerConfig = useCallback((kind, patch) => {
+    mutateEdges((e) => {
+      const cur = e[kind] || { effect: e.default?.effect ?? 'puzzle' };
+      return {
+        ...e,
+        [kind]: { ...cur, config: { ...(cur.config || {}), ...patch } },
+      };
+    });
+  }, [mutateEdges]);
+
+  const clearLayer = useCallback((kind) => {
+    mutateEdges((e) => ({ ...e, [kind]: null }));
+  }, [mutateEdges]);
+
   const setPieceColor = useCallback((pieceId, color) => {
     setProject((p) => {
       if (!p) return p;
@@ -261,6 +285,9 @@ export function useProject() {
     setEdgeConfig,
     clearEdgeOverride,
     resetEdgeOverrides,
+    setLayerEffect,
+    setLayerConfig,
+    clearLayer,
     setPieceColor,
     clearPieceColors,
     setPieceContent,

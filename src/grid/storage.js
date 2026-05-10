@@ -38,7 +38,9 @@ export function newProject(name = 'Untitled') {
     grid: makeFreshGrid(2, 2),
     edges: {
       default: { effect: 'puzzle' },
-      byEdge: {},
+      inner:   null,            // override for shared edges (between two pieces)
+      outer:   null,            // override for outer edges (no neighbor)
+      byEdge:  {},              // per-edge overrides — highest priority
     },
     pieceColors: {},
     pieceContent: {},

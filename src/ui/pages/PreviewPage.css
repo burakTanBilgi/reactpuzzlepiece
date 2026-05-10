@@ -85,9 +85,9 @@
 }
 
 .preview-info__export {
-  margin-top: auto;
-  padding-top: 16px;
-  border-top: 1px solid var(--stroke-idle);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--stroke-idle);
+  margin-bottom: 6px;
 }
 
 .preview-info__export .export-menu,

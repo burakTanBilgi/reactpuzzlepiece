@@ -24,6 +24,9 @@ export default function EditPage({ project }) {
     setEdgeConfig,
     clearEdgeOverride,
     resetEdgeOverrides,
+    setLayerEffect,
+    setLayerConfig,
+    clearLayer,
     setPieceContent,
     updatePieceContent,
   } = project;
@@ -92,6 +95,9 @@ export default function EditPage({ project }) {
             setEdgeConfig={setEdgeConfig}
             clearEdgeOverride={clearEdgeOverride}
             resetEdgeOverrides={resetEdgeOverrides}
+            setLayerEffect={setLayerEffect}
+            setLayerConfig={setLayerConfig}
+            clearLayer={clearLayer}
           />
         ) : (
           <ContentPanel

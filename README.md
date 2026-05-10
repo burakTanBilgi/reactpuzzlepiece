@@ -8,14 +8,15 @@ Built with React 18 + Vite. Zero runtime dependencies beyond React.
 
 ## What's in the app
 
-Four pages, switched in-app (no router):
+Five pages, switched in-app (no router):
 
 | Page         | What it does                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------- |
+| **Docs**     | Interactive tutorial — landing page on first visit, with a section per tab and live demos. |
 | **Projects** | Project library + JSON import.                                                            |
 | **Preview**  | Large preview of the current project; rename it; jump to Grid or Edit; **export** (JSON · single-file React · full ZIP). |
 | **Grid**     | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete, **place background images** (upload or Ctrl+V) that span across multiple pieces. |
-| **Edit**     | Same canvas, two modes selectable in the side panel: **Edges** (override per-edge effect & config) and **Content** (fill individual pieces with text or images, cover/contain/stretch). |
+| **Edit**     | Same canvas, two modes selectable in the side panel: **Edges** (effect & config — with default → inner/outer → per-edge override priority chain) and **Content** (fill individual pieces with text or images, cover/contain/stretch). |
 
 Other niceties:
 
@@ -63,11 +64,11 @@ src/
     useProject.js               React hook: state + auto-save
 
   ui/                         App shell, pages, components, styles
-    App.jsx                     Page switcher + theme state
+    App.jsx                     Page switcher + theme + last-page persistence
     components/                 PageNav, GridCanvas, EditCanvas, EdgesPanel, ContentPanel,
                                 EdgeEditorCanvas, ContentCanvas, ImportDialog, SliderRow,
-                                ViewPanel, PreviewSvg
-    pages/                      ProjectsPage, PreviewPage, GridEditorPage, EditPage
+                                ViewPanel, PreviewSvg, BackgroundsPanel, docs/*
+    pages/                      DocsPage, ProjectsPage, PreviewPage, GridEditorPage, EditPage
     styles/                     App.css (shell), ui-kit.css, side-tools.css
     utils/                      formatTime
 ```
@@ -94,8 +95,12 @@ type Project = {
 
   edges: {
     default: { effect: 'puzzle' | 'wave' | 'straight'; config?: object };
-    byEdge:  { [pairKey: string]: { effect; config? } };  // overrides
+    inner:   null | { effect; config? };                  // override for shared edges
+    outer:   null | { effect; config? };                  // override for outer edges
+    byEdge:  { [pairKey: string]: { effect; config? } };  // per-edge overrides
   };
+  // Effect resolution chain (highest priority first):
+  //   per-edge override > inner/outer layer > default
 
   pieceColors:  { [groupId: string]: string };            // '#hex'
   pieceContent: { [groupId: string]: ContentSpec };

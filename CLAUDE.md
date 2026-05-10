@@ -53,8 +53,12 @@ The `src/puzzle/` folder is a **portable drop-in module** — no imports from ou
   grid: { rows, cols, cellSize, groups: string[][] },   // groupId per cell
   edges: {
     default: { effect, config? },                       // 'puzzle' | 'wave' | 'straight'
+    inner:   null | { effect, config? },                // override for shared edges
+    outer:   null | { effect, config? },                // override for outer edges
     byEdge:  { [pairKey]: { effect, config? } },        // per-edge overrides
   },
+  // Effect resolution chain (highest first): byEdge > inner/outer > default
+  // (computed by `compile.js#resolveEdge`).
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
   backgrounds:  Background[],                              // multi-piece images
@@ -101,10 +105,13 @@ type Background = {
 
 | Page     | What it does                                                                |
 | -------- | --------------------------------------------------------------------------- |
+| Docs     | Interactive tutorial + landing page on first visit. Sidebar nav for sections; live demo components in `components/docs/demos/`. |
 | Projects | Project library + JSON import.                                              |
-| Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP). |
+| Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP) at top of side panel. |
 | Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete, **multi-piece background images** (upload or Ctrl+V into selected cells). |
-| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (per-edge effect + config) and **Content** (text/image content per piece) |
+| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (default + inner/outer + per-edge layers, see compile.js#resolveEdge) and **Content** (text/image content per piece). |
+
+The last visited page is persisted to `localStorage[hakoniwa:lastPage]`; first-time visitors land on Docs.
 
 The Edit page wires shared canvas + a `ModeSwitch` in the side panel; the underlying `PuzzleBoard` renders identically in both modes — only the overlay/interaction changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.
 

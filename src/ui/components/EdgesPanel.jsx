@@ -7,17 +7,35 @@ const MIXED = '__mixed__';
 
 // Side-panel UI for the Edges mode of the Edit page. Pure presentation —
 // shared selection state lives on the parent.
+//
+// Effect/config resolution chain (highest priority first):
+//   per-edge override (selected) > inner/outer layer > default
 export default function EdgesPanel({
   project, pieces, sharedEdges, allEdges,
   selected, onClearSelection, onSelectAll,
   setDefaultEdgeEffect, setDefaultEdgeConfig,
   setEdgeEffect, setEdgeConfig, clearEdgeOverride, resetEdgeOverrides,
+  setLayerEffect, setLayerConfig, clearLayer,
 }) {
   const p = project;
   const defaultEffect = p.edges.default.effect;
   const defaultConfig = p.edges.default.config ?? DEFAULT_WAVE;
+  const innerLayer = p.edges.inner;       // null if no override
+  const outerLayer = p.edges.outer;
   const overrideCount = Object.keys(p.edges.byEdge).length;
   const piecesById = useMemo(() => new Map(pieces.map((pc) => [pc.id, pc])), [pieces]);
+
+  // Resolve the "current" effect/config of an edge using the same priority
+  // chain as the renderer: per-edge override > inner/outer layer > default.
+  const resolveSelected = (pk) => {
+    const ov = p.edges.byEdge[pk];
+    const isOuter = pk.includes('||outer-');
+    const layer = isOuter ? outerLayer : innerLayer;
+    return {
+      effect: ov?.effect ?? layer?.effect ?? defaultEffect,
+      cfg:    ov?.config ?? layer?.config ?? defaultConfig,
+    };
+  };
 
   const combo = useMemo(() => {
     if (selected.size === 0) return null;
@@ -25,9 +43,7 @@ export default function EdgesPanel({
     let cfg = null;
     let first = true;
     for (const pk of selected) {
-      const ov = p.edges.byEdge[pk];
-      const e = ov?.effect ?? defaultEffect;
-      const c = ov?.config ?? defaultConfig;
+      const { effect: e, cfg: c } = resolveSelected(pk);
       if (first) { effect = e; cfg = c; first = false; }
       else {
         if (e !== effect) effect = MIXED;
@@ -37,7 +53,8 @@ export default function EdgesPanel({
       }
     }
     return { effect, cfg };
-  }, [selected, p.edges.byEdge, defaultEffect, defaultConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, p.edges.byEdge, defaultEffect, defaultConfig, innerLayer, outerLayer]);
 
   const applyEffect = (name) => {
     const cfg = name === 'wave'
@@ -55,30 +72,40 @@ export default function EdgesPanel({
 
   return (
     <>
-      <section className="card">
-        <h3 className="card__title">Default effect</h3>
-        <p className="hint">Applied to every edge unless overridden below.</p>
-        <div className="effect-chips">
-          {EFFECT_NAMES.map((name) => (
-            <button key={name} type="button"
-              className={`chip chip--sm ${defaultEffect === name ? 'chip--active' : ''}`}
-              onClick={() => setDefaultEdgeEffect(name, name === 'wave' ? defaultConfig : undefined)}>
-              {cap(name)}
-            </button>
-          ))}
-        </div>
-        {defaultEffect === 'wave' && (
-          <div className="wave-config">
-            <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
-              value={defaultConfig.frequency ?? DEFAULT_WAVE.frequency}
-              format={(v) => v.toFixed(3)}
-              onChange={(v) => setDefaultEdgeConfig({ frequency: v })} />
-            <SliderRow label="Amp" min={0} max={40} step={1}
-              value={defaultConfig.amplitude ?? DEFAULT_WAVE.amplitude}
-              onChange={(v) => setDefaultEdgeConfig({ amplitude: v })} />
-          </div>
-        )}
-      </section>
+      <EffectCard
+        title="Default effect"
+        hint="Applied to every edge unless overridden below."
+        effect={defaultEffect}
+        config={defaultConfig}
+        onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultConfig : undefined)}
+        onPatchConfig={setDefaultEdgeConfig}
+      />
+
+      <EffectCard
+        title="Inner edges"
+        hint={innerLayer
+          ? 'Override applied to every shared edge. Per-edge picks still win.'
+          : 'No override — inner edges follow the default. Pick an effect to override.'}
+        effect={innerLayer?.effect ?? defaultEffect}
+        config={innerLayer?.config ?? defaultConfig}
+        active={!!innerLayer}
+        onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave' ? (innerLayer?.config ?? defaultConfig) : undefined)}
+        onPatchConfig={(patch) => setLayerConfig('inner', patch)}
+        onClear={innerLayer ? () => clearLayer('inner') : null}
+      />
+
+      <EffectCard
+        title="Outer edges"
+        hint={outerLayer
+          ? 'Override applied to every outer edge. Per-edge picks still win.'
+          : 'No override — outer edges follow the default. Pick an effect to override.'}
+        effect={outerLayer?.effect ?? defaultEffect}
+        config={outerLayer?.config ?? defaultConfig}
+        active={!!outerLayer}
+        onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave' ? (outerLayer?.config ?? defaultConfig) : undefined)}
+        onPatchConfig={(patch) => setLayerConfig('outer', patch)}
+        onClear={outerLayer ? () => clearLayer('outer') : null}
+      />
 
       {selected.size > 0 ? (
         <section className="card card--accent">
@@ -116,8 +143,7 @@ export default function EdgesPanel({
           </div>
 
           {(combo?.effect === 'puzzle' ||
-            (combo?.effect === MIXED && [...selected].some((pk) =>
-              ((p.edges.byEdge[pk]?.effect ?? defaultEffect) === 'puzzle')))) && (
+            (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'puzzle'))) && (
             <div className="puzzle-config">
               <button type="button"
                 className={`invert-tabs-btn ${combo?.cfg?.inverted === true ? 'invert-tabs-btn--active' : ''}`}
@@ -130,8 +156,7 @@ export default function EdgesPanel({
           )}
 
           {(combo?.effect === 'wave' ||
-            (combo?.effect === MIXED && [...selected].some((pk) =>
-              ((p.edges.byEdge[pk]?.effect ?? defaultEffect) === 'wave')))) && (
+            (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'wave'))) && (
             <div className="wave-config">
               <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
                 value={combo?.cfg?.frequency === MIXED
@@ -180,3 +205,45 @@ export default function EdgesPanel({
 }
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// A small re-usable card for setting effect + wave config (used by Default,
+// Inner, Outer). When `active` is true the card visually highlights as an
+// override layer; `onClear` shows a "use default" link if provided.
+function EffectCard({ title, hint, effect, config, active, onSetEffect, onPatchConfig, onClear }) {
+  return (
+    <section className={`card ${active ? 'card--accent' : ''}`}>
+      <div className="card__row">
+        <h3 className="card__title">{title}</h3>
+        {onClear && (
+          <button type="button" className="link-btn" onClick={onClear}>
+            use default
+          </button>
+        )}
+      </div>
+      {hint && <p className="hint">{hint}</p>}
+      <div className="effect-chips">
+        {EFFECT_NAMES.map((name) => (
+          <button
+            key={name}
+            type="button"
+            className={`chip chip--sm ${effect === name ? 'chip--active' : ''}`}
+            onClick={() => onSetEffect(name)}
+          >
+            {cap(name)}
+          </button>
+        ))}
+      </div>
+      {effect === 'wave' && (
+        <div className="wave-config">
+          <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
+            value={config?.frequency ?? DEFAULT_WAVE.frequency}
+            format={(v) => v.toFixed(3)}
+            onChange={(v) => onPatchConfig({ frequency: v })} />
+          <SliderRow label="Amp" min={0} max={40} step={1}
+            value={config?.amplitude ?? DEFAULT_WAVE.amplitude}
+            onChange={(v) => onPatchConfig({ amplitude: v })} />
+        </div>
+      )}
+    </section>
+  );
+}

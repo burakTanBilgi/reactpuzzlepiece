@@ -15,6 +15,7 @@
 @import '../components/ImportDialog.css';
 @import '../components/BackgroundsPanel.css';
 
+@import '../pages/DocsPage.css';
 @import '../pages/ProjectsPage.css';
 @import '../pages/PreviewPage.css';
 @import '../pages/GridEditorPage.css';
