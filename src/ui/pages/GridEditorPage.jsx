@@ -4,6 +4,7 @@ import { importTableText } from '../../grid/import.js';
 import GridCanvas from '../components/GridCanvas.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
+import ViewPanel from '../components/ViewPanel.jsx';
 
 // Curated palette — warm, sophisticated, mode-agnostic.
 const PALETTE = [
@@ -208,11 +209,12 @@ export default function GridEditorPage({ project }) {
             <li><strong>Click a row/column number</strong> to delete it. Drag across multiple to delete in bulk.</li>
             <li>Merged groups show their dimensions.</li>
             <li>Click any number value to type it directly.</li>
+            <li><strong>Ctrl+scroll</strong> zooms; middle-drag or Ctrl+drag pans.</li>
           </ul>
         </section>
       </aside>
 
-      <div className="page-grid__canvas">
+      <ViewPanel>
         <GridCanvas
           grid={p.grid}
           selection={selection}
@@ -221,7 +223,7 @@ export default function GridEditorPage({ project }) {
           onDeleteRows={(idxs) => { removeRows(idxs); setSelection([]); }}
           onDeleteCols={(idxs) => { removeCols(idxs); setSelection([]); }}
         />
-      </div>
+      </ViewPanel>
 
       {showImport && (
         <ImportDialog

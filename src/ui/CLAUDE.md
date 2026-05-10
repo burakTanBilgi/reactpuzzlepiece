@@ -3,25 +3,37 @@
 State-based routing (no react-router). `App.jsx` owns the page state, the theme, and passes `project` (from `useProject`) to all pages.
 
 ## Pages
-- `LandingPage` — project library, import (JSON), export menu (JSON / single-file / ZIP).
-- `GridEditorPage` — cell grid: drag-select, merge/unmerge, resize, color picker, **CSV/TSV paste & file import**.
-- `EdgeEditorPage` — edge effect picker, per-edge overrides, selection panel.
-- `ContentEditorPage` — click any piece → fill it with text or image (with cover/contain/fill).
+- `ProjectsPage` — project library, JSON import, export menu (JSON / single-file / ZIP). Opening a project tile auto-navigates to `Preview`.
+- `PreviewPage` — large preview of the current project, rename input, navigation buttons to Grid and Edit.
+- `GridEditorPage` — cell grid wrapped in `ViewPanel` for pan/zoom: drag-select, merge/unmerge, resize, color picker, **CSV/TSV paste & file import**, click/drag row & column headers to delete.
+- `EditPage` — combined editor with two modes selectable in the side panel:
+  - `Edges` mode (`EdgesPanel`) — default effect, per-edge overrides, multi-edge selection.
+  - `Content` mode (`ContentPanel`) — text/image content per selected piece, with fit (cover/contain/stretch) and alignment.
+
+  Same canvas (`EditCanvas` inside `ViewPanel`) in both modes — only the overlay/interaction layer changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.
 
 ## Components
-- `PageNav` — top bar: theme toggle (sun/moon, leftmost), brand, page tabs (Home / Grid / Edges / Content).
-- `GridCanvas` — interactive SVG grid (drag-select, hover, color reflection).
+- `PageNav` — top bar: brand (`箱` mark + "Hakoniwa"), theme toggle, page tabs (Projects / Preview / Grid / Edit).
+- `GridCanvas` — interactive SVG grid (drag-select, hover, color reflection, row/col headers with click-or-drag delete).
+- `EditCanvas` — thin shell that picks `EdgeEditorCanvas` or `ContentCanvas` based on mode.
 - `EdgeEditorCanvas` — `PuzzleBoard` + SVG overlay with clip-path-based edge highlights (tight along edge, `PERP_PAD=60` perpendicular for knobs/waves).
 - `ContentCanvas` — `PuzzleBoard` configured with `onSelect` for piece selection.
+- `EdgesPanel`, `ContentPanel` — side-panel UIs for the two Edit modes; pure presentation.
 - `ImportDialog` — modal: paste textarea + auto-merge toggle + sample button.
-- `ViewPanel` — scrollable/zoomable wrapper used by edge & content editors.
+- `SliderRow` — slider + typeable numeric text input. Click value to type, Enter/blur commits, Esc cancels, ↑/↓ steps.
+- `ViewPanel` — scrollable/zoomable wrapper. Used by Grid and Edit pages.
 - `PreviewSvg` — read-only thumbnail rendered from a Project (uses `pieceColors`).
 
-## Styles (`styles/`)
-- `App.css` — page layouts, nav, cards, tiles, modals, color picker, export menu.
+## Utils
+- `utils/formatTime.js` — relative-time formatter shared by Projects + Preview pages.
 
-The puzzle module's `PuzzleBoard.css` is co-located with the rendering code for portability.
+## Styles (`styles/`)
+- `App.css` — shell only: scrollbars, `.app`, `fadeIn`. Imports the shared kit + every per-component / per-page sheet.
+- `ui-kit.css` — primitives: `.card`, `.action-btn`, `.chip`, `.slider-control`, `.modal*`, `.form-row`, etc.
+- `side-tools.css` — sidebar layout shared by Grid + Edit.
+
+Per-component CSS lives next to its component (e.g. `components/PageNav.css`); per-page CSS lives next to its page (e.g. `pages/EditPage.css`). The puzzle module's `PuzzleBoard.css` is co-located with the rendering code for portability.
 
 ## Theme
-- `data-theme="light"` on `<html>` switches palette; persisted in `localStorage` under `puzzle-studio:theme`.
+- `data-theme="light"` on `<html>` switches palette; persisted in `localStorage` under `hakoniwa:theme` (with one-time migration from the legacy `puzzle-studio:theme` key).
 - All colors derive from CSS custom properties in `src/index.css` — no theme-specific class names in components.

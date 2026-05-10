@@ -4,19 +4,6 @@
   min-height: 0;
 }
 
-.page-grid__canvas {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: auto;
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(214, 139, 84, 0.06), transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(149, 117, 205, 0.04), transparent 60%),
-    var(--bg);
-  padding: 24px;
-}
-
 /* === Color picker === */
 .color-grid {
   display: grid;

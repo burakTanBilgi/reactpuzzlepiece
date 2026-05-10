@@ -2,8 +2,28 @@
 
 import { makeFreshGrid } from './grid.js';
 
-const PROJECTS_KEY = 'puzzle-studio:projects';
-const CURRENT_KEY  = 'puzzle-studio:currentId';
+const PROJECTS_KEY = 'hakoniwa:projects';
+const CURRENT_KEY  = 'hakoniwa:currentId';
+
+// One-time migration from the previous storage namespace.
+const LEGACY_PROJECTS_KEY = 'puzzle-studio:projects';
+const LEGACY_CURRENT_KEY  = 'puzzle-studio:currentId';
+
+function migrateLegacyKeys() {
+  try {
+    if (!localStorage.getItem(PROJECTS_KEY)) {
+      const legacy = localStorage.getItem(LEGACY_PROJECTS_KEY);
+      if (legacy) localStorage.setItem(PROJECTS_KEY, legacy);
+    }
+    if (!localStorage.getItem(CURRENT_KEY)) {
+      const legacy = localStorage.getItem(LEGACY_CURRENT_KEY);
+      if (legacy) localStorage.setItem(CURRENT_KEY, legacy);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+migrateLegacyKeys();
 
 let _pid = 0;
 const newProjectId = () => `p-${Date.now().toString(36)}-${++_pid}`;

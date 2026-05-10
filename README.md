@@ -1,6 +1,8 @@
-# Puzzle Studio
+# Hakoniwa (箱庭)
 
 A visual design tool for grid-based layouts where sections are separated by stylized connectors — puzzle tabs/sockets, waves, or straight lines. Build a grid, merge cells into pieces, style every edge, fill cells with text or images, and export the result as JSON, a single React file, or a full module bundle.
+
+**Live demo: [hak10iwa.netlify.app](https://hak10iwa.netlify.app)**
 
 Built with React 18 + Vite. Zero runtime dependencies beyond React.
 
@@ -8,12 +10,12 @@ Built with React 18 + Vite. Zero runtime dependencies beyond React.
 
 Four pages, switched in-app (no router):
 
-| Page        | What it does                                                                              |
-| ----------- | ----------------------------------------------------------------------------------------- |
-| **Home**    | Project library, JSON import, **export menu** (JSON · single-file React · full ZIP).      |
-| **Grid**    | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete. |
-| **Edges**   | Click any edge in the canvas to override its effect (puzzle / wave / straight) and per-edge wave/inversion config. |
-| **Content** | Click any piece to fill it with text or an image (cover / contain / stretch).             |
+| Page         | What it does                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| **Projects** | Project library, JSON import, **export menu** (JSON · single-file React · full ZIP).      |
+| **Preview**  | Large preview of the current project; rename it; jump to Grid or Edit.                    |
+| **Grid**     | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete, **pan/zoom** (Ctrl+scroll, middle/Ctrl-drag). |
+| **Edit**     | Same canvas, two modes selectable in the side panel: **Edges** (override per-edge effect & config) and **Content** (fill pieces with text or images, cover/contain/stretch). |
 
 Other niceties:
 
@@ -60,9 +62,12 @@ src/
 
   ui/                         App shell, pages, components, styles
     App.jsx                     Page switcher + theme state
-    components/                 PageNav, GridCanvas, EdgeEditorCanvas, etc.
-    pages/                      LandingPage, GridEditorPage, EdgeEditorPage, ContentEditorPage
+    components/                 PageNav, GridCanvas, EditCanvas, EdgesPanel, ContentPanel,
+                                EdgeEditorCanvas, ContentCanvas, ImportDialog, SliderRow,
+                                ViewPanel, PreviewSvg
+    pages/                      ProjectsPage, PreviewPage, GridEditorPage, EditPage
     styles/                     App.css (shell), ui-kit.css, side-tools.css
+    utils/                      formatTime
 ```
 
 The `src/puzzle/` folder has **no imports from outside itself** — it's a portable drop-in module. Everything else is the studio that wraps around it.
@@ -121,7 +126,7 @@ Step 1                  Step 2                              Step 3
 - **Auto-merge horizontal runs** — each non-empty cell extends rightward over consecutive empty cells, producing a layout-shaped grid. Toggle off in the dialog if you want a 1:1 import.
 - Each non-empty cell becomes a piece with `{ type: 'text', text }`.
 
-## Exporting (Home → Export)
+## Exporting (Projects → Export)
 
 Three options:
 

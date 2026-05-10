@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
 import { exportSingleFileJSX, exportModuleZip } from '../../grid/export.js';
+import { formatTime } from '../utils/formatTime.js';
 
-export default function LandingPage({ project, onNav }) {
+// Project library: tiles for every saved project, with import + export controls
+// at the top. Selecting a project opens it; the rest of the app reflects it.
+export default function ProjectsPage({ project, onNav }) {
   const {
     project: p,
     projects,
-    setName,
     openProject,
     createNew,
     removeProject,
@@ -14,60 +16,27 @@ export default function LandingPage({ project, onNav }) {
     importFromFile,
   } = project;
   const fileRef = useRef(null);
-  const [editingName, setEditingName] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    try {
-      await importFromFile(file);
-    } catch (err) {
-      alert('Could not import: ' + err.message);
-    }
+    try { await importFromFile(file); }
+    catch (err) { alert('Could not import: ' + err.message); }
+  };
+
+  const handleOpen = (id) => {
+    openProject(id);
+    onNav('preview');
   };
 
   return (
-    <div className="page-landing">
-      <section className="landing-hero">
-        <div className="landing-hero__preview">
-          <PreviewSvg project={p} maxSize={220} />
-        </div>
-        <div className="landing-hero__info">
-          {editingName ? (
-            <input
-              className="landing-hero__name-input"
-              autoFocus
-              value={p?.name ?? ''}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={() => setEditingName(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter') setEditingName(false); }}
-            />
-          ) : (
-            <h1 className="landing-hero__name" onClick={() => setEditingName(true)} title="Click to rename">
-              {p?.name || 'Untitled'}
-            </h1>
-          )}
-          <p className="landing-hero__meta">
-            {p?.grid.rows}×{p?.grid.cols} grid
-            {p ? ` · last edited ${formatTime(p.updatedAt)}` : ''}
-          </p>
-          <div className="landing-hero__actions">
-            <button type="button" className="action-btn action-btn--primary" onClick={() => onNav('grid')}>
-              ⊞ Edit Grid
-            </button>
-            <button type="button" className="action-btn action-btn--primary" onClick={() => onNav('edges')}>
-              ∿ Edit Edges
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-section">
-        <div className="landing-section__head">
-          <h2 className="landing-section__title">Your Projects</h2>
-          <div className="landing-section__actions">
+    <div className="page-projects">
+      <section className="projects-section">
+        <div className="projects-section__head">
+          <h2 className="projects-section__title">Your Projects</h2>
+          <div className="projects-section__actions">
             <input ref={fileRef} type="file" accept=".json" hidden onChange={handleImport} />
             <button type="button" className="action-btn action-btn--ghost" onClick={() => fileRef.current?.click()}>
               ↑ Import
@@ -85,7 +54,8 @@ export default function LandingPage({ project, onNav }) {
                   <div className="export-menu__backdrop" onClick={() => setExportOpen(false)} />
                   <div className="export-menu__panel">
                     <button type="button" className="export-menu__item"
-                      onClick={() => { exportCurrent(); setExportOpen(false); }}>
+                      onClick={() => { exportCurrent(); setExportOpen(false); }}
+                      disabled={!p}>
                       <strong>JSON</strong>
                       <span>Project file (re-importable)</span>
                     </button>
@@ -109,7 +79,11 @@ export default function LandingPage({ project, onNav }) {
         </div>
 
         <div className="project-grid">
-          <button type="button" className="project-tile project-tile--new" onClick={createNew}>
+          <button
+            type="button"
+            className="project-tile project-tile--new"
+            onClick={() => { createNew(); onNav('preview'); }}
+          >
             <div className="project-tile__plus">+</div>
             <div className="project-tile__name">New project</div>
           </button>
@@ -119,7 +93,7 @@ export default function LandingPage({ project, onNav }) {
             return (
               <div key={proj.id}
                    className={`project-tile ${isCurrent ? 'project-tile--current' : ''}`}>
-                <button type="button" className="project-tile__open" onClick={() => openProject(proj.id)}>
+                <button type="button" className="project-tile__open" onClick={() => handleOpen(proj.id)}>
                   <div className="project-tile__preview">
                     <PreviewSvg project={proj} maxSize={140} />
                   </div>
@@ -140,13 +114,4 @@ export default function LandingPage({ project, onNav }) {
       </section>
     </div>
   );
-}
-
-function formatTime(ts) {
-  const d = new Date(ts);
-  const diff = (Date.now() - ts) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return d.toLocaleDateString();
 }

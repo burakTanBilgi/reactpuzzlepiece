@@ -1,8 +1,10 @@
-# CLAUDE.md — React Puzzle Piece (Puzzle Studio)
+# CLAUDE.md — Hakoniwa (箱庭)
 
 ## Project Purpose
 
 A React + Vite design tool for grid-based layouts where sections are separated by stylized connectors (puzzle tabs/sockets, wave, straight). You build a grid, merge cells into pieces, style edges, fill cells with text/images, and export as JSON, a single React file, or a full ZIP module.
+
+**Live at [hak10iwa.netlify.app](https://hak10iwa.netlify.app).**
 
 ## Architecture
 
@@ -30,9 +32,13 @@ src/
     CLAUDE.md
   ui/                         — App shell + pages + components
     App.jsx                   — page switcher + theme state
-    components/               — PageNav, PreviewSvg, ImportDialog, etc.
-    pages/                    — Landing / Grid / Edges / Content
-    styles/App.css            — page layouts, modals, etc.
+    components/               — PageNav, GridCanvas, EditCanvas,
+                                EdgesPanel, ContentPanel, EdgeEditorCanvas,
+                                ContentCanvas, ImportDialog, SliderRow,
+                                ViewPanel, PreviewSvg
+    pages/                    — Projects / Preview / Grid / Edit
+    utils/formatTime.js       — relative-time helper
+    styles/App.css            — shell only; imports per-component & per-page sheets
     CLAUDE.md
 ```
 
@@ -85,12 +91,14 @@ type ContentSpec =
 
 ## Pages (state-based routing)
 
-| Page    | What it does                                                           |
-| ------- | ---------------------------------------------------------------------- |
-| Home    | Project library, JSON import, **export menu** (JSON / single-file / ZIP) |
-| Grid    | Cell grid: drag-select, merge/unmerge, resize, color, **paste/CSV import** |
-| Edges   | Click any edge to override its effect (puzzle/wave/straight) + config  |
-| Content | Click any piece to fill with text or image (cover/contain/stretch)     |
+| Page     | What it does                                                                |
+| -------- | --------------------------------------------------------------------------- |
+| Projects | Project library, JSON import, **export menu** (JSON / single-file / ZIP)    |
+| Preview  | Large preview of current project; rename it; jump to Grid or Edit           |
+| Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete |
+| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (per-edge effect + config) and **Content** (text/image content per piece) |
+
+The Edit page wires shared canvas + a `ModeSwitch` in the side panel; the underlying `PuzzleBoard` renders identically in both modes — only the overlay/interaction changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.
 
 ## Export options
 

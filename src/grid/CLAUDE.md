@@ -5,7 +5,7 @@ Owns the project data model. Pieces are **derived** from a `Project` via `compil
 ## Files
 - `grid.js` — pure cell-grid helpers: `makeFreshGrid`, `resizeGrid`, `mergeCells`, `unmergeCells`, `groupBoundsMap`. `MAX_GRID = 50`.
 - `compile.js` — `compileProject(project) → Piece[]`, `listSharedEdges(project)`, `listOuterEdges(project)`.
-- `storage.js` — localStorage helpers: `loadProjects`, `saveProject`, `deleteProject`, `exportJSON`, `importJSON`, `newProject`.
+- `storage.js` — localStorage helpers: `loadProjects`, `saveProject`, `deleteProject`, `exportJSON`, `importJSON`, `newProject`. Keys live under the `hakoniwa:` namespace (with one-time migration from the legacy `puzzle-studio:` keys).
 - `import.js` — parse CSV/TSV/paste into a `{ grid, pieceContent }` pair (`importTableText`, `parseTable`, `tableToProject`).
 - `export.js` — `exportSingleFileJSX(project)` and `exportModuleZip(project)`. Uses Vite's `import.meta.glob` to bundle the `puzzle/` source at build time.
 - `zip.js` — minimal pure-JS ZIP encoder (STORE method, no compression). No external deps.

@@ -1,8 +1,8 @@
 const PAGES = [
-  { id: 'landing', label: 'Home', icon: '◇' },
-  { id: 'grid',    label: 'Grid', icon: '⊞' },
-  { id: 'edges',   label: 'Edges', icon: '∿' },
-  { id: 'content', label: 'Content', icon: '✎' },
+  { id: 'projects', label: 'Projects', icon: '⚏' },
+  { id: 'preview',  label: 'Preview',  icon: '◇' },
+  { id: 'grid',     label: 'Grid',     icon: '⊞' },
+  { id: 'edit',     label: 'Edit',     icon: '✎' },
 ];
 
 export default function PageNav({ page, onNav, projectName, theme, onToggleTheme }) {
@@ -10,8 +10,8 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
   return (
     <header className="page-nav">
       <div className="page-nav__brand">
-        <span className="page-nav__mark" aria-hidden>◆</span>
-        <span className="page-nav__title">Puzzle Studio</span>
+        <span className="page-nav__mark" aria-hidden>箱</span>
+        <span className="page-nav__title">Hakoniwa</span>
         {projectName && (
           <>
             <span className="page-nav__sep" aria-hidden>·</span>

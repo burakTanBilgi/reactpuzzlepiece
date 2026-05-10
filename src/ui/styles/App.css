@@ -14,10 +14,10 @@
 @import '../components/PreviewSvg.css';
 @import '../components/ImportDialog.css';
 
-@import '../pages/LandingPage.css';
+@import '../pages/ProjectsPage.css';
+@import '../pages/PreviewPage.css';
 @import '../pages/GridEditorPage.css';
-@import '../pages/EdgeEditorPage.css';
-@import '../pages/ContentEditorPage.css';
+@import '../pages/EditPage.css';
 
 /* === Scrollbars === */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
