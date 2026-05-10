@@ -57,8 +57,12 @@ The `src/puzzle/` folder is a **portable drop-in module** — no imports from ou
     outer:   null | { effect, config? },                // override for outer edges
     byEdge:  { [pairKey]: { effect, config? } },        // per-edge overrides
   },
-  // Effect resolution chain (highest first): byEdge > inner/outer > default
+  // Effect & style resolution chain (highest first): byEdge > inner/outer > default
   // (computed by `compile.js#resolveEdge`).
+  //
+  // `config` is a bag with both effect-specific keys (inverted, frequency,
+  // amplitude) AND stroke-style keys (color, opacity, strokeWidth) — they all
+  // cascade through the same chain.
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
   backgrounds:  Background[],                              // multi-piece images

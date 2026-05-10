@@ -7,6 +7,7 @@ export { default as PuzzlePiece } from './PuzzlePiece.jsx';
 export {
   computePiecePath,
   computeSidePath,
+  computeSideSegments,
   computePieceBbox,
   computeKnobs,
   computeActiveKnobs,

@@ -57,6 +57,16 @@
   padding-top: 4px;
 }
 
+/* Per-edge stroke style: color + opacity + width.  Apply to every effect. */
+.style-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--stroke-idle);
+}
+
 /* === Invert tabs button === */
 
 .invert-tabs-btn {

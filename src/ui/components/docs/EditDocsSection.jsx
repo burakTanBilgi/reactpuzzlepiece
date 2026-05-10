@@ -49,6 +49,17 @@ export default function EditDocsSection({ onNav }) {
         <strong>Straight</strong> (clean line).
       </p>
 
+      <h3>Stroke styling</h3>
+      <p>
+        Every effect carries three style fields that cascade through the same
+        Default → Inner/Outer → per-edge chain:
+      </p>
+      <ul className="doc__list">
+        <li><strong>Color</strong> — any color from the picker. Hit <em>reset</em> to fall back to the theme stroke.</li>
+        <li><strong>Opacity</strong> — 0 to 100%. <em>Transparent ≠ no color:</em> a transparent stroke shows the page background through the gap, while a colorless stroke just inherits the theme.</li>
+        <li><strong>Width</strong> — 0 to 10px. Use 0 to hide the outline entirely without changing geometry.</li>
+      </ul>
+
       <h3>Content mode</h3>
       <ul className="doc__list">
         <li>Click any piece to select it.</li>

@@ -26,6 +26,7 @@ Other niceties:
 - All content is clipped to the puzzle outline — text and images respect the piece shape.
 - Background images on the Grid page span across multiple pieces (without merging them) — each piece naturally renders its own slice via SVG clipping.
 - Wheel scroll zooms the canvas (no modifier needed); middle-drag or Ctrl+drag pans.
+- Per-edge stroke styling — every edge has its own **color**, **opacity**, and **width** (cascading through the same Default → Inner/Outer → per-edge chain). A transparent stroke shows the page background through; a colorless stroke uses the theme stroke.
 
 ## Install & run
 
@@ -94,13 +95,25 @@ type Project = {
   };
 
   edges: {
-    default: { effect: 'puzzle' | 'wave' | 'straight'; config?: object };
-    inner:   null | { effect; config? };                  // override for shared edges
-    outer:   null | { effect; config? };                  // override for outer edges
+    default: { effect: 'puzzle' | 'wave' | 'straight'; config?: EdgeConfig };
+    inner:   null | { effect; config?: EdgeConfig };      // override for shared edges
+    outer:   null | { effect; config?: EdgeConfig };      // override for outer edges
     byEdge:  { [pairKey: string]: { effect; config? } };  // per-edge overrides
   };
-  // Effect resolution chain (highest priority first):
+  // Effect & style resolution chain (highest priority first):
   //   per-edge override > inner/outer layer > default
+
+type EdgeConfig = {
+  // Effect-specific
+  inverted?: boolean;       // puzzle: flip tab/socket
+  frequency?: number;       // wave
+  amplitude?: number;       // wave
+
+  // Stroke styling — applies to every effect
+  color?: string;           // any CSS color (or 'transparent'). Omitted = theme stroke.
+  opacity?: number;         // 0..1.  Omitted = 1.
+  strokeWidth?: number;     // px.    Omitted = 1.25.
+};
 
   pieceColors:  { [groupId: string]: string };            // '#hex'
   pieceContent: { [groupId: string]: ContentSpec };
@@ -217,8 +230,9 @@ Components:
 
 Geometry (pure, framework-free):
 
-- `computePiecePath(piece, allPieces, effect, config)` → SVG `d` string.
-- `computeSidePath(piece, allPieces, side, effect, config)` → single side path.
+- `computePiecePath(piece, allPieces, effect, config)` → SVG `d` string for the closed body.
+- `computeSidePath(piece, allPieces, side, effect, config)` → single side path (one continuous `d`).
+- `computeSideSegments(piece, allPieces, side, effect, config)` → `[{ pairKey, neighborId, d, style }]` — one entry per segment of the side, each with its own M-prefixed `d` and resolved stroke style. Used by the renderer to draw per-edge color / opacity / width.
 - `computePieceBbox(piece, allPieces, effect, config)` → `{ minX, minY, maxX, maxY }` including knob/wave extent.
 - `computeKnobs(piece)` / `computeActiveKnobs(piece, allPieces, effect)` — knob positions.
 - `knobHitCenter(side, cx, cy)` — for overlaying click hit-regions.
@@ -269,7 +283,7 @@ For matching pieces to interlock cleanly, a tab on one side must meet a socket o
 }
 ```
 
-The stylesheet only targets `.puzzle-board`, `.piece`, `.piece__path`, `.piece__label`, `.piece__content`, and `.piece__knob-hit`, so it won't collide with anything else in your app.
+The stylesheet only targets `.puzzle-board`, `.piece`, `.piece__body` (fill), `.piece__edge` (stroke — one path per segment so each edge can be styled independently), the legacy `.piece__path`, `.piece__label`, `.piece__content`, and `.piece__knob-hit`, so it won't collide with anything else in your app.
 
 ## Visual rules
 

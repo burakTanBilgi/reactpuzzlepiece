@@ -4,8 +4,10 @@
 //   - exportModuleZip     (full puzzle module + README + project.json)
 
 import { compileProject } from './compile.js';
-import { computePiecePath } from '../puzzle/geometry.js';
+import { computePiecePath, computeSideSegments } from '../puzzle/geometry.js';
 import { makeZip } from './zip.js';
+
+const SIDES = ['top', 'right', 'bottom', 'left'];
 
 // Vite reads these as raw text at build time so they ship inside the app.
 const PUZZLE_SOURCES = import.meta.glob('../puzzle/**/*.{js,jsx,css,md}', {
@@ -35,7 +37,13 @@ function snapshot(project) {
     label: p.label,
     fill: p.fill ?? null,
     content: p.content ?? null,
+    backgrounds: p.backgrounds ?? null,
     d: computePiecePath(p, pieces, effect, config),
+    // Per-segment stroke paths so the exported file can render each edge with
+    // its own color / opacity / width — same pipeline as the live renderer.
+    segments: SIDES.flatMap((side) =>
+      computeSideSegments(p, pieces, side, effect, config)
+    ).map((seg) => ({ d: seg.d, style: seg.style ?? null })),
   }));
 }
 
@@ -86,27 +94,60 @@ export default function PuzzleExport({ width = '100%', height = 'auto', style })
 }
 
 function Piece({ piece }) {
-  const { id, x, y, w, h, label, fill, content, d } = piece;
+  const { id, x, y, w, h, label, fill, content, backgrounds, segments, d } = piece;
   const clipId = 'pcx-' + id.replace(/[^a-zA-Z0-9]/g, '');
   const hasContent = content && (content.text || content.src);
+  const hasBgs = backgrounds && backgrounds.length > 0;
+  const needsClip = hasContent || hasBgs;
   return (
     <g>
-      {hasContent && (
+      {needsClip && (
         <defs>
           <clipPath id={clipId}><path d={d} /></clipPath>
         </defs>
       )}
-      <path d={d} fill={fill || '#1f1d28'} stroke="#423a4f" strokeWidth={1.5} strokeLinejoin="round" />
+      <path d={d} fill={fill || '#1f1d28'} stroke="none" />
+
+      {hasBgs && (
+        <g clipPath={\`url(#\${clipId})\`}>
+          {backgrounds.map((bg, i) => {
+            const fit = bg.fit || 'cover';
+            const par = fit === 'cover' ? 'xMidYMid slice'
+                      : fit === 'contain' ? 'xMidYMid meet'
+                      : fit === 'fill' ? 'none' : 'xMidYMid slice';
+            return <image key={i} href={bg.src} x={bg.x} y={bg.y} width={bg.w} height={bg.h} preserveAspectRatio={par} />;
+          })}
+        </g>
+      )}
+
       {hasContent ? (
         <g clipPath={\`url(#\${clipId})\`}>
           <Content x={x} y={y} w={w} h={h} content={content} />
         </g>
-      ) : (label && (
+      ) : (!hasBgs && label && (
         <text x={x + w / 2} y={y + h / 2} textAnchor="middle" dominantBaseline="central"
           fill="#9d96a8" fontSize={14} fontFamily="system-ui, sans-serif">
           {label}
         </text>
       ))}
+
+      {/* Per-segment edge strokes — one path per edge so each can carry its
+          own color / opacity / width baked in at export time. */}
+      {(segments || []).map((seg, i) => {
+        const s = seg.style || {};
+        return (
+          <path
+            key={i}
+            d={seg.d}
+            fill="none"
+            stroke={s.color || '#423a4f'}
+            strokeOpacity={s.opacity != null ? s.opacity : 1}
+            strokeWidth={s.strokeWidth != null ? s.strokeWidth : 1.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        );
+      })}
     </g>
   );
 }

@@ -1,4 +1,6 @@
-import { KNOB_R, TAB, computeActiveKnobs, knobHitCenter } from './geometry.js';
+import { KNOB_R, TAB, computeActiveKnobs, computeSideSegments, knobHitCenter } from './geometry.js';
+
+const SIDES = ['top', 'right', 'bottom', 'left'];
 
 // Single puzzle piece rendered as <g> with one <path> for the outline,
 // plus optional content (text/image) clipped to that path.
@@ -24,6 +26,12 @@ export default function PuzzlePiece({
   const hasBackgrounds = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBackgrounds;
 
+  // Per-segment edge strokes. Compute once per side so each segment can carry
+  // its own color / opacity / stroke-width while the body stays one path.
+  const segments = SIDES.flatMap((side) =>
+    computeSideSegments(piece, allPieces, side, effect)
+  );
+
   return (
     <g
       className={`piece ${isHovered ? 'piece--hover' : ''} ${isSelected ? 'piece--selected' : ''}`}
@@ -38,7 +46,10 @@ export default function PuzzlePiece({
           </clipPath>
         )}
       </defs>
-      <path d={path} className="piece__path" style={fill ? { fill } : undefined} />
+
+      {/* Body: fill only — the visible stroke comes from per-segment paths
+          rendered on top, so each edge can be styled independently. */}
+      <path d={path} className="piece__body" style={fill ? { fill } : undefined} />
 
       {hasBackgrounds && (
         <g clipPath={`url(#${clipId})`} pointerEvents="none">
@@ -59,6 +70,26 @@ export default function PuzzlePiece({
           {label}
         </text>
       )}
+
+      {/* Per-segment edge strokes (rendered after content so the outline sits on top). */}
+      <g className="piece__edges" pointerEvents="none">
+        {segments.map((seg, i) => {
+          const s = seg.style;
+          const style = s ? {
+            ...(s.color != null       ? { stroke: s.color } : null),
+            ...(s.opacity != null     ? { strokeOpacity: s.opacity } : null),
+            ...(s.strokeWidth != null ? { strokeWidth: s.strokeWidth } : null),
+          } : undefined;
+          return (
+            <path
+              key={`${seg.pairKey}-${i}`}
+              d={seg.d}
+              className="piece__edge"
+              style={style}
+            />
+          );
+        })}
+      </g>
 
       {onKnobClick &&
         knobs

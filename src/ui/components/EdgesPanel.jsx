@@ -47,9 +47,12 @@ export default function EdgesPanel({
       if (first) { effect = e; cfg = c; first = false; }
       else {
         if (e !== effect) effect = MIXED;
-        if (cfg?.frequency !== c?.frequency) cfg = { ...cfg, frequency: MIXED };
-        if (cfg?.amplitude !== c?.amplitude) cfg = { ...cfg, amplitude: MIXED };
-        if (cfg?.inverted !== c?.inverted)   cfg = { ...cfg, inverted: MIXED };
+        if (cfg?.frequency   !== c?.frequency)   cfg = { ...cfg, frequency:   MIXED };
+        if (cfg?.amplitude   !== c?.amplitude)   cfg = { ...cfg, amplitude:   MIXED };
+        if (cfg?.inverted    !== c?.inverted)    cfg = { ...cfg, inverted:    MIXED };
+        if (cfg?.color       !== c?.color)       cfg = { ...cfg, color:       MIXED };
+        if (cfg?.opacity     !== c?.opacity)     cfg = { ...cfg, opacity:     MIXED };
+        if (cfg?.strokeWidth !== c?.strokeWidth) cfg = { ...cfg, strokeWidth: MIXED };
       }
     }
     return { effect, cfg };
@@ -173,6 +176,8 @@ export default function EdgesPanel({
             </div>
           )}
 
+          <StyleControls config={combo?.cfg} onPatchConfig={applyConfig} />
+
           <div className="action-stack">
             <button type="button" className="action-btn action-btn--ghost" onClick={resetSelected}>
               Reset {selected.size === 1 ? 'this edge' : `these ${selected.size} edges`} to default
@@ -244,6 +249,63 @@ function EffectCard({ title, hint, effect, config, active, onSetEffect, onPatchC
             onChange={(v) => onPatchConfig({ amplitude: v })} />
         </div>
       )}
+      <StyleControls config={config} onPatchConfig={onPatchConfig} />
     </section>
+  );
+}
+
+// Color / opacity / thickness — apply to every effect. Lives in the same
+// `config` bag so it cascades through the existing priority chain.
+//
+// "Default color" (no entry) is distinct from "transparent": the former
+// inherits the theme stroke color; the latter sets opacity to 0 / a
+// transparent stroke so the page background shows through.
+export function StyleControls({ config, onPatchConfig }) {
+  const colorMixed   = config?.color === MIXED;
+  const opacityMixed = config?.opacity === MIXED;
+  const widthMixed   = config?.strokeWidth === MIXED;
+
+  // For the color picker we always need a concrete hex value to satisfy
+  // <input type="color">. Default to a neutral grey when nothing is set.
+  const colorValue = (typeof config?.color === 'string' && config.color !== MIXED)
+    ? config.color
+    : '#888888';
+  const colorIsSet = typeof config?.color === 'string' && config.color !== MIXED;
+
+  return (
+    <div className="style-controls">
+      <div className="form-row">
+        <label className="form-row__label">Color</label>
+        <input
+          type="color"
+          className="form-row__color"
+          value={colorValue}
+          onChange={(e) => onPatchConfig({ color: e.target.value })}
+        />
+        {colorIsSet ? (
+          <button type="button" className="link-btn" onClick={() => onPatchConfig({ color: undefined })}>
+            reset
+          </button>
+        ) : (
+          <span className="hint" style={{ marginLeft: 4 }}>{colorMixed ? 'mixed' : 'theme'}</span>
+        )}
+      </div>
+
+      <SliderRow
+        label="Opacity"
+        min={0} max={1} step={0.01}
+        value={opacityMixed ? 1 : (config?.opacity ?? 1)}
+        format={(v) => `${Math.round(v * 100)}%`}
+        onChange={(v) => onPatchConfig({ opacity: v })}
+      />
+
+      <SliderRow
+        label="Width"
+        min={0} max={10} step={0.25}
+        value={widthMixed ? 1.25 : (config?.strokeWidth ?? 1.25)}
+        format={(v) => `${v}px`}
+        onChange={(v) => onPatchConfig({ strokeWidth: v })}
+      />
+    </div>
   );
 }

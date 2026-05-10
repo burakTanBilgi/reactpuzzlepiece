@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { compileProject } from '../../grid/compile.js';
-import { computePieceBbox, computePiecePath } from '../../puzzle';
+import { computePieceBbox, computePiecePath, computeSideSegments } from '../../puzzle';
+
+const SIDES = ['top', 'right', 'bottom', 'left'];
 
 // Generous padding so outer knobs (KNOB_R=30) and waves (amp up to 40) at the
 // top/left edges aren't clipped by the viewBox.
@@ -22,6 +24,9 @@ export default function PreviewSvg({ project, maxSize = 180 }) {
       ...p,
       d: computePiecePath(p, pieces, defaultEffect, defaultConfig),
       bbox: computePieceBbox(p, pieces, defaultEffect, defaultConfig),
+      segments: SIDES.flatMap((side) =>
+        computeSideSegments(p, pieces, side, defaultEffect, defaultConfig)
+      ),
     }));
 
     const bbox = enriched.reduce(
@@ -81,7 +86,7 @@ export default function PreviewSvg({ project, maxSize = 180 }) {
 }
 
 function PreviewPiece({ piece }) {
-  const { id, d, fill, content, backgrounds, x, y, w, h, label } = piece;
+  const { id, d, fill, content, backgrounds, segments, x, y, w, h, label } = piece;
   const hasBackgrounds = backgrounds && backgrounds.length > 0;
   const hasContent = !!content && (content.text || content.src);
   const clipUrl = hasBackgrounds || hasContent ? `url(#pv-clip-${safeId(id)})` : undefined;
@@ -91,9 +96,7 @@ function PreviewPiece({ piece }) {
       <path
         d={d}
         fill={fill || 'var(--surface-2)'}
-        stroke="var(--stroke-soft)"
-        strokeWidth="2"
-        strokeLinejoin="round"
+        stroke="none"
       />
 
       {hasBackgrounds && (
@@ -127,6 +130,24 @@ function PreviewPiece({ piece }) {
           {label}
         </text>
       )}
+
+      {/* Per-segment edge strokes — uses the same per-edge style data as the
+          live PuzzlePiece so the preview matches what you designed. */}
+      {(segments || []).map((seg, i) => {
+        const s = seg.style;
+        return (
+          <path
+            key={`${seg.pairKey}-${i}`}
+            d={seg.d}
+            fill="none"
+            stroke={s?.color ?? 'var(--stroke-soft)'}
+            strokeOpacity={s?.opacity ?? 1}
+            strokeWidth={s?.strokeWidth ?? 1.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        );
+      })}
     </g>
   );
 }
