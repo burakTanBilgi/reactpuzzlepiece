@@ -199,6 +199,39 @@ export function knobHitCenter(side, cx, cy) {
 }
 
 // Bounding box including effect-specific extents.
+// Export buildSidePath for use in overlays that need to render edge paths.
+export { buildSidePath };
+
+// Compute the SVG path for a single side of a piece (for edge highlighting overlays).
+export function computeSidePath(piece, allPieces, sideName, defaultEffect = 'puzzle', effectConfig) {
+  const { x, y, w, h } = piece;
+  const sidesNorm = {
+    top: normalizeSide(piece.sides?.top),
+    right: normalizeSide(piece.sides?.right),
+    bottom: normalizeSide(piece.sides?.bottom),
+    left: normalizeSide(piece.sides?.left),
+  };
+
+  const sideConfigs = {
+    top: { startA: x, endA: x + w, fixed: y, axis: 'x', pieceStartA: x, pieceLength: w, knobs: sidesNorm.top, outwardSign: -1, startPoint: `${x} ${y}` },
+    right: { startA: y, endA: y + h, fixed: x + w, axis: 'y', pieceStartA: y, pieceLength: h, knobs: sidesNorm.right, outwardSign: +1, startPoint: `${x + w} ${y}` },
+    bottom: { startA: x + w, endA: x, fixed: y + h, axis: 'x', pieceStartA: x, pieceLength: w, knobs: sidesNorm.bottom, outwardSign: +1, startPoint: `${x + w} ${y + h}` },
+    left: { startA: y + h, endA: y, fixed: x, axis: 'y', pieceStartA: y, pieceLength: h, knobs: sidesNorm.left, outwardSign: -1, startPoint: `${x} ${y + h}` },
+  };
+
+  const cfg = sideConfigs[sideName];
+  if (!cfg) return '';
+
+  const { startPoint, ...buildCfg } = cfg;
+  const sidePath = buildSidePath({
+    piece, allPieces, sideName,
+    ...buildCfg,
+    defaultEffect, effectConfig,
+  });
+
+  return `M ${startPoint} ${sidePath}`;
+}
+
 export function computePieceBbox(piece, allPieces, defaultEffect = 'puzzle', effectConfig) {
   const { x, y, w, h, sides = {} } = piece;
   const padForSide = (side) => {

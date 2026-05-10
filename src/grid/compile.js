@@ -43,7 +43,19 @@ export function compileProject(project) {
 
     for (const side of ['top', 'right', 'bottom', 'left']) {
       const segs = collectSegments(grid, piece.id, b, side);
-      if (segs.length === 0) continue;
+      if (segs.length === 0) {
+        // No neighbors on this side → outer edge. Apply flat edge with any outer edge override.
+        const outerKey = `${piece.id}||outer-${side}`;
+        const override = edges?.byEdge?.[outerKey];
+        const effect = override?.effect ?? defaultEffect;
+        const config = override?.config ?? defaultConfig;
+        piece.sides[side] = 'flat';
+        piece.edgeEffects[side] = piece.edgeEffects[side] || {};
+        piece.edgeEffectConfigs[side] = piece.edgeEffectConfigs[side] || {};
+        piece.edgeEffects[side]['__outer'] = effect;
+        if (config) piece.edgeEffectConfigs[side]['__outer'] = config;
+        continue;
+      }
       assignSide(piece, side, segs, edges, defaultEffect, defaultConfig);
     }
   }
@@ -210,6 +222,35 @@ export function listSharedEdges(project) {
         }
         c = endC + 1;
       }
+    }
+  }
+  return out;
+}
+
+export function listOuterEdges(project) {
+  const { grid } = project;
+  const bounds = groupBoundsMap(grid);
+  const out = [];
+  for (const [id, b] of bounds) {
+    // Top edge
+    if (b.rMin === 0) {
+      const pairKey = `${id}||outer-top`;
+      out.push({ pairKey, pieceId: id, side: 'top', isOuter: true });
+    }
+    // Bottom edge
+    if (b.rMax + 1 >= grid.rows) {
+      const pairKey = `${id}||outer-bottom`;
+      out.push({ pairKey, pieceId: id, side: 'bottom', isOuter: true });
+    }
+    // Left edge
+    if (b.cMin === 0) {
+      const pairKey = `${id}||outer-left`;
+      out.push({ pairKey, pieceId: id, side: 'left', isOuter: true });
+    }
+    // Right edge
+    if (b.cMax + 1 >= grid.cols) {
+      const pairKey = `${id}||outer-right`;
+      out.push({ pairKey, pieceId: id, side: 'right', isOuter: true });
     }
   }
   return out;

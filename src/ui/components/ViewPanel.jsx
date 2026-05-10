@@ -9,7 +9,7 @@ const ZOOM_SPEED = 0.0015;
 //   - Ctrl/Cmd + wheel: zoom centered on cursor
 //   - Middle mouse button drag: pan
 //   - Spacebar + drag (also): pan (future-friendly)
-export default function ViewPanel(props) {
+export default function ViewPanel({ children, ...props }) {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
@@ -114,7 +114,7 @@ export default function ViewPanel(props) {
             transformOrigin: '0 0',
           }}
         >
-          <PuzzleBoard {...props} />
+          {children ?? <PuzzleBoard {...props} />}
         </div>
       </div>
     </section>

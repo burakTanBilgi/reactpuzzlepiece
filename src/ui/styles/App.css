@@ -20,6 +20,12 @@
   min-height: 0;
   display: flex;
   overflow: hidden;
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* === Page Nav === */
@@ -98,7 +104,8 @@
 .page-nav__tab--active {
   background: linear-gradient(135deg, var(--blue-1), var(--blue-2));
   color: white;
-  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.5);
+  font-weight: 600;
 }
 
 .page-nav__icon { font-size: 14px; }
@@ -343,6 +350,87 @@
   flex: 1;
   display: flex;
   min-height: 0;
+}
+
+/* Edge editor canvas overlay (clickable edges) */
+
+.edge-canvas {
+  position: relative;
+  display: inline-block;
+}
+
+.edge-canvas__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.edge-hit__hit {
+  fill: rgba(0, 0, 0, 0.001); /* near-zero alpha so SVG hit-tests this rect */
+  pointer-events: all;
+  cursor: pointer;
+}
+
+.edge-hit__line {
+  stroke: transparent;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 0;
+  pointer-events: none;
+  transition: stroke 120ms ease, stroke-width 120ms ease, stroke-dasharray 120ms ease, opacity 120ms ease;
+  opacity: 0;
+}
+
+/* Show line on hover or when selected (inner edges always visible for clarity) */
+.edge-hit__hit:hover ~ .edge-hit__line {
+  stroke: rgba(138, 180, 248, 0.55);
+  stroke-width: 8;
+  opacity: 1;
+}
+
+.edge-hit--override .edge-hit__line {
+  stroke: rgba(138, 180, 248, 0.45);
+  stroke-width: 5;
+  stroke-dasharray: 6 4;
+}
+
+.edge-hit--override .edge-hit__hit:hover ~ .edge-hit__line {
+  stroke: rgba(138, 180, 248, 0.85);
+  opacity: 1;
+}
+
+.edge-hit--selected .edge-hit__line {
+  stroke: var(--blue-2);
+  stroke-width: 10;
+  stroke-dasharray: 0;
+  filter: drop-shadow(0 0 6px rgba(66, 133, 244, 0.6));
+  opacity: 1;
+}
+
+.card--accent {
+  border-color: var(--blue-2);
+  box-shadow: 0 0 0 1px rgba(66, 133, 244, 0.2);
+}
+
+.link-btn {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.link-btn:hover { color: var(--blue-3); }
+
+.chip--mixed {
+  background: var(--surface-3);
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .edge-list {
@@ -606,18 +694,21 @@
   border: 1px solid var(--stroke-idle);
   border-radius: 10px;
   overflow: hidden;
-  transition: all 180ms ease;
+  transition: all 200ms ease;
+  cursor: pointer;
 }
 
 .project-tile:hover {
   border-color: var(--blue-2);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(26, 115, 232, 0.25);
+  background: var(--bg);
 }
 
 .project-tile--current {
   border-color: var(--blue-2);
-  box-shadow: 0 0 0 1px var(--blue-2);
+  background: rgba(66, 133, 244, 0.08);
+  box-shadow: 0 0 0 1px var(--blue-2), inset 0 0 0 1px rgba(66, 133, 244, 0.2);
 }
 
 .project-tile__open {
@@ -663,23 +754,37 @@
   top: 6px;
   right: 6px;
   appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: rgba(15, 20, 32, 0.85);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(15, 20, 32, 0.9);
   border: 1px solid var(--stroke-idle);
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   display: none;
   align-items: center;
   justify-content: center;
   font-family: inherit;
+  transition: all 150ms ease;
+  backdrop-filter: blur(8px);
 }
 
-.project-tile:hover .project-tile__del { display: inline-flex; }
+.project-tile:hover .project-tile__del {
+  display: inline-flex;
+  animation: slideIn 150ms ease-out;
+}
 
-.project-tile__del:hover { color: var(--red-2); border-color: var(--red-2); }
+.project-tile__del:hover {
+  color: var(--red-2);
+  border-color: var(--red-2);
+  background: rgba(234, 67, 53, 0.1);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
 
 .project-tile--new {
   display: flex;
@@ -691,10 +796,19 @@
   cursor: pointer;
   font-family: inherit;
   color: var(--text-muted);
-  border-style: dashed;
+  border: 2px dashed var(--stroke-soft);
+  transition: all 200ms ease;
 }
 
-.project-tile--new:hover { color: var(--blue-3); }
+.project-tile--new:hover {
+  color: var(--blue-3);
+  border-color: var(--blue-2);
+  background: rgba(66, 133, 244, 0.04);
+}
+
+.project-tile--new:active {
+  transform: scale(0.98);
+}
 
 .project-tile__plus {
   font-size: 32px;

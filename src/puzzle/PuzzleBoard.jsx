@@ -3,7 +3,7 @@ import PuzzlePiece from './PuzzlePiece.jsx';
 import { computePieceBbox, computePiecePath } from './geometry.js';
 import './PuzzleBoard.css';
 
-const STROKE_PAD = 4;
+const STROKE_PAD = 60;  // padding for wave effects (max amplitude ~40 + margin)
 
 // Renders every piece as a <path> inside a single <svg>, so the outlines
 // stay seamless and hover/selection can control z-order trivially.

@@ -6,12 +6,14 @@ export { default as PuzzlePiece } from './PuzzlePiece.jsx';
 
 export {
   computePiecePath,
+  computeSidePath,
   computePieceBbox,
   computeKnobs,
   computeActiveKnobs,
   knobHitCenter,
   evenlySpaced,
   normalizeSide,
+  buildSidePath,
   KNOB_R,
   KNOB_D,
   FLAT,
