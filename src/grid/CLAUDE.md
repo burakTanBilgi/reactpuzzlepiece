@@ -23,6 +23,7 @@ Owns the project data model. Pieces are **derived** from a `Project` via `compil
   },
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
+  backgrounds:  Background[],
 }
 ```
 
@@ -34,6 +35,24 @@ type ContentSpec =
       fontSize?: number, fontWeight?: number, color?: string }
   | { type: 'image', src: string /* data: URL */, fit?: 'cover'|'contain'|'fill' };
 ```
+
+## Background
+
+A multi-piece image. Stored project-level and rendered sliced across whichever
+pieces happen to overlap its cell rect — pieces stay separate (no merging).
+
+```js
+type Background = {
+  id, src,                                                 // src is a data: URL
+  rect: { rMin, rMax, cMin, cMax },                        // cell coordinates
+  fit?: 'cover' | 'contain' | 'fill',                      // default 'cover'
+};
+```
+
+`compileProject` attaches an array of `{ id, src, fit, x, y, w, h }` to each
+piece (in pixel space) for every overlapping background. `PuzzlePiece` renders
+each background `<image>` at the full background coordinates and clips it to
+the piece's outline — SVG handles the slicing automatically.
 
 ## Edge keys
 - Shared edge: `edgeKey(idA, idB)` → `"idA||idB"` (sorted lexicographically).

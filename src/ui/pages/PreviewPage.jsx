@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
+import { exportSingleFileJSX, exportModuleZip } from '../../grid/export.js';
 import { formatTime } from '../utils/formatTime.js';
 
-// Large preview of the current project. Big board, easy navigation to editors.
+// Large preview of the current project. Big board, easy navigation to editors,
+// and export options (per-project, so they live with the project view).
 export default function PreviewPage({ project, onNav }) {
-  const { project: p, setName } = project;
+  const { project: p, setName, exportCurrent } = project;
   const [editingName, setEditingName] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   if (!p) return null;
 
@@ -63,6 +66,40 @@ export default function PreviewPage({ project, onNav }) {
         <p className="hint">
           Edit the grid layout, or open the Edit page to style edges and fill cells with text/images.
         </p>
+
+        <div className="preview-info__export">
+          <div className="export-menu">
+            <button
+              type="button"
+              className="action-btn"
+              onClick={() => setExportOpen((v) => !v)}
+            >
+              ↓ Export ▾
+            </button>
+            {exportOpen && (
+              <>
+                <div className="export-menu__backdrop" onClick={() => setExportOpen(false)} />
+                <div className="export-menu__panel">
+                  <button type="button" className="export-menu__item"
+                    onClick={() => { exportCurrent(); setExportOpen(false); }}>
+                    <strong>JSON</strong>
+                    <span>Project file (re-importable)</span>
+                  </button>
+                  <button type="button" className="export-menu__item"
+                    onClick={() => { exportSingleFileJSX(p); setExportOpen(false); }}>
+                    <strong>Single-file React</strong>
+                    <span>One .jsx + README — drop into any React 18+ project</span>
+                  </button>
+                  <button type="button" className="export-menu__item"
+                    onClick={() => { exportModuleZip(p); setExportOpen(false); }}>
+                    <strong>Module bundle (ZIP)</strong>
+                    <span>Full puzzle/ folder + project.json + README</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </aside>
     </div>
   );

@@ -1,10 +1,9 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
-import { exportSingleFileJSX, exportModuleZip } from '../../grid/export.js';
 import { formatTime } from '../utils/formatTime.js';
 
-// Project library: tiles for every saved project, with import + export controls
-// at the top. Selecting a project opens it; the rest of the app reflects it.
+// Project library: tiles for every saved project plus an Import control.
+// Export options live on the Preview page (one-shot, per project).
 export default function ProjectsPage({ project, onNav }) {
   const {
     project: p,
@@ -12,11 +11,9 @@ export default function ProjectsPage({ project, onNav }) {
     openProject,
     createNew,
     removeProject,
-    exportCurrent,
     importFromFile,
   } = project;
   const fileRef = useRef(null);
-  const [exportOpen, setExportOpen] = useState(false);
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
@@ -38,43 +35,9 @@ export default function ProjectsPage({ project, onNav }) {
           <h2 className="projects-section__title">Your Projects</h2>
           <div className="projects-section__actions">
             <input ref={fileRef} type="file" accept=".json" hidden onChange={handleImport} />
-            <button type="button" className="action-btn action-btn--ghost" onClick={() => fileRef.current?.click()}>
-              ↑ Import
+            <button type="button" className="action-btn" onClick={() => fileRef.current?.click()}>
+              ↑ Import JSON
             </button>
-            <div className="export-menu">
-              <button
-                type="button"
-                className="action-btn action-btn--ghost"
-                onClick={() => setExportOpen((v) => !v)}
-              >
-                ↓ Export ▾
-              </button>
-              {exportOpen && (
-                <>
-                  <div className="export-menu__backdrop" onClick={() => setExportOpen(false)} />
-                  <div className="export-menu__panel">
-                    <button type="button" className="export-menu__item"
-                      onClick={() => { exportCurrent(); setExportOpen(false); }}
-                      disabled={!p}>
-                      <strong>JSON</strong>
-                      <span>Project file (re-importable)</span>
-                    </button>
-                    <button type="button" className="export-menu__item"
-                      onClick={() => { exportSingleFileJSX(p); setExportOpen(false); }}
-                      disabled={!p}>
-                      <strong>Single-file React</strong>
-                      <span>One .jsx + README — drop into any React 18+ project</span>
-                    </button>
-                    <button type="button" className="export-menu__item"
-                      onClick={() => { exportModuleZip(p); setExportOpen(false); }}
-                      disabled={!p}>
-                      <strong>Module bundle (ZIP)</strong>
-                      <span>Full puzzle/ folder + project.json + README</span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
           </div>
         </div>
 

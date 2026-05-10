@@ -42,6 +42,7 @@ export function newProject(name = 'Untitled') {
     },
     pieceColors: {},
     pieceContent: {},
+    backgrounds: [],
   };
 }
 

@@ -17,10 +17,12 @@ export default function PuzzlePiece({
   onSelect,
   onKnobClick,
 }) {
-  const { id, x, y, w, h, label, fill, content } = piece;
+  const { id, x, y, w, h, label, fill, content, backgrounds } = piece;
   const knobs = computeActiveKnobs(piece, allPieces, effect);
   const clipId = `pc-clip-${id}`;
   const hasContent = !!content && (content.text || content.src);
+  const hasBackgrounds = backgrounds && backgrounds.length > 0;
+  const needsClip = hasContent || hasBackgrounds;
 
   return (
     <g
@@ -30,7 +32,7 @@ export default function PuzzlePiece({
       onClick={() => onSelect?.(id)}
     >
       <defs>
-        {hasContent && (
+        {needsClip && (
           <clipPath id={clipId}>
             <path d={path} />
           </clipPath>
@@ -38,13 +40,21 @@ export default function PuzzlePiece({
       </defs>
       <path d={path} className="piece__path" style={fill ? { fill } : undefined} />
 
+      {hasBackgrounds && (
+        <g clipPath={`url(#${clipId})`} pointerEvents="none">
+          {backgrounds.map((bg) => (
+            <BackgroundImage key={bg.id} bg={bg} />
+          ))}
+        </g>
+      )}
+
       {hasContent && (
         <g clipPath={`url(#${clipId})`} pointerEvents="none">
           <PieceContent piece={piece} />
         </g>
       )}
 
-      {!hasContent && label && (
+      {!hasContent && !hasBackgrounds && label && (
         <text x={x + w / 2} y={y + h / 2} className="piece__label">
           {label}
         </text>
@@ -70,6 +80,25 @@ export default function PuzzlePiece({
             );
           })}
     </g>
+  );
+}
+
+// Render a multi-piece background image. The same image is rendered in every
+// overlapping piece at the full background coordinates, and each piece's
+// clipPath cuts it to that piece's outline — so the image appears spanned and
+// sliced naturally across pieces.
+function BackgroundImage({ bg }) {
+  const par =
+    bg.fit === 'cover'   ? 'xMidYMid slice' :
+    bg.fit === 'contain' ? 'xMidYMid meet'  :
+    bg.fit === 'fill'    ? 'none'           :
+                           'xMidYMid slice';
+  return (
+    <image
+      href={bg.src}
+      x={bg.x} y={bg.y} width={bg.w} height={bg.h}
+      preserveAspectRatio={par}
+    />
   );
 }
 

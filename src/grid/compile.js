@@ -8,10 +8,34 @@ export function edgeKey(idA, idB) {
   return idA < idB ? `${idA}||${idB}` : `${idB}||${idA}`;
 }
 
+// For a piece with cell-bounds `b`, return the backgrounds that overlap it,
+// in pixel-space {x,y,w,h} so the renderer can position the same image across
+// all overlapped pieces (each piece's clipPath handles the slicing).
+function collectBackgrounds(backgrounds, b, cellSize) {
+  if (!backgrounds?.length) return undefined;
+  const out = [];
+  for (const bg of backgrounds) {
+    const r = bg.rect;
+    if (!r) continue;
+    if (r.rMax < b.rMin || r.rMin > b.rMax) continue;
+    if (r.cMax < b.cMin || r.cMin > b.cMax) continue;
+    out.push({
+      id: bg.id,
+      src: bg.src,
+      fit: bg.fit || 'cover',
+      x: r.cMin * cellSize,
+      y: r.rMin * cellSize,
+      w: (r.cMax - r.cMin + 1) * cellSize,
+      h: (r.rMax - r.rMin + 1) * cellSize,
+    });
+  }
+  return out.length ? out : undefined;
+}
+
 // --- Compile -----------------------------------------------------------------
 
 export function compileProject(project) {
-  const { grid, edges, pieceColors, pieceContent } = project;
+  const { grid, edges, pieceColors, pieceContent, backgrounds } = project;
   const cellSize = grid.cellSize;
   const bounds = groupBoundsMap(grid);
 
@@ -19,7 +43,7 @@ export function compileProject(project) {
   const pieces = [];
   const piecesById = new Map();
   for (const [id, b] of bounds) {
-    pieces.push(piecesById.set(id, {
+    const piece = {
       id,
       x: b.cMin * cellSize,
       y: b.rMin * cellSize,
@@ -28,12 +52,15 @@ export function compileProject(project) {
       label: prettyLabel(id),
       fill: pieceColors?.[id],
       content: pieceContent?.[id],
+      backgrounds: collectBackgrounds(backgrounds, b, cellSize),
       sides: {},
       sideEffects: {},
       sideEffectConfigs: {},
       edgeEffects: {},
       edgeEffectConfigs: {},
-    }).get(id));
+    };
+    pieces.push(piece);
+    piecesById.set(id, piece);
   }
 
   const defaultEffect = edges?.default?.effect ?? 'puzzle';

@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MAX_GRID, MIN_GRID, isRectangular } from '../../grid/grid.js';
 import { importTableText } from '../../grid/import.js';
 import GridCanvas from '../components/GridCanvas.jsx';
+import BackgroundsPanel from '../components/BackgroundsPanel.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
@@ -16,10 +17,57 @@ export default function GridEditorPage({ project }) {
   const {
     project: p, setGrid, merge, unmerge, setPieceColor, replaceGrid,
     removeRows, removeCols,
+    addBackground, updateBackground, removeBackground,
   } = project;
   const [selection, setSelection] = useState([]);
   const [showImport, setShowImport] = useState(false);
   const fileRef = useRef(null);
+
+  // Bounding rect of the current selection in cell coordinates, or null.
+  const selectionRect = useMemo(() => {
+    if (selection.length === 0) return null;
+    let rMin = Infinity, rMax = -Infinity, cMin = Infinity, cMax = -Infinity;
+    for (const [r, c] of selection) {
+      if (r < rMin) rMin = r; if (r > rMax) rMax = r;
+      if (c < cMin) cMin = c; if (c > cMax) cMax = c;
+    }
+    return { rMin, rMax, cMin, cMax };
+  }, [selection]);
+
+  // Read an image file (or blob) as a data URL, then add a background covering
+  // either the current selection or the whole grid as a fallback.
+  const addImageFromFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const rect = selectionRect ?? {
+        rMin: 0, rMax: (p?.grid.rows ?? 1) - 1,
+        cMin: 0, cMax: (p?.grid.cols ?? 1) - 1,
+      };
+      addBackground({ src: ev.target.result, rect, fit: 'cover' });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Listen for paste events globally — if an image is in the clipboard,
+  // turn it into a background covering the current selection (or full grid).
+  useEffect(() => {
+    const handler = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) addImageFromFile(file);
+          return;
+        }
+      }
+    };
+    document.addEventListener('paste', handler);
+    return () => document.removeEventListener('paste', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectionRect, p?.grid.rows, p?.grid.cols]);
 
   const handleImportText = (text, opts) => {
     try {
@@ -201,6 +249,14 @@ export default function GridEditorPage({ project }) {
           </section>
         )}
 
+        <BackgroundsPanel
+          backgrounds={p.backgrounds || []}
+          selectionRect={selectionRect}
+          onAddImage={addImageFromFile}
+          onUpdate={updateBackground}
+          onRemove={removeBackground}
+        />
+
         <section className="card">
           <h3 className="card__title">Tips</h3>
           <ul className="tip-list">
@@ -209,7 +265,8 @@ export default function GridEditorPage({ project }) {
             <li><strong>Click a row/column number</strong> to delete it. Drag across multiple to delete in bulk.</li>
             <li>Merged groups show their dimensions.</li>
             <li>Click any number value to type it directly.</li>
-            <li><strong>Ctrl+scroll</strong> zooms; middle-drag or Ctrl+drag pans.</li>
+            <li><strong>Scroll</strong> to zoom; middle-drag or Ctrl+drag to pan.</li>
+            <li>Select cells, then <strong>paste an image</strong> (Ctrl+V) to span it across them.</li>
           </ul>
         </section>
       </aside>
@@ -220,6 +277,7 @@ export default function GridEditorPage({ project }) {
           selection={selection}
           onSelectionChange={setSelection}
           pieceColors={p.pieceColors}
+          backgrounds={p.backgrounds}
           onDeleteRows={(idxs) => { removeRows(idxs); setSelection([]); }}
           onDeleteCols={(idxs) => { removeCols(idxs); setSelection([]); }}
         />

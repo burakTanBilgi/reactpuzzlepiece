@@ -6,9 +6,8 @@ const MAX_SCALE = 5;
 const ZOOM_SPEED = 0.0015;
 
 // Canvas surface that hosts the PuzzleBoard with pan + zoom.
-//   - Ctrl/Cmd + wheel: zoom centered on cursor
-//   - Middle mouse button drag: pan
-//   - Spacebar + drag (also): pan (future-friendly)
+//   - Wheel / pinch: zoom centered on cursor
+//   - Middle mouse button drag (or Ctrl+drag): pan
 export default function ViewPanel({ children, ...props }) {
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -18,7 +17,8 @@ export default function ViewPanel({ children, ...props }) {
 
   const handleWheel = useCallback(
     (e) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
+      // Always zoom on wheel — both regular mouse and touchpad pinch
+      // (browsers send Ctrl+wheel for pinch on a touchpad).
       e.preventDefault();
       const rect = containerRef.current.getBoundingClientRect();
       const cx = e.clientX - rect.left;
@@ -95,7 +95,7 @@ export default function ViewPanel({ children, ...props }) {
         <button type="button" className="view-panel__reset" onClick={resetView} title="Reset view">
           Reset View
         </button>
-        <span className="view-panel__hint">Ctrl+Scroll to zoom · Middle-drag or Ctrl+Drag to pan</span>
+        <span className="view-panel__hint">Scroll to zoom · Middle-drag or Ctrl+drag to pan</span>
       </div>
 
       <div

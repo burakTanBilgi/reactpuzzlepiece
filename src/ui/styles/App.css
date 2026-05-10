@@ -13,6 +13,7 @@
 @import '../components/ContentCanvas.css';
 @import '../components/PreviewSvg.css';
 @import '../components/ImportDialog.css';
+@import '../components/BackgroundsPanel.css';
 
 @import '../pages/ProjectsPage.css';
 @import '../pages/PreviewPage.css';

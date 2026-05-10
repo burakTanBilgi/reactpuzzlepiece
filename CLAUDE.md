@@ -57,12 +57,20 @@ The `src/puzzle/` folder is a **portable drop-in module** — no imports from ou
   },
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
+  backgrounds:  Background[],                              // multi-piece images
 }
 
 // ContentSpec
 type ContentSpec =
   | { type: 'text',  text: string, align?, fontSize?, fontWeight?, color? }
   | { type: 'image', src: string /* data: URL */, fit?: 'cover'|'contain'|'fill' };
+
+// Background — image spanning a rectangular cell range; sliced by SVG clipPath
+// across all overlapped pieces (no merging needed; pieces stay separate).
+type Background = {
+  id, src, fit?,
+  rect: { rMin, rMax, cMin, cMax },                        // in cell coordinates
+};
 
 // Piece (derived via compileProject)
 {
@@ -93,9 +101,9 @@ type ContentSpec =
 
 | Page     | What it does                                                                |
 | -------- | --------------------------------------------------------------------------- |
-| Projects | Project library, JSON import, **export menu** (JSON / single-file / ZIP)    |
-| Preview  | Large preview of current project; rename it; jump to Grid or Edit           |
-| Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete |
+| Projects | Project library + JSON import.                                              |
+| Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP). |
+| Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete, **multi-piece background images** (upload or Ctrl+V into selected cells). |
 | Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (per-edge effect + config) and **Content** (text/image content per piece) |
 
 The Edit page wires shared canvas + a `ModeSwitch` in the side panel; the underlying `PuzzleBoard` renders identically in both modes — only the overlay/interaction changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.

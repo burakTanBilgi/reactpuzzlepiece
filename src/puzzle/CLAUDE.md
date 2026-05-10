@@ -23,6 +23,7 @@ Each effect exports `{ buildSide, hidesKnobs? }`. `buildSide` returns an SVG pat
   id, x, y, w, h, label?,
   fill?: string,                                // optional override fill color
   content?: ContentSpec,                        // optional text/image content
+  backgrounds?: Array<{ id, src, fit, x, y, w, h }>,  // multi-piece images (px space)
   sides: { top?, right?, bottom?, left? },      // Side = 'flat' | {count,type} | [{pos,type}]
   edgeEffects:        { [side]: { [neighborId]: effectName } },
   edgeEffectConfigs:  { [side]: { [neighborId]: config } },
@@ -30,7 +31,9 @@ Each effect exports `{ buildSide, hidesKnobs? }`. `buildSide` returns an SVG pat
 ```
 
 ## Content rendering
-`PuzzlePiece.jsx` clips text/images to the piece outline:
-- `<defs><clipPath><path d={path}/></clipPath></defs>` per piece.
-- Text: greedy word-wrap + `<text><tspan>` per line.
-- Image: `<image preserveAspectRatio>` mapped from `fit` (`cover` → `slice`, `contain`/`none` → `meet`, `fill` → `none`).
+`PuzzlePiece.jsx` clips text/images and backgrounds to the piece outline:
+- `<defs><clipPath><path d={path}/></clipPath></defs>` per piece (created when content or backgrounds exist).
+- **Backgrounds** render first as `<image>` at the full background coords; the piece's clipPath cuts each one down to that piece's outline. Multiple pieces can share the same background object — every overlapping piece shows its own slice with no per-piece slicing math.
+- **Content** (text or image) renders on top of any backgrounds.
+  - Text: greedy word-wrap + `<text><tspan>` per line.
+  - Image: `<image preserveAspectRatio>` mapped from `fit` (`cover` → `slice`, `contain`/`none` → `meet`, `fill` → `none`).

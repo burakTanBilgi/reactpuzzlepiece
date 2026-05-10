@@ -22,6 +22,7 @@ export default function GridCanvas({
   selection,
   onSelectionChange,
   pieceColors,
+  backgrounds,
   onDeleteRows,
   onDeleteCols,
 }) {
@@ -216,6 +217,36 @@ export default function GridCanvas({
             rx="6" ry="6"
           />
         ))}
+
+        {/* Background images (rendered above group fills, dimmed so the
+            user can still see the grid lines underneath while editing). */}
+        {(backgrounds || []).map((bg) => {
+          const r = bg.rect;
+          if (!r) return null;
+          const bx = gx + r.cMin * CELL_PX;
+          const by = gy + r.rMin * CELL_PX;
+          const bw = (r.cMax - r.cMin + 1) * CELL_PX;
+          const bh = (r.rMax - r.rMin + 1) * CELL_PX;
+          const par =
+            bg.fit === 'cover'   ? 'xMidYMid slice' :
+            bg.fit === 'contain' ? 'xMidYMid meet'  :
+            bg.fit === 'fill'    ? 'none'           :
+                                   'xMidYMid slice';
+          return (
+            <g key={bg.id} className="grid-canvas__bg" pointerEvents="none">
+              <image
+                href={bg.src}
+                x={bx} y={by} width={bw} height={bh}
+                preserveAspectRatio={par}
+              />
+              <rect
+                x={bx} y={by} width={bw} height={bh}
+                className="grid-canvas__bg-frame"
+                rx="4" ry="4"
+              />
+            </g>
+          );
+        })}
 
         {/* Selection overlay */}
         {selRects.map((s) => (

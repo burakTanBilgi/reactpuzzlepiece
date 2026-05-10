@@ -12,10 +12,10 @@ Four pages, switched in-app (no router):
 
 | Page         | What it does                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------- |
-| **Projects** | Project library, JSON import, **export menu** (JSON · single-file React · full ZIP).      |
-| **Preview**  | Large preview of the current project; rename it; jump to Grid or Edit.                    |
-| **Grid**     | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete, **pan/zoom** (Ctrl+scroll, middle/Ctrl-drag). |
-| **Edit**     | Same canvas, two modes selectable in the side panel: **Edges** (override per-edge effect & config) and **Content** (fill pieces with text or images, cover/contain/stretch). |
+| **Projects** | Project library + JSON import.                                                            |
+| **Preview**  | Large preview of the current project; rename it; jump to Grid or Edit; **export** (JSON · single-file React · full ZIP). |
+| **Grid**     | Cell grid: drag-select, merge/unmerge, resize, color pieces, **CSV/TSV paste & import**, click/drag row & column numbers to delete, **place background images** (upload or Ctrl+V) that span across multiple pieces. |
+| **Edit**     | Same canvas, two modes selectable in the side panel: **Edges** (override per-edge effect & config) and **Content** (fill individual pieces with text or images, cover/contain/stretch). |
 
 Other niceties:
 
@@ -23,6 +23,8 @@ Other niceties:
 - **Typeable numeric inputs** — every slider value is also a text field; click and type.
 - **Auto-save** to `localStorage`; refresh restores your last project.
 - All content is clipped to the puzzle outline — text and images respect the piece shape.
+- Background images on the Grid page span across multiple pieces (without merging them) — each piece naturally renders its own slice via SVG clipping.
+- Wheel scroll zooms the canvas (no modifier needed); middle-drag or Ctrl+drag pans.
 
 ## Install & run
 
@@ -97,6 +99,7 @@ type Project = {
 
   pieceColors:  { [groupId: string]: string };            // '#hex'
   pieceContent: { [groupId: string]: ContentSpec };
+  backgrounds:  Array<Background>;                        // multi-piece images
 };
 
 type ContentSpec =
@@ -105,6 +108,13 @@ type ContentSpec =
       fontSize?: number; fontWeight?: number; color?: string }
   | { type: 'image'; src: string;                          // data: URL
       fit?: 'cover' | 'contain' | 'fill' };
+
+type Background = {
+  id: string;
+  src: string;                                             // data: URL
+  rect: { rMin: number; rMax: number; cMin: number; cMax: number };  // cell range
+  fit?: 'cover' | 'contain' | 'fill';
+};
 ```
 
 Edge keys:
@@ -126,7 +136,7 @@ Step 1                  Step 2                              Step 3
 - **Auto-merge horizontal runs** — each non-empty cell extends rightward over consecutive empty cells, producing a layout-shaped grid. Toggle off in the dialog if you want a 1:1 import.
 - Each non-empty cell becomes a piece with `{ type: 'text', text }`.
 
-## Exporting (Projects → Export)
+## Exporting (Preview → Export)
 
 Three options:
 

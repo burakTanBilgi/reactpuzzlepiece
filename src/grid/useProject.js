@@ -167,6 +167,33 @@ export function useProject() {
     setProject((p) => (p ? { ...p, pieceContent: {} } : p));
   }, []);
 
+  // --- Backgrounds (multi-piece images) ---
+
+  const addBackground = useCallback(({ src, rect, fit = 'cover' }) => {
+    setProject((p) => {
+      if (!p) return p;
+      const id = `bg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const next = [...(p.backgrounds || []), { id, src, rect, fit }];
+      return { ...p, backgrounds: next };
+    });
+  }, []);
+
+  const updateBackground = useCallback((id, patch) => {
+    setProject((p) => {
+      if (!p) return p;
+      const list = (p.backgrounds || []).map((b) => (b.id === id ? { ...b, ...patch } : b));
+      return { ...p, backgrounds: list };
+    });
+  }, []);
+
+  const removeBackground = useCallback((id) => {
+    setProject((p) => {
+      if (!p) return p;
+      const list = (p.backgrounds || []).filter((b) => b.id !== id);
+      return { ...p, backgrounds: list };
+    });
+  }, []);
+
   // Replace the entire grid (used by CSV/TSV import).
   const replaceGrid = useCallback((grid, content) => {
     setProject((p) => {
@@ -239,6 +266,9 @@ export function useProject() {
     setPieceContent,
     updatePieceContent,
     clearPieceContent,
+    addBackground,
+    updateBackground,
+    removeBackground,
     replaceGrid,
     openProject,
     createNew,
