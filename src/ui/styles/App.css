@@ -288,6 +288,60 @@
   padding-top: 4px;
 }
 
+.puzzle-config {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.invert-tabs-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 7px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 150ms ease;
+  font-family: inherit;
+}
+
+.invert-tabs-btn:hover {
+  border-color: var(--blue-2);
+  color: var(--text);
+  background: var(--accent-tint);
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.2);
+}
+
+.invert-tabs-btn--active {
+  background: linear-gradient(135deg, rgba(66, 133, 244, 0.15), rgba(66, 133, 244, 0.08));
+  border-color: var(--blue-2);
+  color: var(--blue-3);
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.25);
+}
+
+.invert-tabs-btn--active:hover {
+  background: linear-gradient(135deg, rgba(66, 133, 244, 0.2), rgba(66, 133, 244, 0.12));
+  box-shadow: 0 0 12px rgba(66, 133, 244, 0.35);
+}
+
+.invert-tabs-btn__icon {
+  font-size: 13px;
+  transition: transform 150ms ease;
+}
+
+.invert-tabs-btn--active .invert-tabs-btn__icon {
+  transform: scaleX(-1);
+  color: var(--blue-2);
+}
+
 /* === Grid Editor page === */
 
 .page-grid {

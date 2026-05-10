@@ -44,12 +44,25 @@ export function compileProject(project) {
     for (const side of ['top', 'right', 'bottom', 'left']) {
       const segs = collectSegments(grid, piece.id, b, side);
       if (segs.length === 0) {
-        // No neighbors on this side → outer edge. Apply flat edge with any outer edge override.
+        // No neighbors on this side → outer edge. Apply effect with single knob or flat.
         const outerKey = `${piece.id}||outer-${side}`;
         const override = edges?.byEdge?.[outerKey];
         const effect = override?.effect ?? defaultEffect;
         const config = override?.config ?? defaultConfig;
-        piece.sides[side] = 'flat';
+
+        // For outer edges, apply the effect (puzzle/wave/straight)
+        // Puzzle: single centered tab or socket depending on side convention
+        if (effect === 'puzzle') {
+          let knobType = (side === 'right' || side === 'bottom') ? 'tab' : 'socket';
+          if (config?.inverted) {
+            knobType = knobType === 'tab' ? 'socket' : 'tab';
+          }
+          piece.sides[side] = { count: 1, type: knobType };
+        } else {
+          // Wave or straight: treat as full-width effect
+          piece.sides[side] = effect === 'flat' ? 'flat' : { count: 1, type: 'tab' };
+        }
+
         piece.edgeEffects[side] = piece.edgeEffects[side] || {};
         piece.edgeEffectConfigs[side] = piece.edgeEffectConfigs[side] || {};
         piece.edgeEffects[side]['__outer'] = effect;
@@ -146,15 +159,24 @@ function knobTypeForSide(side) {
 }
 
 function assignSide(piece, side, segs, edges, defaultEffect, defaultConfig) {
-  const knobType = knobTypeForSide(side);
+  const baseKnobType = knobTypeForSide(side);
 
-  // One knob per segment, centered on that segment.
-  const knobs = segs.map((s) => ({ pos: s.midPos, type: knobType }));
+  // One knob per segment, centered on that segment. Check inversion per-segment.
+  const knobs = segs.map((s) => {
+    const pairKey = edgeKey(piece.id, s.neighborId);
+    const override = edges?.byEdge?.[pairKey];
+    let knobType = baseKnobType;
+    // Flip this segment's knob if inverted
+    if (override?.config?.inverted) {
+      knobType = knobType === 'tab' ? 'socket' : 'tab';
+    }
+    return { pos: s.midPos, type: knobType };
+  });
 
   // Simplify single-segment full-side cases to the compact { count, type } form
   // (only when the lone knob lands exactly at the midpoint).
   if (knobs.length === 1 && Math.abs(knobs[0].pos - 0.5) < 1e-6) {
-    piece.sides[side] = { count: 1, type: knobType };
+    piece.sides[side] = { count: 1, type: knobs[0].type };
   } else {
     piece.sides[side] = knobs;
   }

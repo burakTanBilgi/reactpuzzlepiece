@@ -75,8 +75,9 @@ export default function EdgeEditorPage({ project }) {
       if (first) { effect = e; cfg = c; first = false; }
       else {
         if (e !== effect) effect = MIXED;
-        if (cfg.frequency !== c.frequency) cfg = { ...cfg, frequency: MIXED };
-        if (cfg.amplitude !== c.amplitude) cfg = { ...cfg, amplitude: MIXED };
+        if (cfg?.frequency !== c?.frequency) cfg = { ...cfg, frequency: MIXED };
+        if (cfg?.amplitude !== c?.amplitude) cfg = { ...cfg, amplitude: MIXED };
+        if (cfg?.inverted !== c?.inverted) cfg = { ...cfg, inverted: MIXED };
       }
     }
     return { effect, cfg };
@@ -176,6 +177,22 @@ export default function EdgeEditorPage({ project }) {
                 <span className="chip chip--sm chip--mixed">mixed</span>
               )}
             </div>
+
+            {(combo?.effect === 'puzzle' ||
+              (combo?.effect === MIXED && [...selected].some((pk) =>
+                ((p.edges.byEdge[pk]?.effect ?? defaultEffect) === 'puzzle')))) && (
+              <div className="puzzle-config">
+                <button
+                  type="button"
+                  className={`invert-tabs-btn ${combo?.cfg?.inverted === true ? 'invert-tabs-btn--active' : ''}`}
+                  onClick={() => applyConfig({ inverted: !(combo?.cfg?.inverted === true) })}
+                  title="Toggle tab/socket orientation"
+                >
+                  <span className="invert-tabs-btn__icon">⟷</span>
+                  <span>Invert</span>
+                </button>
+              </div>
+            )}
 
             {(combo?.effect === 'wave' ||
               (combo?.effect === MIXED && [...selected].some((pk) =>
