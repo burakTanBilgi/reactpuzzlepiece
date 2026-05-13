@@ -73,126 +73,153 @@ export default function EdgesPanel({
     for (const pk of selected) clearEdgeOverride(pk);
   };
 
+  // Which kinds of edges are in the current selection. Drives which layer
+  // cards (inner/outer) appear under the Selected-edge editor.
+  const hasInnerSelected = [...selected].some((pk) => !pk.includes('||outer-'));
+  const hasOuterSelected = [...selected].some((pk) => pk.includes('||outer-'));
+
+  const defaultCard = (
+    <EffectCard
+      title="Default effect"
+      hint="Applied to every edge unless overridden below."
+      effect={defaultEffect}
+      config={defaultConfig}
+      onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultConfig : undefined)}
+      onPatchConfig={setDefaultEdgeConfig}
+    />
+  );
+
+  const innerCard = (
+    <EffectCard
+      title="Inner edges"
+      hint={innerLayer
+        ? 'Override applied to every shared edge. Per-edge picks still win.'
+        : 'No override — inner edges follow the default. Pick an effect to override.'}
+      effect={innerLayer?.effect ?? defaultEffect}
+      config={innerLayer?.config ?? defaultConfig}
+      active={!!innerLayer}
+      onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave' ? (innerLayer?.config ?? defaultConfig) : undefined)}
+      onPatchConfig={(patch) => setLayerConfig('inner', patch)}
+      onClear={innerLayer ? () => clearLayer('inner') : null}
+    />
+  );
+
+  const outerCard = (
+    <EffectCard
+      title="Outer edges"
+      hint={outerLayer
+        ? 'Override applied to every outer edge. Per-edge picks still win.'
+        : 'No override — outer edges follow the default. Pick an effect to override.'}
+      effect={outerLayer?.effect ?? defaultEffect}
+      config={outerLayer?.config ?? defaultConfig}
+      active={!!outerLayer}
+      onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave' ? (outerLayer?.config ?? defaultConfig) : undefined)}
+      onPatchConfig={(patch) => setLayerConfig('outer', patch)}
+      onClear={outerLayer ? () => clearLayer('outer') : null}
+    />
+  );
+
+  const selectedCard = selected.size > 0 ? (
+    <section className="card card--accent">
+      <div className="card__row">
+        <h3 className="card__title">
+          {selected.size === 1 ? 'Selected edge' : `${selected.size} edges selected`}
+        </h3>
+        <button type="button" className="link-btn" onClick={onClearSelection}>clear</button>
+      </div>
+
+      {selected.size === 1 && (() => {
+        const pk = [...selected][0];
+        const e = sharedEdges.find((x) => x.pairKey === pk);
+        if (!e) return null;
+        return (
+          <p className="hint">
+            {piecesById.get(e.pieceAId)?.label ?? e.pieceAId}
+            {' ↔ '}
+            {piecesById.get(e.pieceBId)?.label ?? e.pieceBId}
+          </p>
+        );
+      })()}
+
+      <div className="effect-chips">
+        {EFFECT_NAMES.map((name) => (
+          <button key={name} type="button"
+            className={`chip chip--sm ${combo?.effect === name ? 'chip--active' : ''}`}
+            onClick={() => applyEffect(name)}>
+            {cap(name)}
+          </button>
+        ))}
+        {combo?.effect === MIXED && (
+          <span className="chip chip--sm chip--mixed">mixed</span>
+        )}
+      </div>
+
+      {(combo?.effect === 'puzzle' ||
+        (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'puzzle'))) && (
+        <div className="puzzle-config">
+          <button type="button"
+            className={`invert-tabs-btn ${combo?.cfg?.inverted === true ? 'invert-tabs-btn--active' : ''}`}
+            onClick={() => applyConfig({ inverted: !(combo?.cfg?.inverted === true) })}
+            title="Toggle tab/socket orientation">
+            <span className="invert-tabs-btn__icon">⟷</span>
+            <span>Invert</span>
+          </button>
+        </div>
+      )}
+
+      {(combo?.effect === 'wave' ||
+        (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'wave'))) && (
+        <div className="wave-config">
+          <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
+            value={combo?.cfg?.frequency === MIXED
+              ? (defaultConfig.frequency ?? DEFAULT_WAVE.frequency)
+              : (combo?.cfg?.frequency ?? DEFAULT_WAVE.frequency)}
+            format={(v) => combo?.cfg?.frequency === MIXED ? `· ${v.toFixed(3)}` : v.toFixed(3)}
+            onChange={(v) => applyConfig({ frequency: v })} />
+          <SliderRow label="Amp" min={0} max={40} step={1}
+            value={combo?.cfg?.amplitude === MIXED
+              ? (defaultConfig.amplitude ?? DEFAULT_WAVE.amplitude)
+              : (combo?.cfg?.amplitude ?? DEFAULT_WAVE.amplitude)}
+            format={(v) => combo?.cfg?.amplitude === MIXED ? `· ${v}` : `${v}`}
+            onChange={(v) => applyConfig({ amplitude: v })} />
+        </div>
+      )}
+
+      <StyleControls config={combo?.cfg} onPatchConfig={applyConfig} />
+
+      <div className="action-stack">
+        <button type="button" className="action-btn action-btn--ghost" onClick={resetSelected}>
+          Reset {selected.size === 1 ? 'this edge' : `these ${selected.size} edges`} to default
+        </button>
+      </div>
+    </section>
+  ) : null;
+
+  const hintCard = (
+    <section className="card">
+      <h3 className="card__title">Per-edge override</h3>
+      <p className="hint">
+        Click an edge in the canvas to give it its own effect.
+        <br/>Shift-click to select multiple edges and edit them together.
+      </p>
+    </section>
+  );
+
+  // Ordering rules:
+  //   No selection:  Hint    → Default → Inner → Outer
+  //   Inner only:    Selected → Inner   → Default
+  //   Outer only:    Selected → Outer   → Default
+  //   Mixed:         Selected → Inner   → Outer  → Default
+  // Matches the resolution order in compile.js#resolveEdge (per-edge > layer > default),
+  // top-down — the section a user just clicked is always nearest the cursor.
   return (
     <>
-      <EffectCard
-        title="Default effect"
-        hint="Applied to every edge unless overridden below."
-        effect={defaultEffect}
-        config={defaultConfig}
-        onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultConfig : undefined)}
-        onPatchConfig={setDefaultEdgeConfig}
-      />
+      {selected.size === 0 ? hintCard : selectedCard}
 
-      <EffectCard
-        title="Inner edges"
-        hint={innerLayer
-          ? 'Override applied to every shared edge. Per-edge picks still win.'
-          : 'No override — inner edges follow the default. Pick an effect to override.'}
-        effect={innerLayer?.effect ?? defaultEffect}
-        config={innerLayer?.config ?? defaultConfig}
-        active={!!innerLayer}
-        onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave' ? (innerLayer?.config ?? defaultConfig) : undefined)}
-        onPatchConfig={(patch) => setLayerConfig('inner', patch)}
-        onClear={innerLayer ? () => clearLayer('inner') : null}
-      />
-
-      <EffectCard
-        title="Outer edges"
-        hint={outerLayer
-          ? 'Override applied to every outer edge. Per-edge picks still win.'
-          : 'No override — outer edges follow the default. Pick an effect to override.'}
-        effect={outerLayer?.effect ?? defaultEffect}
-        config={outerLayer?.config ?? defaultConfig}
-        active={!!outerLayer}
-        onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave' ? (outerLayer?.config ?? defaultConfig) : undefined)}
-        onPatchConfig={(patch) => setLayerConfig('outer', patch)}
-        onClear={outerLayer ? () => clearLayer('outer') : null}
-      />
-
-      {selected.size > 0 ? (
-        <section className="card card--accent">
-          <div className="card__row">
-            <h3 className="card__title">
-              {selected.size === 1 ? 'Selected edge' : `${selected.size} edges selected`}
-            </h3>
-            <button type="button" className="link-btn" onClick={onClearSelection}>clear</button>
-          </div>
-
-          {selected.size === 1 && (() => {
-            const pk = [...selected][0];
-            const e = sharedEdges.find((x) => x.pairKey === pk);
-            if (!e) return null;
-            return (
-              <p className="hint">
-                {piecesById.get(e.pieceAId)?.label ?? e.pieceAId}
-                {' ↔ '}
-                {piecesById.get(e.pieceBId)?.label ?? e.pieceBId}
-              </p>
-            );
-          })()}
-
-          <div className="effect-chips">
-            {EFFECT_NAMES.map((name) => (
-              <button key={name} type="button"
-                className={`chip chip--sm ${combo?.effect === name ? 'chip--active' : ''}`}
-                onClick={() => applyEffect(name)}>
-                {cap(name)}
-              </button>
-            ))}
-            {combo?.effect === MIXED && (
-              <span className="chip chip--sm chip--mixed">mixed</span>
-            )}
-          </div>
-
-          {(combo?.effect === 'puzzle' ||
-            (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'puzzle'))) && (
-            <div className="puzzle-config">
-              <button type="button"
-                className={`invert-tabs-btn ${combo?.cfg?.inverted === true ? 'invert-tabs-btn--active' : ''}`}
-                onClick={() => applyConfig({ inverted: !(combo?.cfg?.inverted === true) })}
-                title="Toggle tab/socket orientation">
-                <span className="invert-tabs-btn__icon">⟷</span>
-                <span>Invert</span>
-              </button>
-            </div>
-          )}
-
-          {(combo?.effect === 'wave' ||
-            (combo?.effect === MIXED && [...selected].some((pk) => resolveSelected(pk).effect === 'wave'))) && (
-            <div className="wave-config">
-              <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
-                value={combo?.cfg?.frequency === MIXED
-                  ? (defaultConfig.frequency ?? DEFAULT_WAVE.frequency)
-                  : (combo?.cfg?.frequency ?? DEFAULT_WAVE.frequency)}
-                format={(v) => combo?.cfg?.frequency === MIXED ? `· ${v.toFixed(3)}` : v.toFixed(3)}
-                onChange={(v) => applyConfig({ frequency: v })} />
-              <SliderRow label="Amp" min={0} max={40} step={1}
-                value={combo?.cfg?.amplitude === MIXED
-                  ? (defaultConfig.amplitude ?? DEFAULT_WAVE.amplitude)
-                  : (combo?.cfg?.amplitude ?? DEFAULT_WAVE.amplitude)}
-                format={(v) => combo?.cfg?.amplitude === MIXED ? `· ${v}` : `${v}`}
-                onChange={(v) => applyConfig({ amplitude: v })} />
-            </div>
-          )}
-
-          <StyleControls config={combo?.cfg} onPatchConfig={applyConfig} />
-
-          <div className="action-stack">
-            <button type="button" className="action-btn action-btn--ghost" onClick={resetSelected}>
-              Reset {selected.size === 1 ? 'this edge' : `these ${selected.size} edges`} to default
-            </button>
-          </div>
-        </section>
-      ) : (
-        <section className="card">
-          <h3 className="card__title">Per-edge override</h3>
-          <p className="hint">
-            Click an edge in the canvas to give it its own effect.
-            <br/>Shift-click to select multiple edges and edit them together.
-          </p>
-        </section>
-      )}
+      {selected.size === 0 && defaultCard}
+      {(selected.size === 0 || hasInnerSelected) && innerCard}
+      {(selected.size === 0 || hasOuterSelected) && outerCard}
+      {selected.size > 0 && defaultCard}
 
       <div className="action-stack">
         <button type="button" className="action-btn action-btn--ghost"
