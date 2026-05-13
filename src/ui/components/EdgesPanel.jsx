@@ -206,19 +206,20 @@ export default function EdgesPanel({
   );
 
   // Ordering rules:
-  //   No selection:  Hint    → Default → Inner → Outer
+  //   No selection:  Hint     → Default
   //   Inner only:    Selected → Inner   → Default
   //   Outer only:    Selected → Outer   → Default
   //   Mixed:         Selected → Inner   → Outer  → Default
-  // Matches the resolution order in compile.js#resolveEdge (per-edge > layer > default),
-  // top-down — the section a user just clicked is always nearest the cursor.
+  // Layer cards only surface when their kind is in the selection — keeps the
+  // no-selection state minimal, and matches the resolution order in
+  // compile.js#resolveEdge (per-edge > layer > default) top-down.
   return (
     <>
       {selected.size === 0 ? hintCard : selectedCard}
 
       {selected.size === 0 && defaultCard}
-      {(selected.size === 0 || hasInnerSelected) && innerCard}
-      {(selected.size === 0 || hasOuterSelected) && outerCard}
+      {hasInnerSelected && innerCard}
+      {hasOuterSelected && outerCard}
       {selected.size > 0 && defaultCard}
 
       <div className="action-stack">

@@ -1,4 +1,5 @@
 const PAGES = [
+  { id: 'landing',  label: 'Landing',  icon: '⌂' },
   { id: 'docs',     label: 'Docs',     icon: '?' },
   { id: 'projects', label: 'Projects', icon: '⚏' },
   { id: 'preview',  label: 'Preview',  icon: '◇' },
