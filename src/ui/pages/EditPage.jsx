@@ -39,6 +39,7 @@ export default function EditPage({ project, mode = 'edges' }) {
     updatePieceContent,
     setDefaultCellEffects,
     setCellEffects,
+    resetAllCellEffects,
     setDefaultEdgeEffects,
     setLayerEffects,
     setPieceEdgeEffects,
@@ -140,6 +141,7 @@ export default function EditPage({ project, mode = 'edges' }) {
             updatePieceContent={updatePieceContent}
             setDefaultCellEffects={setDefaultCellEffects}
             setCellEffects={setCellEffects}
+            resetAllCellEffects={resetAllCellEffects}
           />
         )}
       </aside>

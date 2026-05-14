@@ -70,5 +70,22 @@ export function pieceActions(setProject) {
         return { ...p, cells: { ...cells, byPiece } };
       });
     },
+
+    // Wipe every cell effect across the cascade — both project default
+    // and per-piece overrides. Surfaced via the "Clear all overrides"
+    // footer on the Cells tab as a single nuclear reset.
+    resetAllCellEffects() {
+      setProject((p) => {
+        if (!p) return p;
+        return {
+          ...p,
+          cells: {
+            ...(p.cells || {}),
+            default: { ...(p.cells?.default || {}), effects: {} },
+            byPiece: {},
+          },
+        };
+      });
+    },
   };
 }

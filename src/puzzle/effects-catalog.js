@@ -80,12 +80,22 @@ export const CELL_EFFECTS = {
   },
 };
 
+// Edge effects also declare `scopes`: where the trigger fires from. 'piece'
+// means hovering anywhere on the parent piece activates the effect (current
+// default — large hit target). 'edge' means hovering the edge stroke itself
+// activates only that edge (precise but small target). Each entry below
+// supports both; the picker exposes a "Where" pill on every active row.
+const EDGE_SCOPES = ['piece', 'edge'];
+export const EDGE_SCOPE_LABELS = { piece: 'Cell', edge: 'Edge' };
+
 export const EDGE_EFFECTS = {
   highlight: {
     label: 'Highlight',
     group: 'stroke',
     triggers: ['hover', 'click', 'always'],
     defaultTrigger: 'hover',
+    scopes: EDGE_SCOPES,
+    defaultScope: 'piece',
     config: {},
   },
   glow: {
@@ -93,6 +103,8 @@ export const EDGE_EFFECTS = {
     group: 'filter',
     triggers: ['hover', 'click', 'idle', 'always'],
     defaultTrigger: 'hover',
+    scopes: EDGE_SCOPES,
+    defaultScope: 'piece',
     config: {
       radius: { default: 4, min: 1, max: 16, step: 1, label: 'Radius', unit: 'px', cssVar: '--anim-edge-glow-radius' },
     },
@@ -102,6 +114,8 @@ export const EDGE_EFFECTS = {
     group: 'transform',
     triggers: ['hover', 'click'],
     defaultTrigger: 'hover',
+    scopes: EDGE_SCOPES,
+    defaultScope: 'piece',
     config: {
       intensity: { default: 0.6, min: 0.1, max: 2.5, step: 0.1, label: 'Intensity', unit: 'px', cssVar: '--anim-edge-wiggle-intensity' },
     },
@@ -111,6 +125,8 @@ export const EDGE_EFFECTS = {
     group: 'stroke',
     triggers: ['hover', 'click', 'always'],
     defaultTrigger: 'hover',
+    scopes: EDGE_SCOPES,
+    defaultScope: 'piece',
     config: {
       width: { default: 3.5, min: 1.5, max: 8, step: 0.25, label: 'Width', unit: 'px', cssVar: '--anim-edge-thicken-width' },
     },
@@ -120,6 +136,8 @@ export const EDGE_EFFECTS = {
     group: 'animate',
     triggers: ['hover', 'click'],
     defaultTrigger: 'click',
+    scopes: EDGE_SCOPES,
+    defaultScope: 'piece',
     config: {
       duration: { default: 700, min: 100, max: 2000, step: 50, label: 'Duration', unit: 'ms', cssVar: '--anim-edge-flash-duration' },
     },
@@ -130,9 +148,10 @@ export const EDGE_EFFECTS = {
 export const CELL_EFFECT_IDS = Object.keys(CELL_EFFECTS);
 export const EDGE_EFFECT_IDS = Object.keys(EDGE_EFFECTS);
 
-// Build a fresh effect entry from the catalogue with default trigger + config.
-// Used by the picker when the user clicks a chip to add an effect.
-export function makeEffectEntry(catalogue, id, trigger) {
+// Build a fresh effect entry from the catalogue with default trigger,
+// scope (edges only), and config. Used by the picker when the user clicks
+// a chip to add an effect.
+export function makeEffectEntry(catalogue, id, trigger, scope) {
   const def = catalogue[id];
   if (!def) return null;
   const t = trigger ?? def.defaultTrigger ?? def.triggers[0];
@@ -140,11 +159,18 @@ export function makeEffectEntry(catalogue, id, trigger) {
   for (const [field, schema] of Object.entries(def.config || {})) {
     config[field] = schema.default;
   }
+  // Cells have no scope concept — only edges do.
+  if (def.scopes) {
+    const s = scope ?? def.defaultScope ?? def.scopes[0];
+    return { id, trigger: t, scope: s, config };
+  }
   return { id, trigger: t, config };
 }
 
-// Compose the unique key for an entry under (id, trigger). Same id with
-// different triggers are independent entries that compose.
-export function effectKey(id, trigger) {
-  return `${id}:${trigger}`;
+// Storage key for an entry — must uniquely identify (id, trigger, scope)
+// so multiple variants of the same effect can coexist (e.g. glow on hover
+// for the cell + glow on idle for the edge). Scope-less keys (id:trigger)
+// are valid v1 storage and treated as piece-scope at read time.
+export function effectKey(id, trigger, scope) {
+  return scope ? `${id}:${trigger}:${scope}` : `${id}:${trigger}`;
 }

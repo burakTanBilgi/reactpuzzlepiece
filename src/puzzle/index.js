@@ -30,6 +30,7 @@ export {
   CELL_EFFECTS, EDGE_EFFECTS,
   CELL_EFFECT_IDS, EDGE_EFFECT_IDS,
   TRIGGERS, TRIGGER_LABELS,
+  EDGE_SCOPE_LABELS,
   makeEffectEntry, effectKey,
 } from './effects-catalog.js';
 

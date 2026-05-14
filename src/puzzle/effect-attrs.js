@@ -9,13 +9,19 @@
 import { CELL_EFFECTS, EDGE_EFFECTS } from './effects-catalog.js';
 
 function computeAttrs(effects, catalogue, scopeClass) {
-  if (!effects) return { className: '', style: undefined };
+  if (!effects) return { className: '', style: undefined, hasEdgeScope: false };
   const classes = [];
   const style = {};
+  let hasEdgeScope = false;
   for (const entry of Object.values(effects)) {
     if (!entry || !entry.id || !entry.trigger) continue;
-    classes.push(`${scopeClass}--anim-${entry.id}--${entry.trigger}`);
     const def = catalogue[entry.id];
+    // Edges grow a `--{trigger}-on-{scope}` suffix; cells stay scope-free.
+    // Legacy entries without `scope` are treated as 'piece' (current default).
+    const scope = def?.scopes ? (entry.scope ?? def.defaultScope ?? 'piece') : null;
+    if (scope === 'edge') hasEdgeScope = true;
+    const triggerSuffix = scope ? `${entry.trigger}-on-${scope}` : entry.trigger;
+    classes.push(`${scopeClass}--anim-${entry.id}--${triggerSuffix}`);
     if (!def) continue;
     for (const [field, schema] of Object.entries(def.config || {})) {
       if (!schema?.cssVar) continue;
@@ -26,6 +32,7 @@ function computeAttrs(effects, catalogue, scopeClass) {
   return {
     className: classes.join(' '),
     style: Object.keys(style).length ? style : undefined,
+    hasEdgeScope,
   };
 }
 

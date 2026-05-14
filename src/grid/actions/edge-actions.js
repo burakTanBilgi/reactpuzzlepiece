@@ -44,11 +44,20 @@ export function edgeActions(setProject) {
       });
     },
 
-    // Clear every override below the layer/default tier — both per-edge
-    // (byEdge) and per-cell (byPiece). The "Clear all overrides" button
-    // surfaces this as a single user-facing action.
+    // The "Clear all overrides" footer button. Wipes EVERY override below
+    // the connector-style cascade AND every effect map across all tiers
+    // (default/inner/outer/byPiece/byEdge). The user gets a true reset
+    // that's hard to find by clicking through the tier cards individually.
     resetEdgeOverrides() {
-      mutateEdges((e) => ({ ...e, byEdge: {}, byPiece: {} }));
+      mutateEdges((e) => {
+        // Style overrides — wipe byEdge + byPiece entirely.
+        const next = { ...e, byEdge: {}, byPiece: {} };
+        // Effect maps — clear at every tier including default + layers.
+        if (next.default) next.default = { ...next.default, effects: {} };
+        if (next.inner)   next.inner   = { ...next.inner,   effects: {} };
+        if (next.outer)   next.outer   = { ...next.outer,   effects: {} };
+        return next;
+      });
     },
 
     // --- Layer tier (inner / outer) ---

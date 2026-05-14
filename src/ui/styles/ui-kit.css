@@ -265,23 +265,69 @@
   background: var(--surface-2);
   border: 1px solid var(--stroke-idle);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.effect-active-row__head {
+/* Native <details>/<summary> styling — collapse to a single-line summary. */
+.effect-active-row[open] {
+  padding-bottom: 8px;
+}
+
+.effect-active-row__summary {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  font-size: 12px;
+}
+
+.effect-active-row__summary::-webkit-details-marker { display: none; }
+
+.effect-active-row__summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 10px;
+  font-size: 9px;
+  color: var(--text-dim);
+  transition: transform 120ms ease;
+}
+
+.effect-active-row[open] .effect-active-row__summary::before {
+  transform: rotate(90deg);
 }
 
 .effect-active-row__name {
-  font-size: 12px;
   font-weight: 600;
   color: var(--text);
+}
+
+.effect-active-row__hint {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: right;
+  margin-right: 4px;
+}
+
+.effect-active-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* Bare row variant — used when an effect has no controls at all
+   (e.g. Highlight has no intensity / multi-trigger). */
+.effect-active-row--bare {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
 }
 
 .form-row__label {

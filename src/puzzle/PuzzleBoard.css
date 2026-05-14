@@ -53,10 +53,11 @@
   transition: stroke 150ms ease, stroke-width 150ms ease;
 }
 
-.piece--selected .piece__edge {
-  stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
-  stroke-width: 2.5;
-}
+/* Selection-state edge styling intentionally omitted: it competed with
+ * user-configured edge effects (Highlight / Thicken) and made it
+ * impossible to tell whether a configured effect was actually firing.
+ * Selection signal stays via `.piece--selected .piece__body` (fill shift)
+ * which targets a different paint layer entirely. */
 
 /* Backward-compat: anything still using .piece__path keeps working. */
 .piece__path {
@@ -182,35 +183,54 @@
   50%      { opacity: 0.92; transform: scale(0.985); }
 }
 
+/* Edge effects come in two trigger scopes:
+     * `--{trigger}-on-piece` (default) — fires from the parent piece's
+       :hover/:active. Bigger hit target; user feels "the whole piece".
+     * `--{trigger}-on-edge` — fires from the edge stroke itself. Precise
+       per-edge feel. Edges with this scope get `pointer-events: stroke`
+       (set by PuzzlePiece) so the visible stroke region is hoverable. */
+
 /* --- Edge · highlight (stroke recolour + thicken) ---------------------- */
-.piece:hover  .piece__edge--anim-highlight--hover,
-.piece:active .piece__edge--anim-highlight--click,
-              .piece__edge--anim-highlight--always {
+.piece:hover  .piece__edge--anim-highlight--hover-on-piece,
+.piece:active .piece__edge--anim-highlight--click-on-piece,
+              .piece__edge--anim-highlight--always-on-piece,
+.piece__edge--anim-highlight--hover-on-edge:hover,
+.piece__edge--anim-highlight--click-on-edge:active,
+.piece__edge--anim-highlight--always-on-edge {
   stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
   stroke-width: 2.5;
 }
 
 /* --- Edge · glow ------------------------------------------------------- */
-.piece:hover  .piece__edge--anim-glow--hover,
-.piece:active .piece__edge--anim-glow--click,
-              .piece__edge--anim-glow--always {
+.piece:hover  .piece__edge--anim-glow--hover-on-piece,
+.piece:active .piece__edge--anim-glow--click-on-piece,
+              .piece__edge--anim-glow--always-on-piece,
+.piece__edge--anim-glow--hover-on-edge:hover,
+.piece__edge--anim-glow--click-on-edge:active,
+.piece__edge--anim-glow--always-on-edge {
   filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor)
           drop-shadow(0 0 calc(var(--anim-edge-glow-radius, 4px) * 2) currentColor);
 }
-.piece:not(:hover) .piece__edge--anim-glow--idle {
+.piece:not(:hover) .piece__edge--anim-glow--idle-on-piece,
+.piece__edge--anim-glow--idle-on-edge:not(:hover) {
   filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor);
 }
 
 /* --- Edge · thicken ---------------------------------------------------- */
-.piece:hover  .piece__edge--anim-thicken--hover,
-.piece:active .piece__edge--anim-thicken--click,
-              .piece__edge--anim-thicken--always {
+.piece:hover  .piece__edge--anim-thicken--hover-on-piece,
+.piece:active .piece__edge--anim-thicken--click-on-piece,
+              .piece__edge--anim-thicken--always-on-piece,
+.piece__edge--anim-thicken--hover-on-edge:hover,
+.piece__edge--anim-thicken--click-on-edge:active,
+.piece__edge--anim-thicken--always-on-edge {
   stroke-width: var(--anim-edge-thicken-width, 3.5px);
 }
 
 /* --- Edge · wiggle (transient transform shake) ------------------------- */
-.piece:hover  .piece__edge--anim-wiggle--hover,
-.piece:active .piece__edge--anim-wiggle--click {
+.piece:hover  .piece__edge--anim-wiggle--hover-on-piece,
+.piece:active .piece__edge--anim-wiggle--click-on-piece,
+.piece__edge--anim-wiggle--hover-on-edge:hover,
+.piece__edge--anim-wiggle--click-on-edge:active {
   animation: piece-edge-wiggle 320ms ease-in-out;
   transform-box: fill-box;
   transform-origin: center;
@@ -225,8 +245,10 @@
 }
 
 /* --- Edge · flash (transient stroke pulse) ----------------------------- */
-.piece:hover  .piece__edge--anim-flash--hover,
-.piece:active .piece__edge--anim-flash--click {
+.piece:hover  .piece__edge--anim-flash--hover-on-piece,
+.piece:active .piece__edge--anim-flash--click-on-piece,
+.piece__edge--anim-flash--hover-on-edge:hover,
+.piece__edge--anim-flash--click-on-edge:active {
   animation: piece-edge-flash var(--anim-edge-flash-duration, 700ms) ease-out;
 }
 @keyframes piece-edge-flash {

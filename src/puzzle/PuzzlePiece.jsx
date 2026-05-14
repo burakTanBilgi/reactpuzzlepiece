@@ -112,29 +112,40 @@ export default function PuzzlePiece({
 
       {/* Per-segment edge strokes (rendered after content so the outline sits
           on top). Opacity:0 strokes are still emitted but don't paint — the
-          mask above is what creates the visible transparent strip. */}
-      <g className="piece__edges" pointerEvents="none">
-        {segments.map((seg, i) => {
-          const s = seg.style;
-          const inlineStyle = s ? {
-            ...(s.color != null       ? { stroke: s.color } : null),
-            ...(s.opacity != null     ? { strokeOpacity: s.opacity } : null),
-            ...(s.strokeWidth != null ? { strokeWidth: s.strokeWidth } : null),
-          } : undefined;
-          const ea = edgeEffectAttrs(s?.effects);
-          const mergedStyle = ea.style || inlineStyle
-            ? { ...(inlineStyle || {}), ...(ea.style || {}) }
-            : undefined;
-          return (
-            <path
-              key={`${seg.pairKey}-${i}`}
-              d={seg.d}
-              className={`piece__edge ${ea.className}`.trim()}
-              style={mergedStyle}
-            />
-          );
-        })}
-      </g>
+          mask above is what creates the visible transparent strip.
+
+          The wrapper's pointer-events: when ANY segment carries an
+          edge-scope effect we open it up to `stroke` so the stroke region
+          can receive :hover/:active. Otherwise stays 'none' so clicks
+          fall through to the parent piece (selection unaffected). */}
+      {(() => {
+        const segAttrs = segments.map((seg) => edgeEffectAttrs(seg.style?.effects));
+        const anyEdgeScope = segAttrs.some((ea) => ea.hasEdgeScope);
+        return (
+          <g className="piece__edges" pointerEvents={anyEdgeScope ? 'stroke' : 'none'}>
+            {segments.map((seg, i) => {
+              const s = seg.style;
+              const inlineStyle = s ? {
+                ...(s.color != null       ? { stroke: s.color } : null),
+                ...(s.opacity != null     ? { strokeOpacity: s.opacity } : null),
+                ...(s.strokeWidth != null ? { strokeWidth: s.strokeWidth } : null),
+              } : undefined;
+              const ea = segAttrs[i];
+              const mergedStyle = ea.style || inlineStyle
+                ? { ...(inlineStyle || {}), ...(ea.style || {}) }
+                : undefined;
+              return (
+                <path
+                  key={`${seg.pairKey}-${i}`}
+                  d={seg.d}
+                  className={`piece__edge ${ea.className}`.trim()}
+                  style={mergedStyle}
+                />
+              );
+            })}
+          </g>
+        );
+      })()}
 
       {onKnobClick &&
         knobs

@@ -26,8 +26,11 @@ export default function CellsPanel({
   updatePieceContent,
   setDefaultCellEffects,
   setCellEffects,
+  resetAllCellEffects,
 }) {
   const defaultEffects = project?.cells?.default?.effects || {};
+  const byPieceCount = Object.keys(project?.cells?.byPiece || {}).length;
+  const hasAnyCellEffect = Object.keys(defaultEffects).length > 0 || byPieceCount > 0;
 
   return (
     <>
@@ -56,6 +59,15 @@ export default function CellsPanel({
           <h3 className="card__title">Selected cell</h3>
           <p className="hint">Click a piece in the canvas to edit its content + cell effects.</p>
         </section>
+      )}
+
+      {hasAnyCellEffect && resetAllCellEffects && (
+        <div className="action-stack">
+          <button type="button" className="action-btn action-btn--ghost"
+            onClick={resetAllCellEffects}>
+            Clear all overrides
+          </button>
+        </div>
       )}
     </>
   );
