@@ -1,10 +1,5 @@
-import { useRef } from 'react';
-
-const FIT_OPTIONS = [
-  { value: 'cover',   label: 'Cover',   hint: 'Fill, may crop' },
-  { value: 'contain', label: 'Contain', hint: 'Fit whole image' },
-  { value: 'fill',    label: 'Stretch', hint: 'Stretch to bounds' },
-];
+import { FIT_OPTIONS } from '../utils/fitOptions.js';
+import { useFileInput } from '../hooks/useFileInput.js';
 
 // Side-panel UI for project-wide background images. Each background covers a
 // rectangular range of cells and renders sliced across whatever pieces happen
@@ -16,13 +11,7 @@ export default function BackgroundsPanel({
   onUpdate,
   onRemove,
 }) {
-  const fileRef = useRef(null);
-
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (file) onAddImage(file);
-  };
+  const { inputProps, open } = useFileInput(onAddImage);
 
   return (
     <section className="card">
@@ -33,12 +22,12 @@ export default function BackgroundsPanel({
           : 'Select cells to choose where to place the image (defaults to the full grid).'}
       </p>
 
-      <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      <input {...inputProps} type="file" accept="image/*" hidden />
       <div className="action-stack">
         <button
           type="button"
           className="action-btn"
-          onClick={() => fileRef.current?.click()}
+          onClick={open}
         >
           ↑ Upload image
         </button>

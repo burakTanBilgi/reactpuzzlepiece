@@ -273,21 +273,18 @@ export default function GridCanvas({
           </text>
         ))}
 
-        {/* Cell hit areas */}
-        {Array.from({ length: grid.rows }).flatMap((_, r) =>
-          Array.from({ length: grid.cols }, (_, c) => (
-            <rect
-              key={`hit-${r}-${c}`}
-              x={gx + c * CELL_PX}
-              y={gy + r * CELL_PX}
-              width={CELL_PX}
-              height={CELL_PX}
-              fill="transparent"
-              style={{ cursor: 'pointer' }}
-              onPointerDown={(e) => onCellPointerDown(e, r, c)}
-            />
-          ))
-        )}
+        {/* Cell hit area — one overlay rect for the whole grid; the pointer
+            handler maps screen coords to a cell. Saves rows×cols rect
+            elements (up to 50×50 = 2500) compared to per-cell hit rects. */}
+        <rect
+          x={gx} y={gy} width={gridW} height={gridH}
+          fill="transparent"
+          style={{ cursor: 'pointer' }}
+          onPointerDown={(e) => {
+            const cell = cellAt(e.clientX, e.clientY);
+            if (cell) onCellPointerDown(e, cell[0], cell[1]);
+          }}
+        />
       </svg>
     </div>
   );

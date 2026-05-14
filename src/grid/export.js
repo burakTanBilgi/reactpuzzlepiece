@@ -1,5 +1,5 @@
 // Export options for a Project:
-//   - exportJSON          (project state, see storage.js)
+//   - exportJSON          (project state, see file-io.js)
 //   - exportSingleFileJSX (one self-contained .jsx — drop into any React 18+ project)
 //   - exportModuleZip     (full puzzle module + README + project.json)
 

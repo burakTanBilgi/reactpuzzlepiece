@@ -4,9 +4,7 @@
 // over consecutive empty cells until the next non-empty cell.
 
 import { clampGridSize, DEFAULT_CELL_SIZE, MAX_GRID } from './grid.js';
-
-let _gid = 0;
-const nextId = () => `g-im-${Date.now().toString(36)}-${++_gid}`;
+import { nextImportId as nextId } from './ids.js';
 
 // Parse text into a 2D string array. Auto-detects TSV (any tabs in first
 // non-empty line) vs CSV (with quoted-field handling).

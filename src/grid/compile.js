@@ -83,7 +83,7 @@ export function compileProject(project) {
   for (const piece of pieces) {
     const b = bounds.get(piece.id);
 
-    for (const side of ['top', 'right', 'bottom', 'left']) {
+    for (const side of ALL_SIDES) {
       const segs = collectSegments(grid, piece.id, b, side);
       if (segs.length === 0) {
         // No neighbors on this side → outer edge. Apply effect with single knob or flat.
@@ -118,74 +118,58 @@ export function compileProject(project) {
 
 // --- Segment discovery -------------------------------------------------------
 
+// Per-side axis descriptor: how to walk a piece's bounding rect along one
+// side, where the neighbor cells live, and when the side is on the grid edge
+// (no neighbors). Drives collectSegments and listSharedEdges so the four
+// directions share one loop instead of four near-identical copies.
+//
+//   start/end  — the inclusive index range to walk along the side
+//   atEdge     — true when this side faces the grid boundary (no neighbors)
+//   peek       — read the neighbor groupId at the given walk index
+const SIDE_AXIS = {
+  right:  { start: (b)       => b.rMin,
+            end:   (b)       => b.rMax,
+            atEdge:(b, grid) => b.cMax + 1 >= grid.cols,
+            peek:  (i, b, grid) => grid.groups[i][b.cMax + 1] },
+  left:   { start: (b)       => b.rMin,
+            end:   (b)       => b.rMax,
+            atEdge:(b)       => b.cMin === 0,
+            peek:  (i, b, grid) => grid.groups[i][b.cMin - 1] },
+  bottom: { start: (b)       => b.cMin,
+            end:   (b)       => b.cMax,
+            atEdge:(b, grid) => b.rMax + 1 >= grid.rows,
+            peek:  (i, b, grid) => grid.groups[b.rMax + 1][i] },
+  top:    { start: (b)       => b.cMin,
+            end:   (b)       => b.cMax,
+            atEdge:(b)       => b.rMin === 0,
+            peek:  (i, b, grid) => grid.groups[b.rMin - 1][i] },
+};
+
 // Walk the cells along one side of a group's bounding rect, grouping
 // consecutive cells that share the same neighbor groupId. Returns ordered
 // segments with normalized positions in [0,1] along that side.
 //
 //   { neighborId, startPos, endPos, midPos }
-//
 function collectSegments(grid, pieceId, b, side) {
+  const ax = SIDE_AXIS[side];
+  if (ax.atEdge(b, grid)) return [];
+
+  const start = ax.start(b);
+  const end   = ax.end(b);
+  const sideLen = end - start + 1;
+
   const segs = [];
-  const { rows, cols } = grid;
-
-  if (side === 'right') {
-    if (b.cMax + 1 >= cols) return segs;
-    const sideLen = b.rMax - b.rMin + 1;
-    let r = b.rMin;
-    while (r <= b.rMax) {
-      const nbId = grid.groups[r][b.cMax + 1];
-      if (nbId === pieceId) { r++; continue; } // safety: same-group should never appear here
-      let endR = r;
-      while (endR + 1 <= b.rMax && grid.groups[endR + 1][b.cMax + 1] === nbId) endR++;
-      const startPos = (r - b.rMin) / sideLen;
-      const endPos = (endR - b.rMin + 1) / sideLen;
-      segs.push({ neighborId: nbId, startPos, endPos, midPos: (startPos + endPos) / 2 });
-      r = endR + 1;
-    }
-  } else if (side === 'left') {
-    if (b.cMin === 0) return segs;
-    const sideLen = b.rMax - b.rMin + 1;
-    let r = b.rMin;
-    while (r <= b.rMax) {
-      const nbId = grid.groups[r][b.cMin - 1];
-      if (nbId === pieceId) { r++; continue; }
-      let endR = r;
-      while (endR + 1 <= b.rMax && grid.groups[endR + 1][b.cMin - 1] === nbId) endR++;
-      const startPos = (r - b.rMin) / sideLen;
-      const endPos = (endR - b.rMin + 1) / sideLen;
-      segs.push({ neighborId: nbId, startPos, endPos, midPos: (startPos + endPos) / 2 });
-      r = endR + 1;
-    }
-  } else if (side === 'bottom') {
-    if (b.rMax + 1 >= rows) return segs;
-    const sideLen = b.cMax - b.cMin + 1;
-    let c = b.cMin;
-    while (c <= b.cMax) {
-      const nbId = grid.groups[b.rMax + 1][c];
-      if (nbId === pieceId) { c++; continue; }
-      let endC = c;
-      while (endC + 1 <= b.cMax && grid.groups[b.rMax + 1][endC + 1] === nbId) endC++;
-      const startPos = (c - b.cMin) / sideLen;
-      const endPos = (endC - b.cMin + 1) / sideLen;
-      segs.push({ neighborId: nbId, startPos, endPos, midPos: (startPos + endPos) / 2 });
-      c = endC + 1;
-    }
-  } else if (side === 'top') {
-    if (b.rMin === 0) return segs;
-    const sideLen = b.cMax - b.cMin + 1;
-    let c = b.cMin;
-    while (c <= b.cMax) {
-      const nbId = grid.groups[b.rMin - 1][c];
-      if (nbId === pieceId) { c++; continue; }
-      let endC = c;
-      while (endC + 1 <= b.cMax && grid.groups[b.rMin - 1][endC + 1] === nbId) endC++;
-      const startPos = (c - b.cMin) / sideLen;
-      const endPos = (endC - b.cMin + 1) / sideLen;
-      segs.push({ neighborId: nbId, startPos, endPos, midPos: (startPos + endPos) / 2 });
-      c = endC + 1;
-    }
+  let i = start;
+  while (i <= end) {
+    const nbId = ax.peek(i, b, grid);
+    if (nbId === pieceId) { i++; continue; } // safety: same-group should never appear here
+    let endI = i;
+    while (endI + 1 <= end && ax.peek(endI + 1, b, grid) === nbId) endI++;
+    const startPos = (i - start) / sideLen;
+    const endPos   = (endI - start + 1) / sideLen;
+    segs.push({ neighborId: nbId, startPos, endPos, midPos: (startPos + endPos) / 2 });
+    i = endI + 1;
   }
-
   return segs;
 }
 
@@ -244,72 +228,53 @@ function prettyLabel(id) {
 
 // --- Edge enumeration (for the Edge Editor's edge picker) -------------------
 
+// Each shared edge is enumerated once via the side that's lex-smaller in the
+// pair (right & bottom). The opposite side is the neighbor's incoming side.
+const SHARED_ENUM_SIDES = [
+  { side: 'right',  opposite: 'left' },
+  { side: 'bottom', opposite: 'top'  },
+];
+
 export function listSharedEdges(project) {
   const { grid } = project;
   const bounds = groupBoundsMap(grid);
   const seen = new Set();
   const out = [];
   for (const [id, b] of bounds) {
-    // Right neighbors
-    if (b.cMax + 1 < grid.cols) {
-      let r = b.rMin;
-      while (r <= b.rMax) {
-        const nbId = grid.groups[r][b.cMax + 1];
-        if (nbId === id) { r++; continue; }
-        let endR = r;
-        while (endR + 1 <= b.rMax && grid.groups[endR + 1][b.cMax + 1] === nbId) endR++;
+    for (const { side, opposite } of SHARED_ENUM_SIDES) {
+      const ax = SIDE_AXIS[side];
+      if (ax.atEdge(b, grid)) continue;
+      const start = ax.start(b);
+      const end   = ax.end(b);
+      let i = start;
+      while (i <= end) {
+        const nbId = ax.peek(i, b, grid);
+        if (nbId === id) { i++; continue; }
+        let endI = i;
+        while (endI + 1 <= end && ax.peek(endI + 1, b, grid) === nbId) endI++;
         const k = edgeKey(id, nbId);
         if (!seen.has(k)) {
           seen.add(k);
-          out.push({ pairKey: k, pieceAId: id, sideA: 'right', pieceBId: nbId, sideB: 'left' });
+          out.push({ pairKey: k, pieceAId: id, sideA: side, pieceBId: nbId, sideB: opposite });
         }
-        r = endR + 1;
-      }
-    }
-    // Bottom neighbors
-    if (b.rMax + 1 < grid.rows) {
-      let c = b.cMin;
-      while (c <= b.cMax) {
-        const nbId = grid.groups[b.rMax + 1][c];
-        if (nbId === id) { c++; continue; }
-        let endC = c;
-        while (endC + 1 <= b.cMax && grid.groups[b.rMax + 1][endC + 1] === nbId) endC++;
-        const k = edgeKey(id, nbId);
-        if (!seen.has(k)) {
-          seen.add(k);
-          out.push({ pairKey: k, pieceAId: id, sideA: 'bottom', pieceBId: nbId, sideB: 'top' });
-        }
-        c = endC + 1;
+        i = endI + 1;
       }
     }
   }
   return out;
 }
 
+const ALL_SIDES = ['top', 'right', 'bottom', 'left'];
+
 export function listOuterEdges(project) {
   const { grid } = project;
   const bounds = groupBoundsMap(grid);
   const out = [];
   for (const [id, b] of bounds) {
-    // Top edge
-    if (b.rMin === 0) {
-      const pairKey = `${id}||outer-top`;
-      out.push({ pairKey, pieceId: id, side: 'top', isOuter: true });
-    }
-    // Bottom edge
-    if (b.rMax + 1 >= grid.rows) {
-      const pairKey = `${id}||outer-bottom`;
-      out.push({ pairKey, pieceId: id, side: 'bottom', isOuter: true });
-    }
-    // Left edge
-    if (b.cMin === 0) {
-      const pairKey = `${id}||outer-left`;
-      out.push({ pairKey, pieceId: id, side: 'left', isOuter: true });
-    }
-    // Right edge
-    if (b.cMax + 1 >= grid.cols) {
-      const pairKey = `${id}||outer-right`;
-      out.push({ pairKey, pieceId: id, side: 'right', isOuter: true });
+    for (const side of ALL_SIDES) {
+      if (SIDE_AXIS[side].atEdge(b, grid)) {
+        out.push({ pairKey: `${id}||outer-${side}`, pieceId: id, side, isOuter: true });
+      }
     }
   }
   return out;

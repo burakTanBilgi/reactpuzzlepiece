@@ -3,7 +3,8 @@
 State-based routing (no react-router). `App.jsx` owns the page state, the theme, and passes `project` (from `useProject`) to all pages.
 
 ## Pages
-- `DocsPage` — interactive tutorial. Sidebar of sections (`components/docs/*Section.jsx`) with live demos in `components/docs/demos/`. Default landing tab on first visit.
+- `LandingPage` — front-door hero with brand mark, tagline, primary CTAs, feature cards, and a "Continue to docs ↓" link at the bottom. Default first-visit page.
+- `DocsPage` — interactive tutorial. Sidebar of sections (`components/docs/*Section.jsx`) with live demos in `components/docs/demos/`.
 - `ProjectsPage` — project library + JSON import. Opening a project tile auto-navigates to `Preview`.
 - `PreviewPage` — large preview of the current project, rename input, navigation buttons to Grid and Edit, and the **export menu** (JSON / single-file / ZIP).
 - `GridEditorPage` — cell grid wrapped in `ViewPanel` for pan/zoom: drag-select, merge/unmerge, resize, color picker, **CSV/TSV paste & file import**, click/drag row & column headers to delete, and **multi-piece background images** (upload or Ctrl+V → fills the current selection).
@@ -19,15 +20,18 @@ State-based routing (no react-router). `App.jsx` owns the page state, the theme,
 - `EditCanvas` — thin shell that picks `EdgeEditorCanvas` or `ContentCanvas` based on mode.
 - `EdgeEditorCanvas` — `PuzzleBoard` + SVG overlay with clip-path-based edge highlights (tight along edge, `PERP_PAD=60` perpendicular for knobs/waves).
 - `ContentCanvas` — `PuzzleBoard` configured with `onSelect` for piece selection.
-- `EdgesPanel`, `ContentPanel` — side-panel UIs for the two Edit modes; pure presentation.
+- `EdgesPanel`, `ContentPanel` — side-panel UIs for the two Edit modes; pure presentation. `EdgesPanel` is a thin orchestrator over `components/edges/{HintCard, LayerCard, SelectedEdgeCard, StyleControls}.jsx`.
 - `BackgroundsPanel` — Grid-page side card: upload / paste image, list existing backgrounds with thumbnail + fit selector + delete.
 - `ImportDialog` — modal: paste textarea + auto-merge toggle + sample button.
 - `SliderRow` — slider + typeable numeric text input. Click value to type, Enter/blur commits, Esc cancels, ↑/↓ steps.
 - `ViewPanel` — scrollable/zoomable wrapper. Wheel zooms (no modifier), middle-drag or Ctrl+drag pans. Used by Grid and Edit pages.
 - `PreviewSvg` — read-only thumbnail rendered from a Project (uses `pieceColors`).
 
-## Utils
+## Utils & hooks
 - `utils/formatTime.js` — relative-time formatter shared by Projects + Preview pages.
+- `utils/computeViewBox.js` — pure: derive an SVG viewBox snug around all pieces (with knob/wave padding). Shared by `EdgeEditorCanvas` and (formerly) `ContentCanvas`.
+- `utils/fitOptions.js` — single source of truth for the cover/contain/stretch image-fit options (used by `BackgroundsPanel` + `ContentPanel`).
+- `hooks/useFileInput.js` — boilerplate-killer for "hidden `<input type=file>` + a button to open it"; spread `inputProps` and call `open()`.
 
 ## Styles (`styles/`)
 - `App.css` — shell only: scrollbars, `.app`, `fadeIn`. Imports the shared kit + every per-component / per-page sheet.

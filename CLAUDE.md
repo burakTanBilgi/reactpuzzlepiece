@@ -22,22 +22,31 @@ src/
     index.js                  — public API
     CLAUDE.md                 — module-specific notes
   grid/                       — Data model + state + I/O
-    grid.js                   — cell-grid helpers (MAX_GRID = 50)
-    compile.js                — Project → Piece[]
-    storage.js                — localStorage + JSON import/export
-    import.js                 — CSV/TSV/paste → grid + content
+    project.js                — pure: newProject() constructor
+    grid.js                   — pure cell-grid helpers (MAX_GRID = 50)
+    compile.js                — pure: Project → Piece[]
+    import.js                 — pure: CSV/TSV/paste → grid + content
+    ids.js                    — pure id factories (groups, projects, bgs)
+    zip.js                    — pure ZIP encoder (no deps)
+    actions/                  — pure mutation factories (grid/edge/piece/bg)
+    browser-storage.js        — localStorage CRUD (browser-only)
+    file-io.js                — exportJSON / importJSON (browser file I/O)
     export.js                 — single-file JSX + module ZIP exports
-    zip.js                    — minimal pure-JS ZIP encoder (no deps)
-    useProject.js             — React hook: state + auto-save
+    useProject.js             — React hook: state + auto-save + lifecycle
     CLAUDE.md
   ui/                         — App shell + pages + components
     App.jsx                   — page switcher + theme state
     components/               — PageNav, GridCanvas, EditCanvas,
                                 EdgesPanel, ContentPanel, EdgeEditorCanvas,
                                 ContentCanvas, ImportDialog, SliderRow,
-                                ViewPanel, PreviewSvg
-    pages/                    — Projects / Preview / Grid / Edit
+                                ViewPanel, PreviewSvg, BackgroundsPanel
+    components/edges/         — HintCard, LayerCard, SelectedEdgeCard,
+                                StyleControls, constants
+    pages/                    — Landing / Docs / Projects / Preview / Grid / Edit
+    hooks/useFileInput.js     — hidden-input + open-button boilerplate
     utils/formatTime.js       — relative-time helper
+    utils/computeViewBox.js   — pure: SVG viewBox snug around all pieces
+    utils/fitOptions.js       — shared cover/contain/stretch options
     styles/App.css            — shell only; imports per-component & per-page sheets
     CLAUDE.md
 ```
@@ -109,19 +118,20 @@ type Background = {
 
 | Page     | What it does                                                                |
 | -------- | --------------------------------------------------------------------------- |
-| Docs     | Interactive tutorial + landing page on first visit. Sidebar nav for sections; live demo components in `components/docs/demos/`. |
+| Landing  | Hero / brand front door. Tagline, primary CTAs, feature cards, and a "Continue to docs ↓" pill at the bottom. **First-visit default.** |
+| Docs     | Interactive tutorial. Sidebar nav for sections; live demo components in `components/docs/demos/`. |
 | Projects | Project library + JSON import.                                              |
 | Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP) at top of side panel. |
 | Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete, **multi-piece background images** (upload or Ctrl+V into selected cells). |
 | Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (default + inner/outer + per-edge layers, see compile.js#resolveEdge) and **Content** (text/image content per piece). |
 
-The last visited page is persisted to `localStorage[hakoniwa:lastPage]`; first-time visitors land on Docs.
+The last visited page is persisted to `localStorage[hakoniwa:lastPage]`; first-time visitors land on Landing.
 
 The Edit page wires shared canvas + a `ModeSwitch` in the side panel; the underlying `PuzzleBoard` renders identically in both modes — only the overlay/interaction changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.
 
 ## Export options
 
-- **JSON** — re-importable project state (`storage.js#exportJSON`).
+- **JSON** — re-importable project state (`file-io.js#exportJSON`).
 - **Single-file React** (`export.js#exportSingleFileJSX`) — generates one `.jsx` with paths precomputed and content baked in. Zero deps beyond React. Bundled with a README in a small ZIP.
 - **Module bundle (ZIP)** (`export.js#exportModuleZip`) — ships the full `puzzle/` folder + `project.json` + a wrapper component + standalone `compileProject.js` + README. Drop-in for serious integration.
 

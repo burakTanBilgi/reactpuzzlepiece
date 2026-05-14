@@ -1,11 +1,7 @@
-import { useRef } from 'react';
 import SliderRow from './SliderRow.jsx';
+import { FIT_OPTIONS } from '../utils/fitOptions.js';
+import { useFileInput } from '../hooks/useFileInput.js';
 
-const FIT_OPTIONS = [
-  { value: 'cover',   label: 'Cover',   hint: 'Fill, may crop' },
-  { value: 'contain', label: 'Contain', hint: 'Fit whole image' },
-  { value: 'fill',    label: 'Stretch', hint: 'Stretch to bounds' },
-];
 const ALIGN_OPTIONS = [
   { value: 'left',   label: '⇤' },
   { value: 'center', label: '↔' },
@@ -19,7 +15,6 @@ export default function ContentPanel({
   setPieceContent,
   updatePieceContent,
 }) {
-  const fileRef = useRef(null);
   const selected = selectedPiece;
   const content = selected?.content || null;
 
@@ -42,6 +37,8 @@ export default function ContentPanel({
     };
     reader.readAsDataURL(file);
   };
+
+  const { inputProps, open } = useFileInput(handleImageFile);
 
   if (!selected) {
     return (
@@ -115,15 +112,8 @@ export default function ContentPanel({
 
       {content?.type === 'image' && (
         <div className="content-config">
-          <input ref={fileRef} type="file" accept="image/*" hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (f) handleImageFile(f);
-            }}
-          />
-          <button type="button" className="action-btn action-btn--ghost"
-            onClick={() => fileRef.current?.click()}>
+          <input {...inputProps} type="file" accept="image/*" hidden />
+          <button type="button" className="action-btn action-btn--ghost" onClick={open}>
             {content.src ? 'Replace image' : '↑ Upload image'}
           </button>
 

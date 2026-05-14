@@ -2,15 +2,14 @@
 // a `groupId`. Cells with the same groupId are merged into one piece.
 // All functions are immutable — they return new grids/maps.
 
+import { nextGroupId } from './ids.js';
+
 export const MIN_GRID = 1;
 export const MAX_GRID = 50;
 export const DEFAULT_CELL_SIZE = 200;
 
 export const clampGridSize = (n) =>
   Math.max(MIN_GRID, Math.min(MAX_GRID, Number.isFinite(n) ? Math.floor(n) : MIN_GRID));
-
-let _gid = 0;
-const nextGroupId = () => `g-${++_gid}`;
 
 // --- Grid construction -------------------------------------------------------
 

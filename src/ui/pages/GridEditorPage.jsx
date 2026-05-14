@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MAX_GRID, MIN_GRID, isRectangular } from '../../grid/grid.js';
 import { importTableText } from '../../grid/import.js';
 import GridCanvas from '../components/GridCanvas.jsx';
@@ -6,6 +6,7 @@ import BackgroundsPanel from '../components/BackgroundsPanel.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
+import { useFileInput } from '../hooks/useFileInput.js';
 
 // Curated palette — warm, sophisticated, mode-agnostic.
 const PALETTE = [
@@ -21,7 +22,6 @@ export default function GridEditorPage({ project }) {
   } = project;
   const [selection, setSelection] = useState([]);
   const [showImport, setShowImport] = useState(false);
-  const fileRef = useRef(null);
 
   // Bounding rect of the current selection in cell coordinates, or null.
   const selectionRect = useMemo(() => {
@@ -90,6 +90,8 @@ export default function GridEditorPage({ project }) {
     }
   };
 
+  const csvInput = useFileInput(handleImportFile);
+
   if (!p) return null;
 
   const canMerge = selection.length >= 2 && isRectangular(selection);
@@ -156,17 +158,12 @@ export default function GridEditorPage({ project }) {
               ⎘ Paste data
             </button>
             <input
-              ref={fileRef}
+              {...csvInput.inputProps}
               type="file"
               accept=".csv,.tsv,.txt,text/csv"
               hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.target.value = '';
-                if (f) handleImportFile(f);
-              }}
             />
-            <button type="button" className="action-btn action-btn--ghost" onClick={() => fileRef.current?.click()}>
+            <button type="button" className="action-btn action-btn--ghost" onClick={csvInput.open}>
               ↑ Import CSV/TSV file
             </button>
           </div>

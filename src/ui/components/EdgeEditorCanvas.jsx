@@ -1,10 +1,38 @@
 import { useMemo } from 'react';
-import { PuzzleBoard, computePieceBbox, computeSidePath } from '../../puzzle';
+import { PuzzleBoard, computeSidePath } from '../../puzzle';
+import { computeViewBox } from '../utils/computeViewBox.js';
 
-const STROKE_PAD = 60;
 const HIT_THICKNESS = 24;
+const HIT_HALF = HIT_THICKNESS / 2;
 // Perpendicular padding for clip: must cover puzzle knobs (KNOB_R=30) and waves (max ~40).
 const PERP_PAD = 60;
+
+// Hit-rect geometry for one edge. `b` is the neighbor piece for inner edges,
+// or null for outer edges (then start/end span the full side of `a`).
+//
+// Output: a rectangle aligned to the edge for pointer-hit detection plus the
+// (lx1, ly1, lx2, ly2) endpoints of the edge line itself, used to position
+// the clip path that scopes the highlighted stroke.
+function edgeHitGeometry(a, b, side) {
+  if (side === 'right' || side === 'left') {
+    const xLine  = side === 'right' ? a.x + a.w : a.x;
+    const yStart = b ? Math.max(a.y, b.y)         : a.y;
+    const yEnd   = b ? Math.min(a.y + a.h, b.y + b.h) : a.y + a.h;
+    return {
+      isVertical: true,
+      x: xLine - HIT_HALF, y: yStart, w: HIT_THICKNESS, h: yEnd - yStart,
+      lx1: xLine, ly1: yStart, lx2: xLine, ly2: yEnd,
+    };
+  }
+  const yLine  = side === 'bottom' ? a.y + a.h : a.y;
+  const xStart = b ? Math.max(a.x, b.x)         : a.x;
+  const xEnd   = b ? Math.min(a.x + a.w, b.x + b.w) : a.x + a.w;
+  return {
+    isVertical: false,
+    x: xStart, y: yLine - HIT_HALF, w: xEnd - xStart, h: HIT_THICKNESS,
+    lx1: xStart, ly1: yLine, lx2: xEnd, ly2: yLine,
+  };
+}
 
 export default function EdgeEditorCanvas({
   pieces,
@@ -20,76 +48,30 @@ export default function EdgeEditorCanvas({
     [pieces]
   );
 
-  const viewBox = useMemo(() => {
-    if (pieces.length === 0) return { x: 0, y: 0, w: 1, h: 1 };
-    const bbox = pieces.reduce(
-      (acc, p) => {
-        const b = computePieceBbox(p, pieces, effect, effectConfig);
-        return {
-          minX: Math.min(acc.minX, b.minX),
-          minY: Math.min(acc.minY, b.minY),
-          maxX: Math.max(acc.maxX, b.maxX),
-          maxY: Math.max(acc.maxY, b.maxY),
-        };
-      },
-      { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-    );
-    return {
-      x: bbox.minX - STROKE_PAD,
-      y: bbox.minY - STROKE_PAD,
-      w: bbox.maxX - bbox.minX + STROKE_PAD * 2,
-      h: bbox.maxY - bbox.minY + STROKE_PAD * 2,
-    };
-  }, [pieces, effect, effectConfig]);
+  const viewBox = useMemo(
+    () => computeViewBox(pieces, effect, effectConfig),
+    [pieces, effect, effectConfig]
+  );
 
   const hitRects = useMemo(() => {
     const out = [];
     for (const e of allEdges) {
+      const overridden = isOverridden?.(e.pairKey) ?? false;
       if (e.isOuter) {
         const piece = piecesById.get(e.pieceId);
         if (!piece) continue;
-        let x, y, w, h, lx1, ly1, lx2, ly2;
-        if (e.side === 'right') {
-          const xLine = piece.x + piece.w;
-          x = xLine - HIT_THICKNESS / 2; y = piece.y; w = HIT_THICKNESS; h = piece.h;
-          lx1 = lx2 = xLine; ly1 = piece.y; ly2 = piece.y + piece.h;
-        } else if (e.side === 'left') {
-          const xLine = piece.x;
-          x = xLine - HIT_THICKNESS / 2; y = piece.y; w = HIT_THICKNESS; h = piece.h;
-          lx1 = lx2 = xLine; ly1 = piece.y; ly2 = piece.y + piece.h;
-        } else if (e.side === 'bottom') {
-          const yLine = piece.y + piece.h;
-          x = piece.x; y = yLine - HIT_THICKNESS / 2; w = piece.w; h = HIT_THICKNESS;
-          ly1 = ly2 = yLine; lx1 = piece.x; lx2 = piece.x + piece.w;
-        } else {
-          const yLine = piece.y;
-          x = piece.x; y = yLine - HIT_THICKNESS / 2; w = piece.w; h = HIT_THICKNESS;
-          ly1 = ly2 = yLine; lx1 = piece.x; lx2 = piece.x + piece.w;
-        }
-        out.push({ pairKey: e.pairKey, x, y, w, h, lx1, ly1, lx2, ly2,
-          overridden: isOverridden?.(e.pairKey) ?? false,
-          isOuter: true, pieceId: e.pieceId, side: e.side });
+        out.push({
+          pairKey: e.pairKey, ...edgeHitGeometry(piece, null, e.side),
+          overridden, isOuter: true, pieceId: e.pieceId, side: e.side,
+        });
       } else {
         const a = piecesById.get(e.pieceAId);
         const b = piecesById.get(e.pieceBId);
         if (!a || !b) continue;
-        let x, y, w, h, lx1, ly1, lx2, ly2;
-        if (e.sideA === 'right') {
-          const xLine = a.x + a.w;
-          const yStart = Math.max(a.y, b.y);
-          const yEnd = Math.min(a.y + a.h, b.y + b.h);
-          x = xLine - HIT_THICKNESS / 2; y = yStart; w = HIT_THICKNESS; h = yEnd - yStart;
-          lx1 = lx2 = xLine; ly1 = yStart; ly2 = yEnd;
-        } else {
-          const yLine = a.y + a.h;
-          const xStart = Math.max(a.x, b.x);
-          const xEnd = Math.min(a.x + a.w, b.x + b.w);
-          y = yLine - HIT_THICKNESS / 2; x = xStart; h = HIT_THICKNESS; w = xEnd - xStart;
-          ly1 = ly2 = yLine; lx1 = xStart; lx2 = xEnd;
-        }
-        out.push({ pairKey: e.pairKey, x, y, w, h, lx1, ly1, lx2, ly2,
-          overridden: isOverridden?.(e.pairKey) ?? false,
-          isOuter: false, pieceAId: e.pieceAId, pieceBId: e.pieceBId, sideA: e.sideA });
+        out.push({
+          pairKey: e.pairKey, ...edgeHitGeometry(a, b, e.sideA),
+          overridden, isOuter: false, pieceAId: e.pieceAId, pieceBId: e.pieceBId, sideA: e.sideA,
+        });
       }
     }
     return out;
@@ -108,8 +90,7 @@ export default function EdgeEditorCanvas({
         {/* Clip paths: tight along edge, wide perpendicularly to show knobs/waves. */}
         <defs>
           {hitRects.map((r) => {
-            const isVertical = Math.abs(r.lx1 - r.lx2) < 0.1;
-            const cx = isVertical
+            const cx = r.isVertical
               ? { x: r.lx1 - PERP_PAD, y: r.ly1, w: PERP_PAD * 2, h: r.ly2 - r.ly1 }
               : { x: r.lx1, y: r.ly1 - PERP_PAD, w: r.lx2 - r.lx1, h: PERP_PAD * 2 };
             return (
