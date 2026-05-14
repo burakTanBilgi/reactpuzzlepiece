@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
+import AnimationChips from '../interactions/AnimationChips.jsx';
+import { EDGE_ANIMATIONS } from '../interactions/animations.js';
 import { EFFECT_NAMES } from '../../../puzzle';
 import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE, MIXED, cap } from './constants.js';
@@ -60,12 +62,13 @@ export default function SelectedEdgeCard({
       if (first) { effect = e; cfg = c; first = false; }
       else {
         if (e !== effect) effect = MIXED;
-        if (cfg?.frequency   !== c?.frequency)   cfg = { ...cfg, frequency:   MIXED };
-        if (cfg?.amplitude   !== c?.amplitude)   cfg = { ...cfg, amplitude:   MIXED };
-        if (cfg?.inverted    !== c?.inverted)    cfg = { ...cfg, inverted:    MIXED };
-        if (cfg?.color       !== c?.color)       cfg = { ...cfg, color:       MIXED };
-        if (cfg?.opacity     !== c?.opacity)     cfg = { ...cfg, opacity:     MIXED };
-        if (cfg?.strokeWidth !== c?.strokeWidth) cfg = { ...cfg, strokeWidth: MIXED };
+        if (cfg?.frequency      !== c?.frequency)      cfg = { ...cfg, frequency:      MIXED };
+        if (cfg?.amplitude      !== c?.amplitude)      cfg = { ...cfg, amplitude:      MIXED };
+        if (cfg?.inverted       !== c?.inverted)       cfg = { ...cfg, inverted:       MIXED };
+        if (cfg?.color          !== c?.color)          cfg = { ...cfg, color:          MIXED };
+        if (cfg?.opacity        !== c?.opacity)        cfg = { ...cfg, opacity:        MIXED };
+        if (cfg?.strokeWidth    !== c?.strokeWidth)    cfg = { ...cfg, strokeWidth:    MIXED };
+        if (cfg?.hoverAnimation !== c?.hoverAnimation) cfg = { ...cfg, hoverAnimation: MIXED };
       }
     }
     return { effect, cfg };
@@ -158,6 +161,16 @@ export default function SelectedEdgeCard({
       )}
 
       <StyleControls config={combo?.cfg} onPatchConfig={applyConfig} />
+
+      <div className="form-row form-row--stack">
+        <label className="form-row__label">Hover</label>
+        <AnimationChips
+          options={EDGE_ANIMATIONS}
+          active={combo?.cfg?.hoverAnimation && combo.cfg.hoverAnimation !== MIXED ? combo.cfg.hoverAnimation : 'none'}
+          mixed={combo?.cfg?.hoverAnimation === MIXED}
+          onSelect={(id) => applyConfig({ hoverAnimation: id === 'none' ? null : id })}
+        />
+      </div>
 
       <div className="action-stack">
         <button type="button" className="action-btn action-btn--ghost" onClick={resetSelected}>

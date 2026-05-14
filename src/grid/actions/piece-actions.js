@@ -39,5 +39,35 @@ export function pieceActions(setProject) {
     clearPieceContent() {
       setProject((p) => (p ? { ...p, pieceContent: {} } : p));
     },
+
+    // --- Cell hover-animation tier ---
+    // Lives in `cells: { default, byPiece }`. Two-tier cascade resolves in
+    // compile.js#resolveCellAnimation. Pass null/'none' to clear.
+    setDefaultCellHoverAnimation(animation) {
+      const value = animation === 'none' ? null : animation;
+      setProject((p) => {
+        if (!p) return p;
+        const cells = p.cells || { default: {}, byPiece: {} };
+        return {
+          ...p,
+          cells: { ...cells, default: { ...(cells.default || {}), hoverAnimation: value } },
+        };
+      });
+    },
+
+    setCellHoverAnimation(pieceId, animation) {
+      const value = animation === 'none' ? null : animation;
+      setProject((p) => {
+        if (!p) return p;
+        const cells = p.cells || { default: {}, byPiece: {} };
+        const byPiece = { ...(cells.byPiece || {}) };
+        if (value == null) {
+          delete byPiece[pieceId];
+        } else {
+          byPiece[pieceId] = { ...(byPiece[pieceId] || {}), hoverAnimation: value };
+        }
+        return { ...p, cells: { ...cells, byPiece } };
+      });
+    },
   };
 }

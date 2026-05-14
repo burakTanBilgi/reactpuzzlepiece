@@ -19,6 +19,14 @@ export function piecesOfEdge(pairKey) {
   return pairKey.split('||');
 }
 
+// Cell hover animation cascade (two tiers): per-piece override > project default.
+// Returns the animation id (e.g. 'lift') or null when no animation is set.
+export function resolveCellAnimation(project, pieceId) {
+  return project?.cells?.byPiece?.[pieceId]?.hoverAnimation
+      ?? project?.cells?.default?.hoverAnimation
+      ?? null;
+}
+
 // For a piece with cell-bounds `b`, return the backgrounds that overlap it,
 // in pixel-space {x,y,w,h} so the renderer can position the same image across
 // all overlapped pieces (each piece's clipPath handles the slicing).
@@ -90,6 +98,7 @@ export function compileProject(project) {
       fill: pieceColors?.[id],
       content: pieceContent?.[id],
       backgrounds: collectBackgrounds(backgrounds, b, cellSize),
+      cellAnimation: resolveCellAnimation(project, id),
       sides: {},
       sideEffects: {},
       sideEffectConfigs: {},

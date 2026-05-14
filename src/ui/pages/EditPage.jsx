@@ -1,28 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listOuterEdges } from '../../grid/compile.js';
 import EdgesPanel    from '../components/EdgesPanel.jsx';
-import ContentPanel  from '../components/ContentPanel.jsx';
+import CellsPanel    from '../components/CellsPanel.jsx';
 import EditCanvas    from '../components/EditCanvas.jsx';
 import ViewPanel     from '../components/ViewPanel.jsx';
 import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
-import WaveDivider   from '../components/meta/WaveDivider.jsx';
-
-const MODES = [
-  { id: 'edges',   label: 'Edges',   icon: '∿' },
-  { id: 'content', label: 'Content', icon: '✎' },
-];
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
 
-// Combined editor: same canvas, two editing modes selected from the side panel.
+// Combined editor: same canvas, two editing modes selected at the top-nav
+// level (Edges tab vs Cells tab). The mode prop is supplied by App.jsx so
+// the in-page ModeSwitch is gone — the page nav itself is the switch.
 //
-// Selections (both shared across both modes; mutually exclusive within Edges
-// mode so the side panel can show one card at a time):
+// Selection state stays local to this single mounted instance (App renders
+// from one slot for both 'edges' and 'cells' so React reconciles and
+// preserves state across tab switches):
 //   - selectedEdges    : Set<pairKey>  — edge picks for the per-edge tier
-//   - selectedPieceId  : string | null — piece pick for the cell tier
-//                                        (Edges mode) or for content editing
-//                                        (Content mode).
-export default function EditPage({ project }) {
+//   - selectedPieceId  : string | null — piece pick for the cell tier in
+//                                        Edges mode + cell editing in Cells mode
+export default function EditPage({ project, mode = 'edges' }) {
   const {
     project: p,
     pieces,
@@ -41,9 +37,10 @@ export default function EditPage({ project }) {
     clearPieceEdgeOverride,
     setPieceContent,
     updatePieceContent,
+    setDefaultCellHoverAnimation,
+    setCellHoverAnimation,
   } = project;
 
-  const [mode, setMode] = useState('edges');
   const [selectedEdges, setSelectedEdges] = useState(() => new Set());
   const [selectedPieceId, setSelectedPieceId] = useState(null);
 
@@ -103,10 +100,6 @@ export default function EditPage({ project }) {
           <WaveBrandMark size="sm" />
         </div>
 
-        <ModeSwitch mode={mode} onChange={setMode} />
-
-        <WaveDivider amplitude={3} height={10} />
-
         {mode === 'edges' ? (
           <EdgesPanel
             project={p}
@@ -131,11 +124,14 @@ export default function EditPage({ project }) {
             clearPieceEdgeOverride={clearPieceEdgeOverride}
           />
         ) : (
-          <ContentPanel
+          <CellsPanel
+            project={p}
             selectedPiece={selectedPiece}
             onClearSelection={() => setSelectedPieceId(null)}
             setPieceContent={setPieceContent}
             updatePieceContent={updatePieceContent}
+            setDefaultCellHoverAnimation={setDefaultCellHoverAnimation}
+            setCellHoverAnimation={setCellHoverAnimation}
           />
         )}
       </aside>
@@ -154,27 +150,6 @@ export default function EditPage({ project }) {
           onSelectPiece={handleSelectPiece}
         />
       </ViewPanel>
-    </div>
-  );
-}
-
-// Tabby toggle — visually similar to PageNav's tab strip but scoped to side panel.
-function ModeSwitch({ mode, onChange }) {
-  return (
-    <div className="mode-switch" role="tablist" aria-label="Edit mode">
-      {MODES.map((m) => (
-        <button
-          key={m.id}
-          type="button"
-          role="tab"
-          aria-selected={mode === m.id}
-          className={`mode-switch__btn ${mode === m.id ? 'mode-switch__btn--active' : ''}`}
-          onClick={() => onChange(m.id)}
-        >
-          <span className="mode-switch__icon" aria-hidden>{m.icon}</span>
-          <span>{m.label}</span>
-        </button>
-      ))}
     </div>
   );
 }

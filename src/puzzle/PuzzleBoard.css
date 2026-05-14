@@ -117,3 +117,86 @@
   user-select: none;
   pointer-events: none;
 }
+
+/* === Cell + edge interaction effects ========================================
+   Per-piece hover/click animations. Each effect maps to a single class:
+     .piece--anim-{id}            (cell-tier — applied on the root <g>)
+     .piece__edge--anim-{id}      (edge-tier — applied on each segment <path>)
+   Class ids match the catalogue in `src/ui/components/interactions/animations.js`
+   and are baked into the single-file JSX export verbatim. Effects are CSS-only
+   (no JS animation loop) and use only existing CSS vars so themes Just Work.
+*/
+
+/* --- Cell effects (root <g>) --- */
+.piece[class*="piece--anim-"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms ease, filter 200ms ease;
+}
+
+.piece--anim-lift:hover       { transform: translate(0, -4px); }
+.piece--anim-scale-up:hover   { transform: scale(1.04); }
+.piece--anim-scale-down:hover { transform: scale(0.96); }
+
+.piece--anim-glow:hover .piece__body {
+  filter: drop-shadow(0 0 6px var(--primary-tint, rgba(214, 139, 84, 0.55)))
+          drop-shadow(0 0 12px var(--primary-tint, rgba(214, 139, 84, 0.4)));
+}
+
+.piece--anim-pulse {
+  animation: piece-anim-pulse 2.6s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes piece-anim-pulse {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: 0.92; transform: scale(0.985); }
+}
+
+/* --- Edge effects (per-segment <path>) — trigger on piece hover --- */
+.piece__edge[class*="piece__edge--anim-"] {
+  transition: stroke-width 200ms ease, filter 200ms ease, stroke 200ms ease;
+}
+
+.piece:hover .piece__edge--anim-glow {
+  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+}
+
+.piece:hover .piece__edge--anim-thicken {
+  stroke-width: var(--puzzle-edge-thicken-w, 3.5px);
+}
+
+.piece:hover .piece__edge--anim-wiggle {
+  animation: piece-edge-wiggle 320ms ease-in-out;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes piece-edge-wiggle {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(0.6px, -0.6px); }
+  40%  { transform: translate(-0.6px, 0.4px); }
+  60%  { transform: translate(0.4px, 0.6px); }
+  80%  { transform: translate(-0.4px, -0.4px); }
+  100% { transform: translate(0, 0); }
+}
+
+.piece:hover .piece__edge--anim-flash {
+  animation: piece-edge-flash 700ms ease-out;
+}
+@keyframes piece-edge-flash {
+  0%   { stroke: var(--primary-2, #d68b54);
+         filter: drop-shadow(0 0 6px var(--primary-tint, rgba(214,139,84,0.6))); }
+  100% { /* falls back to inline style / .piece__edge default */ }
+}
+
+/* Respect prefers-reduced-motion — collapse to no-ops. */
+@media (prefers-reduced-motion: reduce) {
+  .piece[class*="piece--anim-"],
+  .piece__edge[class*="piece__edge--anim-"] {
+    animation: none !important;
+    transition: none !important;
+  }
+  .piece--anim-lift:hover,
+  .piece--anim-scale-up:hover,
+  .piece--anim-scale-down:hover { transform: none; }
+}

@@ -19,13 +19,14 @@ export default function PuzzlePiece({
   onSelect,
   onKnobClick,
 }) {
-  const { id, x, y, w, h, label, fill, content, backgrounds } = piece;
+  const { id, x, y, w, h, label, fill, content, backgrounds, cellAnimation } = piece;
   const knobs = computeActiveKnobs(piece, allPieces, effect);
   const clipId = `pc-clip-${id}`;
   const maskId = `pc-mask-${id}`;
   const hasContent = !!content && (content.text || content.src);
   const hasBackgrounds = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBackgrounds;
+  const cellAnimClass = cellAnimation && cellAnimation !== 'none' ? `piece--anim-${cellAnimation}` : '';
 
   // Per-segment edge strokes. Compute once per side so each segment can carry
   // its own color / opacity / stroke-width while the body stays one path.
@@ -47,7 +48,7 @@ export default function PuzzlePiece({
 
   return (
     <g
-      className={`piece ${isHovered ? 'piece--hover' : ''} ${isSelected ? 'piece--selected' : ''}`}
+      className={`piece ${isHovered ? 'piece--hover' : ''} ${isSelected ? 'piece--selected' : ''} ${cellAnimClass}`.trim()}
       onMouseEnter={() => onHoverStart?.(id)}
       onMouseLeave={() => onHoverEnd?.(id)}
       onClick={() => onSelect?.(id)}
@@ -118,11 +119,14 @@ export default function PuzzlePiece({
             ...(s.opacity != null     ? { strokeOpacity: s.opacity } : null),
             ...(s.strokeWidth != null ? { strokeWidth: s.strokeWidth } : null),
           } : undefined;
+          const animClass = s?.hoverAnimation && s.hoverAnimation !== 'none'
+            ? ` piece__edge--anim-${s.hoverAnimation}`
+            : '';
           return (
             <path
               key={`${seg.pairKey}-${i}`}
               d={seg.d}
-              className="piece__edge"
+              className={`piece__edge${animClass}`}
               style={style}
             />
           );

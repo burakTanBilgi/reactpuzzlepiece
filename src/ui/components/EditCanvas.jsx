@@ -1,13 +1,14 @@
 import EdgeEditorCanvas from './EdgeEditorCanvas.jsx';
-import ContentCanvas    from './ContentCanvas.jsx';
+import CellsCanvas      from './CellsCanvas.jsx';
 
 // Unified canvas for the Edit page. The underlying PuzzleBoard renders the
 // same in both modes — only the overlay / interaction layer changes.
 //
-//   mode = 'edges'   → edge selection overlay (clicking an edge picks the
-//                      edge; clicking a piece body picks the piece for
-//                      cell-tier editing)
-//   mode = 'content' → piece body click selects the piece for content editing
+//   mode = 'edges'  → edge selection overlay (clicking an edge picks the
+//                     edge; clicking a piece body picks the piece for
+//                     cell-tier editing)
+//   mode = 'cells'  → piece body click selects the piece for cell editing
+//                     (content + hover-animation override)
 export default function EditCanvas({
   mode,
   pieces, effect, effectConfig,
@@ -33,7 +34,7 @@ export default function EditCanvas({
   }
 
   return (
-    <ContentCanvas
+    <CellsCanvas
       pieces={pieces}
       effect={effect}
       effectConfig={effectConfig}

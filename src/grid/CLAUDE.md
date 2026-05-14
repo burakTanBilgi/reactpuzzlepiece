@@ -36,6 +36,10 @@ vs. the **React hook** that wires them in.
     default: { effect, config? },
     byEdge: { [pairKey]: { effect, config? } },
   },
+  cells: {
+    default: { hoverAnimation? },                       // project-wide cell hover effect
+    byPiece: { [pieceId]: { hoverAnimation? } },        // per-cell override
+  },
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
   backgrounds:  Background[],
@@ -55,6 +59,15 @@ vs. the **React hook** that wires them in.
 // `piecesOfEdge(pairKey)` reverses it (returns [pieceId] for outer edges or
 // [idA, idB] sorted for shared). For shared edges where both pieces have a
 // byPiece entry, the lex-smaller id wins.
+//
+// Edge `config` also carries an optional `hoverAnimation` (e.g. 'glow',
+// 'wiggle') that rides through the same cascade — see the catalogue in
+// src/ui/components/interactions/animations.js.
+//
+// Cell hover animations have their own simpler two-tier cascade:
+//   byPiece[pieceId].hoverAnimation > default.hoverAnimation
+// Resolved by `compile.js#resolveCellAnimation` and attached to each piece
+// as `piece.cellAnimation` so PuzzlePiece can apply the matching CSS class.
 ```
 
 ## ContentSpec

@@ -1,5 +1,7 @@
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
+import AnimationChips from '../interactions/AnimationChips.jsx';
+import { EDGE_ANIMATIONS } from '../interactions/animations.js';
 import { EFFECT_NAMES } from '../../../puzzle';
 import { DEFAULT_WAVE, cap } from './constants.js';
 
@@ -45,6 +47,15 @@ export default function LayerCard({
         </div>
       )}
       <StyleControls config={config} onPatchConfig={onPatchConfig} />
+
+      <div className="form-row form-row--stack">
+        <label className="form-row__label">Hover</label>
+        <AnimationChips
+          options={EDGE_ANIMATIONS}
+          active={config?.hoverAnimation || 'none'}
+          onSelect={(id) => onPatchConfig({ hoverAnimation: id === 'none' ? null : id })}
+        />
+      </div>
     </section>
   );
 }

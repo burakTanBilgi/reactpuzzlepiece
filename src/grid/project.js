@@ -20,6 +20,10 @@ export function newProject(name = 'Untitled') {
       byPiece: {},              // per-piece (cell) override — applies to every edge of that piece
       byEdge:  {},              // per-edge overrides — highest priority
     },
+    cells: {
+      default: { hoverAnimation: null }, // project-wide default cell hover effect
+      byPiece: {},                       // per-piece overrides: { [pieceId]: { hoverAnimation } }
+    },
     pieceColors: {},
     pieceContent: {},
     backgrounds: [],

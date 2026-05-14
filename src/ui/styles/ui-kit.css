@@ -245,6 +245,15 @@
   gap: 10px;
 }
 
+/* Stack label above the control instead of putting them on one row.
+   Used for chip rows (animation pickers) where the label is a section
+   heading and the chips wrap below. */
+.form-row--stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .form-row__label {
   font-size: 11px;
   color: var(--text-muted);

@@ -38,14 +38,79 @@ function snapshot(project) {
     fill: p.fill ?? null,
     content: p.content ?? null,
     backgrounds: p.backgrounds ?? null,
+    cellAnimation: p.cellAnimation ?? null,
     d: computePiecePath(p, pieces, effect, config),
     // Per-segment stroke paths so the exported file can render each edge with
-    // its own color / opacity / width — same pipeline as the live renderer.
+    // its own color / opacity / width / hover animation — same pipeline as
+    // the live renderer.
     segments: SIDES.flatMap((side) =>
       computeSideSegments(p, pieces, side, effect, config)
     ).map((seg) => ({ d: seg.d, style: seg.style ?? null })),
   }));
 }
+
+// CSS rules baked into the single-file JSX export so the deployed puzzle
+// carries the same hover/animation behaviour as the studio. Self-contained:
+// no external CSS vars, all colours inlined. Mirrors the catalogue in
+// src/ui/components/interactions/animations.js + puzzle/PuzzleBoard.css.
+const EXPORT_ANIM_CSS = `
+.hak-puzzle .piece { cursor: default; }
+.hak-puzzle .piece[class*="piece--anim-"] {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 200ms ease, filter 200ms ease;
+}
+.hak-puzzle .piece--anim-lift:hover       { transform: translate(0, -4px); }
+.hak-puzzle .piece--anim-scale-up:hover   { transform: scale(1.04); }
+.hak-puzzle .piece--anim-scale-down:hover { transform: scale(0.96); }
+.hak-puzzle .piece--anim-glow:hover .piece__body {
+  filter: drop-shadow(0 0 6px rgba(214,139,84,0.55))
+          drop-shadow(0 0 12px rgba(214,139,84,0.4));
+}
+.hak-puzzle .piece--anim-pulse {
+  animation: hak-piece-pulse 2.6s ease-in-out infinite;
+  transform-box: fill-box; transform-origin: center;
+}
+@keyframes hak-piece-pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.92; transform: scale(0.985); }
+}
+.hak-puzzle .piece__edge[class*="piece__edge--anim-"] {
+  transition: stroke-width 200ms ease, filter 200ms ease, stroke 200ms ease;
+}
+.hak-puzzle .piece:hover .piece__edge--anim-glow {
+  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+}
+.hak-puzzle .piece:hover .piece__edge--anim-thicken { stroke-width: 3.5px; }
+.hak-puzzle .piece:hover .piece__edge--anim-wiggle {
+  animation: hak-edge-wiggle 320ms ease-in-out;
+  transform-box: fill-box; transform-origin: center;
+}
+@keyframes hak-edge-wiggle {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(0.6px, -0.6px); }
+  40%  { transform: translate(-0.6px, 0.4px); }
+  60%  { transform: translate(0.4px, 0.6px); }
+  80%  { transform: translate(-0.4px, -0.4px); }
+  100% { transform: translate(0, 0); }
+}
+.hak-puzzle .piece:hover .piece__edge--anim-flash {
+  animation: hak-edge-flash 700ms ease-out;
+}
+@keyframes hak-edge-flash {
+  0%   { stroke: #d68b54; filter: drop-shadow(0 0 6px rgba(214,139,84,0.6)); }
+  100% { /* falls back to inline stroke */ }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hak-puzzle .piece[class*="piece--anim-"],
+  .hak-puzzle .piece__edge[class*="piece__edge--anim-"] {
+    animation: none !important;
+    transition: none !important;
+  }
+  .hak-puzzle .piece--anim-lift:hover,
+  .hak-puzzle .piece--anim-scale-up:hover,
+  .hak-puzzle .piece--anim-scale-down:hover { transform: none; }
+}`.trim();
 
 // Build a single self-contained .jsx file. No imports beyond React.
 function buildSingleFile(project) {
@@ -68,17 +133,20 @@ function buildSingleFile(project) {
 //   import PuzzleExport from './${safeName(project.name)}.jsx';
 //   <PuzzleExport />
 //
-// No external dependencies beyond React.
+// No external dependencies beyond React. Hover/click animations are baked in
+// via the <style> block below.
 
 import React from 'react';
 
 const PIECES = ${JSON.stringify(data, null, 2)};
 const VIEWBOX = "${vb.x} ${vb.y} ${vb.w} ${vb.h}";
 const SIZE = { w: ${vb.w}, h: ${vb.h} };
+const ANIM_CSS = ${JSON.stringify(EXPORT_ANIM_CSS)};
 
 export default function PuzzleExport({ width = '100%', height = 'auto', style }) {
   return (
     <svg
+      className="hak-puzzle"
       viewBox={VIEWBOX}
       width={width}
       height={height}
@@ -86,6 +154,7 @@ export default function PuzzleExport({ width = '100%', height = 'auto', style })
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: 'block', maxWidth: '100%', ...style }}
     >
+      <style>{ANIM_CSS}</style>
       {PIECES.map((p) => (
         <Piece key={p.id} piece={p} />
       ))}
@@ -94,19 +163,22 @@ export default function PuzzleExport({ width = '100%', height = 'auto', style })
 }
 
 function Piece({ piece }) {
-  const { id, x, y, w, h, label, fill, content, backgrounds, segments, d } = piece;
+  const { id, x, y, w, h, label, fill, content, backgrounds, segments, d, cellAnimation } = piece;
   const clipId = 'pcx-' + id.replace(/[^a-zA-Z0-9]/g, '');
   const hasContent = content && (content.text || content.src);
   const hasBgs = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBgs;
+  const cellClass = cellAnimation && cellAnimation !== 'none'
+    ? ' piece--anim-' + cellAnimation
+    : '';
   return (
-    <g>
+    <g className={'piece' + cellClass}>
       {needsClip && (
         <defs>
           <clipPath id={clipId}><path d={d} /></clipPath>
         </defs>
       )}
-      <path d={d} fill={fill || '#1f1d28'} stroke="none" />
+      <path d={d} className="piece__body" fill={fill || '#1f1d28'} stroke="none" />
 
       {hasBgs && (
         <g clipPath={\`url(#\${clipId})\`}>
@@ -132,13 +204,18 @@ function Piece({ piece }) {
       ))}
 
       {/* Per-segment edge strokes — one path per edge so each can carry its
-          own color / opacity / width baked in at export time. */}
+          own color / opacity / width / hover-animation baked in at export
+          time. The hover-animation triggers on the parent .piece:hover. */}
       {(segments || []).map((seg, i) => {
         const s = seg.style || {};
+        const animClass = s.hoverAnimation && s.hoverAnimation !== 'none'
+          ? ' piece__edge--anim-' + s.hoverAnimation
+          : '';
         return (
           <path
             key={i}
             d={seg.d}
+            className={'piece__edge' + animClass}
             fill="none"
             stroke={s.color || '#423a4f'}
             strokeOpacity={s.opacity != null ? s.opacity : 1}
