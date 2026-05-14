@@ -38,8 +38,18 @@
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   overflow-y: auto;
+}
+
+.preview-info__brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.preview-info .wave-divider {
+  margin: 2px 0;
 }
 
 .preview-info__name {

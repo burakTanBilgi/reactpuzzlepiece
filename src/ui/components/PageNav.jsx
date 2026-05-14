@@ -1,3 +1,5 @@
+import WaveDivider from './meta/WaveDivider.jsx';
+
 const PAGES = [
   { id: 'landing',  label: 'Landing',  icon: '⌂' },
   { id: 'docs',     label: 'Docs',     icon: '?' },
@@ -10,6 +12,7 @@ const PAGES = [
 export default function PageNav({ page, onNav, projectName, theme, onToggleTheme }) {
   const isDark = theme === 'dark';
   return (
+    <>
     <header className="page-nav">
       <div className="page-nav__brand">
         <span className="page-nav__mark" aria-hidden>箱</span>
@@ -46,5 +49,7 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
         ))}
       </nav>
     </header>
+    <WaveDivider className="page-nav-wave" height={10} amplitude={3} strokeWidth={1.25} />
+    </>
   );
 }

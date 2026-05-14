@@ -5,6 +5,7 @@ import PreviewDocsSection from '../components/docs/PreviewDocsSection.jsx';
 import GridDocsSection from '../components/docs/GridDocsSection.jsx';
 import EditDocsSection from '../components/docs/EditDocsSection.jsx';
 import ExportDocsSection from '../components/docs/ExportDocsSection.jsx';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
 
 const SECTIONS = [
   { id: 'intro',    label: 'Welcome',       Comp: IntroSection },
@@ -22,6 +23,9 @@ export default function DocsPage({ onNav }) {
   return (
     <div className="page-docs">
       <aside className="docs-nav">
+        <div className="docs-nav__brand">
+          <WaveBrandMark size="sm" />
+        </div>
         <h2 className="docs-nav__title">Documentation</h2>
         <nav>
           <ul className="docs-nav__list">

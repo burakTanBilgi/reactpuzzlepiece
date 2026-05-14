@@ -1,4 +1,5 @@
 import GridDemo from './demos/GridDemo.jsx';
+import WaveDivider from '../meta/WaveDivider.jsx';
 
 export default function GridDocsSection({ onNav }) {
   return (
@@ -12,6 +13,8 @@ export default function GridDocsSection({ onNav }) {
           across pieces without merging them.
         </p>
       </header>
+
+      <WaveDivider />
 
       <div className="doc__demo">
         <GridDemo />

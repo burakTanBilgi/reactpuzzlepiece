@@ -1,3 +1,5 @@
+import WaveDivider from '../meta/WaveDivider.jsx';
+
 export default function PreviewDocsSection({ onNav }) {
   return (
     <section className="doc">
@@ -9,6 +11,8 @@ export default function PreviewDocsSection({ onNav }) {
           editing canvas, rename the project, jump into Grid or Edit, and export.
         </p>
       </header>
+
+      <WaveDivider />
 
       <h3>What's here</h3>
       <ul className="doc__list">

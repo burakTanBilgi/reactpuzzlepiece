@@ -1,3 +1,5 @@
+import WaveDivider from '../meta/WaveDivider.jsx';
+
 export default function ProjectsDocsSection({ onNav }) {
   return (
     <section className="doc">
@@ -10,6 +12,8 @@ export default function ProjectsDocsSection({ onNav }) {
           on the Preview page automatically).
         </p>
       </header>
+
+      <WaveDivider />
 
       <ul className="doc__list">
         <li><strong>+ New project</strong> — creates a fresh 2×2 grid.</li>

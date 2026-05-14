@@ -14,6 +14,7 @@
 @import '../components/PreviewSvg.css';
 @import '../components/ImportDialog.css';
 @import '../components/BackgroundsPanel.css';
+@import '../components/meta/meta.css';
 
 @import '../pages/LandingPage.css';
 @import '../pages/DocsPage.css';

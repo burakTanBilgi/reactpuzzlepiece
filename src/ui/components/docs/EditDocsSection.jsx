@@ -1,4 +1,5 @@
 import EdgeDemo from './demos/EdgeDemo.jsx';
+import WaveDivider from '../meta/WaveDivider.jsx';
 
 export default function EditDocsSection({ onNav }) {
   return (
@@ -13,6 +14,8 @@ export default function EditDocsSection({ onNav }) {
           change as you switch modes.
         </p>
       </header>
+
+      <WaveDivider />
 
       <div className="doc__demo">
         <EdgeDemo />

@@ -1,6 +1,39 @@
 import MiniPuzzle from './demos/MiniPuzzle.jsx';
+import WaveDivider from '../meta/WaveDivider.jsx';
+import MetaCardRow from '../meta/MetaCardRow.jsx';
 
 export default function IntroSection({ onNav }) {
+  const tiles = [
+    {
+      id: 'tile-projects',
+      icon: '⚏',
+      title: 'Projects',
+      body: "Browse, import, and switch between saved designs.",
+      onClick: () => onNav('projects'),
+    },
+    {
+      id: 'tile-preview',
+      icon: '◇',
+      title: 'Preview',
+      body: "A big read-only view of what you've built.",
+      onClick: () => onNav('preview'),
+    },
+    {
+      id: 'tile-grid',
+      icon: '⊞',
+      title: 'Grid',
+      body: "Lay out the cells: drag-select, merge, color, paste images.",
+      onClick: () => onNav('grid'),
+    },
+    {
+      id: 'tile-edit',
+      icon: '✎',
+      title: 'Edit',
+      body: "Two modes in one canvas: style edges or fill content.",
+      onClick: () => onNav('edit'),
+    },
+  ];
+
   return (
     <section className="doc">
       <header className="doc__header">
@@ -14,6 +47,8 @@ export default function IntroSection({ onNav }) {
         </p>
       </header>
 
+      <WaveDivider />
+
       <div className="doc__demo">
         <MiniPuzzle />
         <p className="doc__demo-caption">
@@ -21,32 +56,7 @@ export default function IntroSection({ onNav }) {
         </p>
       </div>
 
-      <div className="doc__grid">
-        <Tile
-          icon="⚏"
-          title="Projects"
-          body="Browse, import, and switch between saved designs."
-          onClick={() => onNav('projects')}
-        />
-        <Tile
-          icon="◇"
-          title="Preview"
-          body="A big read-only view of what you've built — and the one place you export from."
-          onClick={() => onNav('preview')}
-        />
-        <Tile
-          icon="⊞"
-          title="Grid"
-          body="Lay out the cells: drag-select, merge, color, paste images that span pieces."
-          onClick={() => onNav('grid')}
-        />
-        <Tile
-          icon="✎"
-          title="Edit"
-          body="Two modes in one canvas: style edges or fill pieces with text/images."
-          onClick={() => onNav('edit')}
-        />
-      </div>
+      <MetaCardRow cards={tiles} rows={2} cols={2} />
 
       <div className="doc__note">
         <strong>Already designed something?</strong>{' '}
@@ -55,15 +65,5 @@ export default function IntroSection({ onNav }) {
         </button>
       </div>
     </section>
-  );
-}
-
-function Tile({ icon, title, body, onClick }) {
-  return (
-    <button type="button" className="doc-tile" onClick={onClick}>
-      <span className="doc-tile__icon" aria-hidden>{icon}</span>
-      <span className="doc-tile__title">{title}</span>
-      <span className="doc-tile__body">{body}</span>
-    </button>
   );
 }

@@ -8,9 +8,20 @@
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;                /* tighter — wave dividers carry the spacing */
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.side-tools__brand {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0 6px;
+}
+
+.side-tools .wave-divider {
+  margin: 2px 0;
+  color: var(--stroke-idle);
 }
 
 @media (max-width: 720px) {

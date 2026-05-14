@@ -1,41 +1,33 @@
-import { useMemo } from 'react';
-import { compileProject } from '../../grid/compile.js';
-import { PuzzleBoard } from '../../puzzle';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import WaveDivider   from '../components/meta/WaveDivider.jsx';
+import MetaCardRow   from '../components/meta/MetaCardRow.jsx';
 
-// Tiny Hakoniwa project rendered as the brand mark on the landing hero —
-// proof that the studio is built with its own tools. Two pieces (箱 + 庭)
-// connected by a puzzle tab/socket, content baked in via pieceContent.
-const META_PROJECT = {
-  grid: {
-    rows: 1, cols: 2, cellSize: 100,
-    groups: [['meta-hako', 'meta-niwa']],
+const FEATURE_CARDS = [
+  {
+    id: 'feat-build',
+    icon: '⚏',
+    title: 'Build with pieces',
+    body: 'Drag-select cells in a grid and merge them into custom pieces.',
   },
-  edges: {
-    default: { effect: 'puzzle' },
-    inner: null, outer: null, byPiece: {}, byEdge: {},
+  {
+    id: 'feat-edges',
+    icon: '✎',
+    title: 'Style every edge',
+    body: 'Three connector styles — puzzle, wave, straight — with per-edge overrides for color, opacity, and width.',
   },
-  pieceColors: {},
-  pieceContent: {
-    'meta-hako': { type: 'text', text: '箱', fontSize: 56 },
-    'meta-niwa': { type: 'text', text: '庭', fontSize: 56 },
+  {
+    id: 'feat-export',
+    icon: '⤓',
+    title: 'Export anywhere',
+    body: 'Ship as JSON, a single self-contained React file, or a drop-in module bundle.',
   },
-  backgrounds: [],
-};
-
-function HeroMark() {
-  const pieces = useMemo(() => compileProject(META_PROJECT), []);
-  return (
-    <div className="landing-hero__mark" aria-hidden="true">
-      <PuzzleBoard pieces={pieces} effect="puzzle" />
-    </div>
-  );
-}
+];
 
 export default function LandingPage({ onNav }) {
   return (
     <div className="page-landing">
       <section className="landing-hero">
-        <HeroMark />
+        <WaveBrandMark size="lg" />
         <p className="landing-hero__sub">箱庭 · built with itself</p>
         <h1 className="landing-hero__name">Hakoniwa</h1>
         <p className="landing-hero__tagline">
@@ -62,23 +54,13 @@ export default function LandingPage({ onNav }) {
         </div>
       </section>
 
+      <WaveDivider amplitude={8} />
+
       <section className="landing-features">
-        <Feature
-          icon="⚏"
-          title="Build with pieces"
-          body="Drag-select cells in a grid and merge them into custom pieces."
-        />
-        <Feature
-          icon="✎"
-          title="Style every edge"
-          body="Three connector styles — puzzle, wave, straight — with per-edge overrides for color, opacity, and width."
-        />
-        <Feature
-          icon="⤓"
-          title="Export anywhere"
-          body="Ship as JSON, a single self-contained React file, or a drop-in module bundle. No deps beyond React."
-        />
+        <MetaCardRow cards={FEATURE_CARDS} />
       </section>
+
+      <WaveDivider amplitude={8} flip />
 
       <section className="landing-foot">
         <button
@@ -91,15 +73,5 @@ export default function LandingPage({ onNav }) {
         </button>
       </section>
     </div>
-  );
-}
-
-function Feature({ icon, title, body }) {
-  return (
-    <article className="landing-feature">
-      <span className="landing-feature__icon" aria-hidden="true">{icon}</span>
-      <h3 className="landing-feature__title">{title}</h3>
-      <p className="landing-feature__body">{body}</p>
-    </article>
   );
 }

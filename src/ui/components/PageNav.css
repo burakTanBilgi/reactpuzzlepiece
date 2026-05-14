@@ -6,8 +6,15 @@
   background: color-mix(in srgb, var(--bg-elev) 85%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--stroke-idle);
   z-index: 10;
+}
+
+/* Wave seam under the nav — replaces the old 1px border with a real
+   Hakoniwa wave path so every page sits under our own visual language. */
+.page-nav-wave {
+  height: 10px;
+  margin-bottom: -2px;       /* tuck slightly into the page below */
+  color: var(--stroke-idle);
 }
 
 .page-nav__brand {

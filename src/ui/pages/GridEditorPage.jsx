@@ -6,6 +6,8 @@ import BackgroundsPanel from '../components/BackgroundsPanel.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import WaveDivider from '../components/meta/WaveDivider.jsx';
 import { useFileInput } from '../hooks/useFileInput.js';
 
 // Curated palette — warm, sophisticated, mode-agnostic.
@@ -135,6 +137,10 @@ export default function GridEditorPage({ project }) {
   return (
     <div className="page-grid">
       <aside className="side-tools">
+        <div className="side-tools__brand">
+          <WaveBrandMark size="sm" />
+        </div>
+
         <section className="card">
           <h3 className="card__title">Dimensions</h3>
           <SliderRow
@@ -149,6 +155,8 @@ export default function GridEditorPage({ project }) {
           />
           <p className="hint">{p.grid.rows} × {p.grid.cols} cells (max {MAX_GRID}×{MAX_GRID}).</p>
         </section>
+
+        <WaveDivider amplitude={3} height={10} />
 
         <section className="card">
           <h3 className="card__title">Import</h3>
@@ -169,6 +177,8 @@ export default function GridEditorPage({ project }) {
           </div>
           <p className="hint hint--warn">Importing replaces the current grid.</p>
         </section>
+
+        <WaveDivider amplitude={3} height={10} />
 
         <section className="card">
           <h3 className="card__title">Selection</h3>
@@ -211,6 +221,8 @@ export default function GridEditorPage({ project }) {
           )}
         </section>
 
+        <WaveDivider amplitude={3} height={10} />
+
         {selectedGroupIds.length > 0 && (
           <section className="card">
             <h3 className="card__title">
@@ -246,6 +258,8 @@ export default function GridEditorPage({ project }) {
           </section>
         )}
 
+        {selectedGroupIds.length > 0 && <WaveDivider amplitude={3} height={10} />}
+
         <BackgroundsPanel
           backgrounds={p.backgrounds || []}
           selectionRect={selectionRect}
@@ -253,6 +267,8 @@ export default function GridEditorPage({ project }) {
           onUpdate={updateBackground}
           onRemove={removeBackground}
         />
+
+        <WaveDivider amplitude={3} height={10} />
 
         <section className="card">
           <h3 className="card__title">Tips</h3>

@@ -4,6 +4,8 @@ import EdgesPanel    from '../components/EdgesPanel.jsx';
 import ContentPanel  from '../components/ContentPanel.jsx';
 import EditCanvas    from '../components/EditCanvas.jsx';
 import ViewPanel     from '../components/ViewPanel.jsx';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import WaveDivider   from '../components/meta/WaveDivider.jsx';
 
 const MODES = [
   { id: 'edges',   label: 'Edges',   icon: '∿' },
@@ -97,7 +99,13 @@ export default function EditPage({ project }) {
   return (
     <div className="page-edit">
       <aside className="side-tools">
+        <div className="side-tools__brand">
+          <WaveBrandMark size="sm" />
+        </div>
+
         <ModeSwitch mode={mode} onChange={setMode} />
+
+        <WaveDivider amplitude={3} height={10} />
 
         {mode === 'edges' ? (
           <EdgesPanel

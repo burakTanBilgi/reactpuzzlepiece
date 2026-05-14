@@ -1,0 +1,138 @@
+/* === WaveDivider ============================================================
+   Slim decorative SVG wave used between sections. Display block by default
+   so it occupies a full row; consumers can size or recolour via the props
+   (or the .wave-divider class for layout overrides).
+*/
+.wave-divider {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  color: var(--stroke-soft);
+}
+
+.wave-divider--flip {
+  transform: scaleY(-1);
+}
+
+/* === WaveBrandMark ==========================================================
+   Brand mark used at the top of every page (a real wave-joined Hakoniwa
+   project). The PuzzleBoard's intrinsic SVG sizes via CSS so it shrinks
+   into sidebars cleanly.
+*/
+.wave-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.wave-brand-mark .puzzle-board {
+  width: 100%;
+  height: auto;
+}
+
+/* Decorative — suppress the editor's hover/select treatment so the brand
+   mark stays visually static. */
+.wave-brand-mark .piece { cursor: default; }
+.wave-brand-mark .piece--hover .piece__body,
+.wave-brand-mark .piece--selected .piece__body {
+  fill: var(--puzzle-fill, var(--surface));
+}
+.wave-brand-mark .piece--hover .piece__edge,
+.wave-brand-mark .piece--selected .piece__edge {
+  stroke: var(--puzzle-stroke, var(--stroke-soft));
+  stroke-width: 1.25;
+}
+
+/* Sizes — used by callers via the `size` prop. */
+.wave-brand-mark--sm .puzzle-board { max-width: 120px; }
+.wave-brand-mark--md .puzzle-board { max-width: 200px; }
+.wave-brand-mark--lg .puzzle-board { max-width: 280px; }
+
+/* === MetaCardRow ============================================================
+   A row (or grid) of cards rendered as a real Hakoniwa puzzle. The wave
+   silhouette is the underlying PuzzleBoard SVG; each card's HTML content
+   sits in an absolute overlay aligned to that piece's pixel rect.
+*/
+.meta-card-row {
+  position: relative;
+  width: 100%;
+}
+
+.meta-card-row__svg {
+  width: 100%;
+}
+
+.meta-card-row__svg .puzzle-board {
+  width: 100%;
+  height: auto;
+}
+
+/* The pieces in MetaCardRow are decorative — disable the editor's
+   hover/select highlights so they don't flash on card hover. */
+.meta-card-row .piece { cursor: default; }
+.meta-card-row .piece--hover .piece__body,
+.meta-card-row .piece--selected .piece__body {
+  fill: var(--puzzle-fill, var(--surface));
+}
+.meta-card-row .piece--hover .piece__edge,
+.meta-card-row .piece--selected .piece__edge {
+  stroke: var(--puzzle-stroke, var(--stroke-soft));
+  stroke-width: 1.25;
+}
+
+.meta-card-row__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+.meta-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  color: var(--text);
+  transition: transform 150ms ease, color 150ms ease;
+}
+
+.meta-card--clickable {
+  cursor: pointer;
+}
+
+.meta-card--clickable:hover {
+  color: var(--primary-3);
+  transform: translateY(-2px);
+}
+
+.meta-card--clickable:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: -8px;
+  border-radius: 6px;
+}
+
+.meta-card__icon {
+  font-size: 28px;
+  color: var(--primary-2);
+  line-height: 1;
+}
+
+.meta-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.meta-card__body {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 22ch;
+}

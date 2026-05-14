@@ -2,6 +2,8 @@ import { useState } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
 import { exportSingleFileJSX, exportModuleZip } from '../../grid/export.js';
 import { formatTime } from '../utils/formatTime.js';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import WaveDivider from '../components/meta/WaveDivider.jsx';
 
 // Large preview of the current project. Big board, easy navigation to editors,
 // and export options (per-project, so they live with the project view).
@@ -21,6 +23,10 @@ export default function PreviewPage({ project, onNav }) {
       </div>
 
       <aside className="preview-info">
+        <div className="preview-info__brand">
+          <WaveBrandMark size="sm" />
+        </div>
+
         <div className="preview-info__export">
           <div className="export-menu">
             <button
@@ -55,6 +61,8 @@ export default function PreviewPage({ project, onNav }) {
           </div>
         </div>
 
+        <WaveDivider amplitude={4} height={14} />
+
         {editingName ? (
           <input
             className="preview-info__name-input"
@@ -79,6 +87,8 @@ export default function PreviewPage({ project, onNav }) {
           <span aria-hidden> · </span>
           <span>last edited {formatTime(p.updatedAt)}</span>
         </p>
+
+        <WaveDivider amplitude={4} height={14} />
 
         <div className="preview-info__actions">
           <button

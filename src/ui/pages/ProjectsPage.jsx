@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
 import { formatTime } from '../utils/formatTime.js';
+import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import WaveDivider from '../components/meta/WaveDivider.jsx';
 
 // Project library: tiles for every saved project plus an Import control.
 // Export options live on the Preview page (one-shot, per project).
@@ -31,6 +33,9 @@ export default function ProjectsPage({ project, onNav }) {
   return (
     <div className="page-projects">
       <section className="projects-section">
+        <div className="projects-section__brand">
+          <WaveBrandMark size="md" />
+        </div>
         <div className="projects-section__head">
           <h2 className="projects-section__title">Your Projects</h2>
           <div className="projects-section__actions">
@@ -40,6 +45,8 @@ export default function ProjectsPage({ project, onNav }) {
             </button>
           </div>
         </div>
+
+        <WaveDivider amplitude={6} />
 
         <div className="project-grid">
           <button

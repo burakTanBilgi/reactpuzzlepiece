@@ -21,33 +21,6 @@
   text-align: center;
 }
 
-/* Brand mark — rendered as a literal Hakoniwa puzzle layout (see HeroMark
-   in LandingPage.jsx). The container shrink-fits the SVG; CSS sizes it
-   responsively up to a sensible cap. */
-.landing-hero__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.landing-hero__mark .puzzle-board {
-  width: 100%;
-  height: auto;
-  max-width: 280px;
-}
-
-/* Decorative — disable hover/click affordances on the brand mark pieces. */
-.landing-hero__mark .piece {
-  cursor: default;
-}
-.landing-hero__mark .piece--hover .piece__body {
-  fill: var(--puzzle-fill, var(--surface));
-}
-.landing-hero__mark .piece--hover .piece__edge {
-  stroke: var(--puzzle-stroke, var(--stroke-soft));
-  stroke-width: 1.25;
-}
-
 .landing-hero__sub {
   margin: 4px 0 0;
   font-size: 11px;
@@ -82,45 +55,12 @@
   justify-content: center;
 }
 
-/* === Feature row === */
+/* === Feature row (now a real wave-joined puzzle via <MetaCardRow />) === */
 
 .landing-features {
   max-width: 960px;
   margin: 0 auto;
-  padding: 40px 24px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-}
-
-.landing-feature {
-  background: var(--surface);
-  border: 1px solid var(--stroke-idle);
-  border-radius: var(--radius-lg);
   padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.landing-feature__icon {
-  font-size: 28px;
-  color: var(--primary-2);
-  margin-bottom: 4px;
-}
-
-.landing-feature__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.landing-feature__body {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--text-muted);
 }
 
 /* === Footer / continue-to-docs === */
@@ -167,8 +107,7 @@
 
 @media (max-width: 720px) {
   .landing-hero { min-height: 60vh; padding: 48px 20px 40px; }
-  .landing-hero__mark { font-size: 64px; }
   .landing-hero__name { font-size: 36px; }
   .landing-hero__tagline { font-size: 14px; }
-  .landing-features { padding: 24px 20px; }
+  .landing-features { padding: 16px 12px; }
 }

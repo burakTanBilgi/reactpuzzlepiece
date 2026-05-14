@@ -1,3 +1,24 @@
+import WaveDivider from '../meta/WaveDivider.jsx';
+import MetaCardRow from '../meta/MetaCardRow.jsx';
+
+const EXPORT_CARDS = [
+  {
+    id: 'export-json',
+    title: 'JSON',
+    body: 'Re-importable project state. Drop it back into Hakoniwa via Projects → Import to keep editing.',
+  },
+  {
+    id: 'export-jsx',
+    title: 'Single-file React',
+    body: 'One self-contained .jsx with paths precomputed and content baked in. Drop into any React 18+ project — zero deps. Bundled with a README in a small ZIP.',
+  },
+  {
+    id: 'export-zip',
+    title: 'Module bundle (ZIP)',
+    body: 'The whole portable puzzle/ folder, your project.json, a wrapper component, a standalone compileProject.js, and a README.',
+  },
+];
+
 export default function ExportDocsSection({ onNav }) {
   return (
     <section className="doc">
@@ -10,20 +31,9 @@ export default function ExportDocsSection({ onNav }) {
         </p>
       </header>
 
-      <div className="doc__cards">
-        <div className="doc-card">
-          <h3>JSON</h3>
-          <p>Re-importable project state. Drop it back into Hakoniwa via Projects → Import to keep editing.</p>
-        </div>
-        <div className="doc-card">
-          <h3>Single-file React</h3>
-          <p>One self-contained <code>.jsx</code> file with paths precomputed and content baked in. Drop into any React 18+ project — zero deps beyond React. Bundled with a README in a small ZIP.</p>
-        </div>
-        <div className="doc-card">
-          <h3>Module bundle (ZIP)</h3>
-          <p>Ships the whole portable <code>puzzle/</code> folder, your <code>project.json</code>, a wrapper component, a standalone <code>compileProject.js</code>, and a README. Use this when you want the full rendering API in your app.</p>
-        </div>
-      </div>
+      <WaveDivider />
+
+      <MetaCardRow cards={EXPORT_CARDS} />
 
       <div className="doc__note">
         The ZIP encoder is hand-rolled (~80 lines, no compression) so the studio

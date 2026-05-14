@@ -2,6 +2,7 @@ import HintCard from './edges/HintCard.jsx';
 import LayerCard from './edges/LayerCard.jsx';
 import SelectedEdgeCard from './edges/SelectedEdgeCard.jsx';
 import SelectedPieceCard from './edges/SelectedPieceCard.jsx';
+import WaveDivider from './meta/WaveDivider.jsx';
 import { DEFAULT_WAVE } from './edges/constants.js';
 
 // Side-panel UI for the Edges mode of the Edit page. Pure presentation —
@@ -125,6 +126,8 @@ export default function EdgesPanel({
   return (
     <>
       {topCard}
+
+      <WaveDivider amplitude={3} height={10} />
 
       {!hasEdgeSelection && !hasPieceSelection && defaultCard}
       {showInnerLayer && innerCard}
