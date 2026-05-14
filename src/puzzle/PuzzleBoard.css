@@ -15,9 +15,6 @@
  *   .piece__edge  — stroke only, one path per segment, so each segment can
  *                   have its own color / opacity / stroke-width via inline
  *                   style. Falls back to --puzzle-stroke when nothing is set.
- *
- * Legacy `.piece__path` is kept for backward compat with anyone styling the
- * old single-path piece.
  */
 
 .puzzle-board {
@@ -36,10 +33,10 @@
   transition: fill 150ms ease;
 }
 
-.piece--hover .piece__body {
-  fill: var(--puzzle-fill-hover, var(--surface-2, #1b222d));
-}
-
+/* Selected state — editor-only signal. NOT user-configurable; kept here
+ * so the studio can show which piece is being edited. The hover signal,
+ * by contrast, is now a user-pickable effect (`highlight`) — see the
+ * effect block at the bottom of this file. */
 .piece--selected .piece__body {
   fill: var(--puzzle-fill-selected, var(--surface-3, #232b38));
 }
@@ -56,18 +53,9 @@
   transition: stroke 150ms ease, stroke-width 150ms ease;
 }
 
-.piece--hover .piece__edge {
-  stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
-  stroke-width: 2.5;
-}
-
 .piece--selected .piece__edge {
   stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
   stroke-width: 2.5;
-}
-
-.piece--selected.piece--hover .piece__edge {
-  stroke-width: 3;
 }
 
 /* Backward-compat: anything still using .piece__path keeps working. */
@@ -118,70 +106,128 @@
   pointer-events: none;
 }
 
-/* === Cell + edge interaction effects ========================================
-   Per-piece hover/click animations. Each effect maps to a single class:
-     .piece--anim-{id}            (cell-tier — applied on the root <g>)
-     .piece__edge--anim-{id}      (edge-tier — applied on each segment <path>)
-   Class ids match the catalogue in `src/ui/components/interactions/animations.js`
-   and are baked into the single-file JSX export verbatim. Effects are CSS-only
-   (no JS animation loop) and use only existing CSS vars so themes Just Work.
+/* === Interaction effects v2 ================================================
+   Each entry in the effects catalogue (see src/puzzle/effects-catalog.js)
+   maps to ONE class per supported trigger:
+
+     .piece--anim-{id}--{trigger}            (cell tier — root <g>)
+     .piece__edge--anim-{id}--{trigger}      (edge tier — segment <path>)
+
+   Triggers:
+     hover  — applies while the piece is :hover
+     click  — applies while the piece is :active
+     idle   — applies when the piece is NOT :hover (continuous)
+     always — applies in every state (continuous)
+
+   Per-effect intensity rides through CSS custom properties (--anim-*)
+   that PuzzlePiece writes inline on each <g>/<path>. Effects in different
+   exclusivity groups compose because they target different CSS properties
+   (transform / filter / fill / stroke) so there's no overwrite war.
+   Same-group effects (e.g., scale-up + scale-down) cannot coexist —
+   the picker auto-swaps them.
 */
 
-/* --- Cell effects (root <g>) --- */
 .piece[class*="piece--anim-"] {
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 200ms ease, filter 200ms ease;
+  transition: transform 200ms ease, filter 200ms ease, opacity 200ms ease;
 }
 
-.piece--anim-lift:hover       { transform: translate(0, -4px); }
-.piece--anim-scale-up:hover   { transform: scale(1.04); }
-.piece--anim-scale-down:hover { transform: scale(0.96); }
-
-.piece--anim-glow:hover .piece__body {
-  filter: drop-shadow(0 0 6px var(--primary-tint, rgba(214, 139, 84, 0.55)))
-          drop-shadow(0 0 12px var(--primary-tint, rgba(214, 139, 84, 0.4)));
+.piece__edge[class*="piece__edge--anim-"] {
+  transition: stroke-width 200ms ease, filter 200ms ease, stroke 200ms ease;
 }
 
-.piece--anim-pulse {
-  animation: piece-anim-pulse 2.6s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
+/* --- Cell · highlight (fill shift) ------------------------------------- */
+.piece--anim-highlight--hover:hover  .piece__body,
+.piece--anim-highlight--click:active .piece__body,
+.piece--anim-highlight--always       .piece__body {
+  fill: var(--puzzle-fill-hover, var(--surface-2, #1b222d));
 }
+
+/* --- Cell · lift (translate up) ---------------------------------------- */
+.piece--anim-lift--hover:hover  { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+.piece--anim-lift--click:active { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+.piece--anim-lift--always       { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+
+/* --- Cell · scale-up --------------------------------------------------- */
+.piece--anim-scale-up--hover:hover  { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+.piece--anim-scale-up--click:active { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+.piece--anim-scale-up--always       { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+
+/* --- Cell · scale-down ------------------------------------------------- */
+.piece--anim-scale-down--hover:hover  { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+.piece--anim-scale-down--click:active { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+.piece--anim-scale-down--always       { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+
+/* --- Cell · glow (drop-shadow on body) --------------------------------- */
+.piece--anim-glow--hover:hover  .piece__body,
+.piece--anim-glow--click:active .piece__body,
+.piece--anim-glow--always       .piece__body {
+  filter: drop-shadow(0 0 var(--anim-glow-radius, 6px) var(--primary-tint, rgba(214, 139, 84, 0.55)))
+          drop-shadow(0 0 calc(var(--anim-glow-radius, 6px) * 2) var(--primary-tint, rgba(214, 139, 84, 0.4)));
+}
+.piece--anim-glow--idle:not(:hover) .piece__body {
+  filter: drop-shadow(0 0 var(--anim-glow-radius, 6px) var(--primary-tint, rgba(214, 139, 84, 0.55)));
+}
+
+/* --- Cell · pulse (continuous breathing) ------------------------------- */
+.piece--anim-pulse--idle,
+.piece--anim-pulse--always {
+  animation: piece-anim-pulse var(--anim-pulse-speed, 2.6s) ease-in-out infinite;
+}
+.piece--anim-pulse--idle:hover { animation-play-state: paused; }
+
 @keyframes piece-anim-pulse {
   0%, 100% { opacity: 1;    transform: scale(1); }
   50%      { opacity: 0.92; transform: scale(0.985); }
 }
 
-/* --- Edge effects (per-segment <path>) — trigger on piece hover --- */
-.piece__edge[class*="piece__edge--anim-"] {
-  transition: stroke-width 200ms ease, filter 200ms ease, stroke 200ms ease;
+/* --- Edge · highlight (stroke recolour + thicken) ---------------------- */
+.piece:hover  .piece__edge--anim-highlight--hover,
+.piece:active .piece__edge--anim-highlight--click,
+              .piece__edge--anim-highlight--always {
+  stroke: var(--puzzle-stroke-hover, var(--stroke-hover, #4285f4));
+  stroke-width: 2.5;
 }
 
-.piece:hover .piece__edge--anim-glow {
-  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+/* --- Edge · glow ------------------------------------------------------- */
+.piece:hover  .piece__edge--anim-glow--hover,
+.piece:active .piece__edge--anim-glow--click,
+              .piece__edge--anim-glow--always {
+  filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor)
+          drop-shadow(0 0 calc(var(--anim-edge-glow-radius, 4px) * 2) currentColor);
+}
+.piece:not(:hover) .piece__edge--anim-glow--idle {
+  filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor);
 }
 
-.piece:hover .piece__edge--anim-thicken {
-  stroke-width: var(--puzzle-edge-thicken-w, 3.5px);
+/* --- Edge · thicken ---------------------------------------------------- */
+.piece:hover  .piece__edge--anim-thicken--hover,
+.piece:active .piece__edge--anim-thicken--click,
+              .piece__edge--anim-thicken--always {
+  stroke-width: var(--anim-edge-thicken-width, 3.5px);
 }
 
-.piece:hover .piece__edge--anim-wiggle {
+/* --- Edge · wiggle (transient transform shake) ------------------------- */
+.piece:hover  .piece__edge--anim-wiggle--hover,
+.piece:active .piece__edge--anim-wiggle--click {
   animation: piece-edge-wiggle 320ms ease-in-out;
   transform-box: fill-box;
   transform-origin: center;
 }
 @keyframes piece-edge-wiggle {
   0%   { transform: translate(0, 0); }
-  20%  { transform: translate(0.6px, -0.6px); }
-  40%  { transform: translate(-0.6px, 0.4px); }
-  60%  { transform: translate(0.4px, 0.6px); }
-  80%  { transform: translate(-0.4px, -0.4px); }
+  20%  { transform: translate(var(--anim-edge-wiggle-intensity, 0.6px), calc(-1 * var(--anim-edge-wiggle-intensity, 0.6px))); }
+  40%  { transform: translate(calc(-1 * var(--anim-edge-wiggle-intensity, 0.6px)), calc(0.7 * var(--anim-edge-wiggle-intensity, 0.6px))); }
+  60%  { transform: translate(calc(0.7 * var(--anim-edge-wiggle-intensity, 0.6px)), var(--anim-edge-wiggle-intensity, 0.6px)); }
+  80%  { transform: translate(calc(-0.6 * var(--anim-edge-wiggle-intensity, 0.6px)), calc(-0.6 * var(--anim-edge-wiggle-intensity, 0.6px))); }
   100% { transform: translate(0, 0); }
 }
 
-.piece:hover .piece__edge--anim-flash {
-  animation: piece-edge-flash 700ms ease-out;
+/* --- Edge · flash (transient stroke pulse) ----------------------------- */
+.piece:hover  .piece__edge--anim-flash--hover,
+.piece:active .piece__edge--anim-flash--click {
+  animation: piece-edge-flash var(--anim-edge-flash-duration, 700ms) ease-out;
 }
 @keyframes piece-edge-flash {
   0%   { stroke: var(--primary-2, #d68b54);
@@ -189,14 +235,16 @@
   100% { /* falls back to inline style / .piece__edge default */ }
 }
 
-/* Respect prefers-reduced-motion — collapse to no-ops. */
+/* Respect prefers-reduced-motion — collapse all transitions / animations
+ * to no-ops. Static visuals (highlight fill shift, thicken width) still
+ * work because they're not transitions. */
 @media (prefers-reduced-motion: reduce) {
   .piece[class*="piece--anim-"],
   .piece__edge[class*="piece__edge--anim-"] {
     animation: none !important;
     transition: none !important;
   }
-  .piece--anim-lift:hover,
-  .piece--anim-scale-up:hover,
-  .piece--anim-scale-down:hover { transform: none; }
+  .piece[class*="piece--anim-lift--"],
+  .piece[class*="piece--anim-scale-up--"],
+  .piece[class*="piece--anim-scale-down--"] { transform: none; }
 }

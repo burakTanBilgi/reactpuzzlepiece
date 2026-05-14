@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
-import AnimationChips from '../interactions/AnimationChips.jsx';
-import { EDGE_ANIMATIONS } from '../interactions/animations.js';
-import { EFFECT_NAMES } from '../../../puzzle';
-import { piecesOfEdge } from '../../../grid/compile.js';
+import EffectsPicker from '../interactions/EffectsPicker.jsx';
+import { EFFECT_NAMES, EDGE_EFFECTS } from '../../../puzzle';
+import { piecesOfEdge, resolveEdgeEffects } from '../../../grid/compile.js';
 import { DEFAULT_WAVE, MIXED, cap } from './constants.js';
 
 // The accent card at the top of the Edges panel when one or more edges are
@@ -20,6 +19,7 @@ export default function SelectedEdgeCard({
   setEdgeEffect,
   setEdgeConfig,
   clearEdgeOverride,
+  setEdgeEffects,
 }) {
   const piecesById = useMemo(
     () => new Map(pieces.map((pc) => [pc.id, pc])),
@@ -162,15 +162,42 @@ export default function SelectedEdgeCard({
 
       <StyleControls config={combo?.cfg} onPatchConfig={applyConfig} />
 
-      <div className="form-row form-row--stack">
-        <label className="form-row__label">Hover</label>
-        <AnimationChips
-          options={EDGE_ANIMATIONS}
-          active={combo?.cfg?.hoverAnimation && combo.cfg.hoverAnimation !== MIXED ? combo.cfg.hoverAnimation : 'none'}
-          mixed={combo?.cfg?.hoverAnimation === MIXED}
-          onSelect={(id) => applyConfig({ hoverAnimation: id === 'none' ? null : id })}
-        />
-      </div>
+      {setEdgeEffects && (() => {
+        const pks = [...selected];
+        const firstPk = pks[0];
+        const isOuter = firstPk.includes('||outer-');
+        const ownEffects = project.edges.byEdge[firstPk]?.effects || {};
+        // Inherited effects = everything that would resolve at the per-edge
+        // tier MINUS this tier's own. Build by resolving the cascade up to
+        // (but not including) byEdge, which is what cells / layer / default
+        // contribute beneath us.
+        const layer = isOuter ? project.edges.outer : project.edges.inner;
+        const cellTiers = piecesOfEdge(firstPk).map((id) => project.edges.byPiece?.[id]?.effects).filter(Boolean);
+        const inheritedEffects = mergeAll(
+          project.edges.default?.effects,
+          layer?.effects,
+          ...cellTiers,
+        );
+        // Multi-edit: detect mixed across selected edges by comparing each
+        // edge's own effects map against the first one.
+        const mixed = pks.length > 1 && pks.some((pk) =>
+          !sameJSON(project.edges.byEdge[pk]?.effects || {}, ownEffects)
+        );
+        return (
+          <>
+            <div className="form-row form-row--stack">
+              <label className="form-row__label">Edge effects</label>
+            </div>
+            <EffectsPicker
+              catalogue={EDGE_EFFECTS}
+              ownEffects={ownEffects}
+              inheritedEffects={inheritedEffects}
+              mixed={mixed}
+              onChange={(map) => { for (const pk of pks) setEdgeEffects(pk, map); }}
+            />
+          </>
+        );
+      })()}
 
       <div className="action-stack">
         <button type="button" className="action-btn action-btn--ghost" onClick={resetSelected}>
@@ -179,4 +206,20 @@ export default function SelectedEdgeCard({
       </div>
     </section>
   );
+}
+
+function mergeAll(...maps) {
+  const out = {};
+  for (const m of maps) {
+    if (!m) continue;
+    for (const [k, v] of Object.entries(m)) {
+      if (v === null) delete out[k];
+      else            out[k] = v;
+    }
+  }
+  return out;
+}
+
+function sameJSON(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
 }

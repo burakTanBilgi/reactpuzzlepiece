@@ -30,9 +30,11 @@ export default function EdgesPanel({
   // piece selection
   selectedPiece, onClearPieceSelection,
   setPieceEdgeEffect, setPieceEdgeConfig, clearPieceEdgeOverride,
-  // default + layers
+  // default + layers (effect + style cascade)
   setDefaultEdgeEffect, setDefaultEdgeConfig,
   setLayerEffect, setLayerConfig, clearLayer,
+  // hover/click animation effects (v2 cascade) — one map setter per tier
+  setDefaultEdgeEffects, setLayerEffects, setPieceEdgeEffects, setEdgeEffects,
 }) {
   const defaultEffect  = project.edges.default.effect;
   const defaultConfig  = project.edges.default.config ?? DEFAULT_WAVE;
@@ -40,6 +42,12 @@ export default function EdgesPanel({
   const outerLayer     = project.edges.outer;
   const overrideCount  = Object.keys(project.edges.byEdge).length;
   const cellOverrideCount = Object.keys(project.edges.byPiece || {}).length;
+
+  // Effect-map cascades — passed to each tier card so it can show its own
+  // entries plus the inherited baseline (read-only, ghosted in the picker).
+  const defaultEdgeEffects = project.edges.default.effects || {};
+  const innerEffects       = project.edges.inner?.effects   || {};
+  const outerEffects       = project.edges.outer?.effects   || {};
 
   const hasEdgeSelection  = selected.size > 0;
   const hasPieceSelection = !!selectedPiece;
@@ -64,6 +72,9 @@ export default function EdgesPanel({
       config={defaultConfig}
       onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultConfig : undefined)}
       onPatchConfig={setDefaultEdgeConfig}
+      ownEffects={defaultEdgeEffects}
+      inheritedEffects={{}}
+      onChangeEffects={setDefaultEdgeEffects}
     />
   );
 
@@ -79,6 +90,9 @@ export default function EdgesPanel({
       onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave' ? (innerLayer?.config ?? defaultConfig) : undefined)}
       onPatchConfig={(patch) => setLayerConfig('inner', patch)}
       onClear={innerLayer ? () => clearLayer('inner') : null}
+      ownEffects={innerEffects}
+      inheritedEffects={defaultEdgeEffects}
+      onChangeEffects={(map) => setLayerEffects('inner', map)}
     />
   );
 
@@ -94,6 +108,9 @@ export default function EdgesPanel({
       onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave' ? (outerLayer?.config ?? defaultConfig) : undefined)}
       onPatchConfig={(patch) => setLayerConfig('outer', patch)}
       onClear={outerLayer ? () => clearLayer('outer') : null}
+      ownEffects={outerEffects}
+      inheritedEffects={defaultEdgeEffects}
+      onChangeEffects={(map) => setLayerEffects('outer', map)}
     />
   );
 
@@ -107,6 +124,7 @@ export default function EdgesPanel({
       setEdgeEffect={setEdgeEffect}
       setEdgeConfig={setEdgeConfig}
       clearEdgeOverride={clearEdgeOverride}
+      setEdgeEffects={setEdgeEffects}
     />
   ) : hasPieceSelection ? (
     <SelectedPieceCard
@@ -116,6 +134,7 @@ export default function EdgesPanel({
       setPieceEdgeEffect={setPieceEdgeEffect}
       setPieceEdgeConfig={setPieceEdgeConfig}
       clearPieceEdgeOverride={clearPieceEdgeOverride}
+      setPieceEdgeEffects={setPieceEdgeEffects}
     />
   ) : (
     <HintCard />

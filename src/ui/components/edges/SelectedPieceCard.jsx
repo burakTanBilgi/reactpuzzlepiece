@@ -1,8 +1,7 @@
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
-import AnimationChips from '../interactions/AnimationChips.jsx';
-import { EDGE_ANIMATIONS } from '../interactions/animations.js';
-import { EFFECT_NAMES } from '../../../puzzle';
+import EffectsPicker from '../interactions/EffectsPicker.jsx';
+import { EFFECT_NAMES, EDGE_EFFECTS } from '../../../puzzle';
 import { DEFAULT_WAVE, cap } from './constants.js';
 
 // The accent card shown when a single piece is selected in Edges mode.
@@ -19,6 +18,7 @@ export default function SelectedPieceCard({
   setPieceEdgeEffect,
   setPieceEdgeConfig,
   clearPieceEdgeOverride,
+  setPieceEdgeEffects,
 }) {
   const defaultEffect = project.edges.default.effect;
   const defaultConfig = project.edges.default.config ?? DEFAULT_WAVE;
@@ -89,14 +89,24 @@ export default function SelectedPieceCard({
 
       <StyleControls config={config} onPatchConfig={applyConfig} />
 
-      <div className="form-row form-row--stack">
-        <label className="form-row__label">Hover</label>
-        <AnimationChips
-          options={EDGE_ANIMATIONS}
-          active={config?.hoverAnimation || 'none'}
-          onSelect={(id) => applyConfig({ hoverAnimation: id === 'none' ? null : id })}
-        />
-      </div>
+      {setPieceEdgeEffects && (() => {
+        const ownEffects = project.edges.byPiece?.[piece.id]?.effects || {};
+        const inheritedEffects = project.edges.default?.effects || {};
+        return (
+          <>
+            <div className="form-row form-row--stack">
+              <label className="form-row__label">Edge effects</label>
+              <p className="hint" style={{ margin: 0 }}>Applies to every edge of this piece. Per-edge picks still win.</p>
+            </div>
+            <EffectsPicker
+              catalogue={EDGE_EFFECTS}
+              ownEffects={ownEffects}
+              inheritedEffects={inheritedEffects}
+              onChange={(map) => setPieceEdgeEffects(piece.id, map)}
+            />
+          </>
+        );
+      })()}
 
       {cellOverride && (
         <div className="action-stack">

@@ -19,12 +19,56 @@ export function piecesOfEdge(pairKey) {
   return pairKey.split('||');
 }
 
-// Cell hover animation cascade (two tiers): per-piece override > project default.
-// Returns the animation id (e.g. 'lift') or null when no animation is set.
-export function resolveCellAnimation(project, pieceId) {
-  return project?.cells?.byPiece?.[pieceId]?.hoverAnimation
-      ?? project?.cells?.default?.hoverAnimation
-      ?? null;
+// --- Effects v2: per-effect intensity + trigger + multi-select cascade ----
+
+// V1 → v2 upgrader: when a tier carries a legacy `hoverAnimation` string
+// (the v1 shape), expand into a one-entry effects map under the 'hover'
+// trigger so cascade resolution works without rewriting saved JSONs.
+function tierEffects(tier) {
+  if (!tier) return null;
+  if (tier.effects) return tier.effects;
+  // Cells v1: { hoverAnimation: 'lift' }
+  // Edges v1: { effect, config: { hoverAnimation: 'lift' } }
+  const legacy = tier.hoverAnimation ?? tier.config?.hoverAnimation;
+  if (!legacy || legacy === 'none') return null;
+  return { [`${legacy}:hover`]: { id: legacy, trigger: 'hover', config: {} } };
+}
+
+// Merge a chain of tier effect maps. Higher-priority tiers come later in the
+// argument list and overwrite earlier entries; an explicit `null` value at
+// any key removes that entry from the resolved set (lets a higher tier opt
+// out of an inherited effect).
+export function mergeEffects(...tiers) {
+  const out = {};
+  for (const tier of tiers) {
+    if (!tier) continue;
+    for (const [key, entry] of Object.entries(tier)) {
+      if (entry === null) delete out[key];
+      else                  out[key] = entry;
+    }
+  }
+  return out;
+}
+
+// Cells effect cascade: project default → per-piece override.
+export function resolveCellEffects(project, pieceId) {
+  return mergeEffects(
+    tierEffects(project?.cells?.default),
+    tierEffects(project?.cells?.byPiece?.[pieceId]),
+  );
+}
+
+// Edges effect cascade: default → inner/outer layer → per-piece (cell-tier
+// — both endpoints for shared edges) → per-edge.
+export function resolveEdgeEffects(edges, pairKey, kind, edgePieceIds = []) {
+  const layer = kind === 'inner' ? edges?.inner : edges?.outer;
+  const cellTiers = edgePieceIds.map((id) => tierEffects(edges?.byPiece?.[id]));
+  return mergeEffects(
+    tierEffects(edges?.default),
+    tierEffects(layer),
+    ...cellTiers,
+    tierEffects(edges?.byEdge?.[pairKey]),
+  );
 }
 
 // For a piece with cell-bounds `b`, return the backgrounds that overlap it,
@@ -98,7 +142,7 @@ export function compileProject(project) {
       fill: pieceColors?.[id],
       content: pieceContent?.[id],
       backgrounds: collectBackgrounds(backgrounds, b, cellSize),
-      cellAnimation: resolveCellAnimation(project, id),
+      cellEffects: resolveCellEffects(project, id),
       sides: {},
       sideEffects: {},
       sideEffectConfigs: {},
@@ -119,6 +163,7 @@ export function compileProject(project) {
         // No neighbors on this side → outer edge. Apply effect with single knob or flat.
         const outerKey = `${piece.id}||outer-${side}`;
         const { effect, config } = resolveEdge(edges, outerKey, 'outer', [piece.id]);
+        const fxs = resolveEdgeEffects(edges, outerKey, 'outer', [piece.id]);
 
         // For outer edges, apply the effect (puzzle/wave/straight)
         // Puzzle: single centered tab or socket depending on side convention
@@ -136,7 +181,12 @@ export function compileProject(project) {
         piece.edgeEffects[side] = piece.edgeEffects[side] || {};
         piece.edgeEffectConfigs[side] = piece.edgeEffectConfigs[side] || {};
         piece.edgeEffects[side]['__outer'] = effect;
-        if (config) piece.edgeEffectConfigs[side]['__outer'] = config;
+        // Merge resolved effects into the per-segment config object so the
+        // existing pickStyle pipeline carries them out to the renderer
+        // (`seg.style.effects`). Effects live under a reserved key so they
+        // don't collide with stroke style fields.
+        const finalCfg = { ...(config || {}), effects: fxs };
+        piece.edgeEffectConfigs[side]['__outer'] = finalCfg;
         continue;
       }
       assignSide(piece, side, segs, edges);
@@ -242,8 +292,14 @@ function assignSide(piece, side, segs, edges) {
   for (const s of segs) {
     const pairKey = edgeKey(piece.id, s.neighborId);
     const { effect, config } = resolveEdge(edges, pairKey, 'inner', [piece.id, s.neighborId]);
+    const fxs = resolveEdgeEffects(edges, pairKey, 'inner', [piece.id, s.neighborId]);
     piece.edgeEffects[side][s.neighborId] = effect;
-    if (config) piece.edgeEffectConfigs[side][s.neighborId] = config;
+    // Carry effects via the same per-segment config bag so geometry.js#pickStyle
+    // can fish them out into seg.style.effects. Storage shape is independent
+    // (effects sit alongside config in the project), but the in-memory hand-off
+    // unifies them.
+    const finalCfg = { ...(config || {}), effects: fxs };
+    piece.edgeEffectConfigs[side][s.neighborId] = finalCfg;
   }
 }
 

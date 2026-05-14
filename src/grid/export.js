@@ -5,6 +5,7 @@
 
 import { compileProject } from './compile.js';
 import { computePiecePath, computeSideSegments } from '../puzzle/geometry.js';
+import { cellEffectAttrs, edgeEffectAttrs } from '../puzzle/effect-attrs.js';
 import { makeZip } from './zip.js';
 
 const SIDES = ['top', 'right', 'bottom', 'left'];
@@ -31,85 +32,154 @@ function snapshot(project) {
   const pieces = compileProject(project);
   const effect = project.edges?.default?.effect ?? 'puzzle';
   const config = project.edges?.default?.config ?? null;
-  return pieces.map((p) => ({
-    id: p.id,
-    x: p.x, y: p.y, w: p.w, h: p.h,
-    label: p.label,
-    fill: p.fill ?? null,
-    content: p.content ?? null,
-    backgrounds: p.backgrounds ?? null,
-    cellAnimation: p.cellAnimation ?? null,
-    d: computePiecePath(p, pieces, effect, config),
-    // Per-segment stroke paths so the exported file can render each edge with
-    // its own color / opacity / width / hover animation — same pipeline as
-    // the live renderer.
-    segments: SIDES.flatMap((side) =>
-      computeSideSegments(p, pieces, side, effect, config)
-    ).map((seg) => ({ d: seg.d, style: seg.style ?? null })),
-  }));
+  return pieces.map((p) => {
+    const cellAttrs = cellEffectAttrs(p.cellEffects);
+    return {
+      id: p.id,
+      x: p.x, y: p.y, w: p.w, h: p.h,
+      label: p.label,
+      fill: p.fill ?? null,
+      content: p.content ?? null,
+      backgrounds: p.backgrounds ?? null,
+      // Pre-baked classes + CSS vars for hover/click/idle/always animations.
+      // Computed at export time so the exported JSX doesn't need to ship
+      // the catalogue — just spreads attrs onto the right elements.
+      animClassName: cellAttrs.className,
+      animStyle: cellAttrs.style ?? null,
+      d: computePiecePath(p, pieces, effect, config),
+      // Per-segment stroke paths so the exported file can render each edge
+      // with its own color / opacity / width — plus pre-baked animation
+      // attrs (className + style) using the same v2 helper.
+      segments: SIDES.flatMap((side) =>
+        computeSideSegments(p, pieces, side, effect, config)
+      ).map((seg) => {
+        const ea = edgeEffectAttrs(seg.style?.effects);
+        return {
+          d: seg.d,
+          style: seg.style ? {
+            color: seg.style.color ?? null,
+            opacity: seg.style.opacity ?? null,
+            strokeWidth: seg.style.strokeWidth ?? null,
+          } : null,
+          animClassName: ea.className,
+          animStyle: ea.style ?? null,
+        };
+      }),
+    };
+  });
 }
 
 // CSS rules baked into the single-file JSX export so the deployed puzzle
-// carries the same hover/animation behaviour as the studio. Self-contained:
-// no external CSS vars, all colours inlined. Mirrors the catalogue in
-// src/ui/components/interactions/animations.js + puzzle/PuzzleBoard.css.
+// carries the same v2 hover/click/idle/always behaviour as the studio.
+// Self-contained: no external CSS vars, brand colours inlined. Mirrors the
+// catalogue in src/puzzle/effects-catalog.js + puzzle/PuzzleBoard.css.
 const EXPORT_ANIM_CSS = `
 .hak-puzzle .piece { cursor: default; }
 .hak-puzzle .piece[class*="piece--anim-"] {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: transform 200ms ease, filter 200ms ease;
-}
-.hak-puzzle .piece--anim-lift:hover       { transform: translate(0, -4px); }
-.hak-puzzle .piece--anim-scale-up:hover   { transform: scale(1.04); }
-.hak-puzzle .piece--anim-scale-down:hover { transform: scale(0.96); }
-.hak-puzzle .piece--anim-glow:hover .piece__body {
-  filter: drop-shadow(0 0 6px rgba(214,139,84,0.55))
-          drop-shadow(0 0 12px rgba(214,139,84,0.4));
-}
-.hak-puzzle .piece--anim-pulse {
-  animation: hak-piece-pulse 2.6s ease-in-out infinite;
   transform-box: fill-box; transform-origin: center;
-}
-@keyframes hak-piece-pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%     { opacity: 0.92; transform: scale(0.985); }
+  transition: transform 200ms ease, filter 200ms ease, opacity 200ms ease;
 }
 .hak-puzzle .piece__edge[class*="piece__edge--anim-"] {
   transition: stroke-width 200ms ease, filter 200ms ease, stroke 200ms ease;
 }
-.hak-puzzle .piece:hover .piece__edge--anim-glow {
-  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor);
+
+/* Cell · highlight */
+.hak-puzzle .piece--anim-highlight--hover:hover  .piece__body,
+.hak-puzzle .piece--anim-highlight--click:active .piece__body,
+.hak-puzzle .piece--anim-highlight--always       .piece__body { fill: #1b222d; }
+
+/* Cell · lift */
+.hak-puzzle .piece--anim-lift--hover:hover  { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+.hak-puzzle .piece--anim-lift--click:active { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+.hak-puzzle .piece--anim-lift--always       { transform: translate(0, calc(-1 * var(--anim-lift-distance, 4px))); }
+
+/* Cell · scale-up */
+.hak-puzzle .piece--anim-scale-up--hover:hover  { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+.hak-puzzle .piece--anim-scale-up--click:active { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+.hak-puzzle .piece--anim-scale-up--always       { transform: scale(calc(1 + var(--anim-scale-up-amount, 0.04))); }
+
+/* Cell · scale-down */
+.hak-puzzle .piece--anim-scale-down--hover:hover  { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+.hak-puzzle .piece--anim-scale-down--click:active { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+.hak-puzzle .piece--anim-scale-down--always       { transform: scale(calc(1 - var(--anim-scale-down-amount, 0.04))); }
+
+/* Cell · glow */
+.hak-puzzle .piece--anim-glow--hover:hover  .piece__body,
+.hak-puzzle .piece--anim-glow--click:active .piece__body,
+.hak-puzzle .piece--anim-glow--always       .piece__body {
+  filter: drop-shadow(0 0 var(--anim-glow-radius, 6px) rgba(214, 139, 84, 0.55))
+          drop-shadow(0 0 calc(var(--anim-glow-radius, 6px) * 2) rgba(214, 139, 84, 0.4));
 }
-.hak-puzzle .piece:hover .piece__edge--anim-thicken { stroke-width: 3.5px; }
-.hak-puzzle .piece:hover .piece__edge--anim-wiggle {
+.hak-puzzle .piece--anim-glow--idle:not(:hover) .piece__body {
+  filter: drop-shadow(0 0 var(--anim-glow-radius, 6px) rgba(214, 139, 84, 0.55));
+}
+
+/* Cell · pulse */
+.hak-puzzle .piece--anim-pulse--idle,
+.hak-puzzle .piece--anim-pulse--always { animation: hak-piece-pulse var(--anim-pulse-speed, 2.6s) ease-in-out infinite; }
+.hak-puzzle .piece--anim-pulse--idle:hover { animation-play-state: paused; }
+@keyframes hak-piece-pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%     { opacity: 0.92; transform: scale(0.985); }
+}
+
+/* Edge · highlight */
+.hak-puzzle .piece:hover  .piece__edge--anim-highlight--hover,
+.hak-puzzle .piece:active .piece__edge--anim-highlight--click,
+.hak-puzzle              .piece__edge--anim-highlight--always {
+  stroke: #4285f4; stroke-width: 2.5;
+}
+
+/* Edge · glow */
+.hak-puzzle .piece:hover  .piece__edge--anim-glow--hover,
+.hak-puzzle .piece:active .piece__edge--anim-glow--click,
+.hak-puzzle              .piece__edge--anim-glow--always {
+  filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor)
+          drop-shadow(0 0 calc(var(--anim-edge-glow-radius, 4px) * 2) currentColor);
+}
+.hak-puzzle .piece:not(:hover) .piece__edge--anim-glow--idle {
+  filter: drop-shadow(0 0 var(--anim-edge-glow-radius, 4px) currentColor);
+}
+
+/* Edge · thicken */
+.hak-puzzle .piece:hover  .piece__edge--anim-thicken--hover,
+.hak-puzzle .piece:active .piece__edge--anim-thicken--click,
+.hak-puzzle              .piece__edge--anim-thicken--always { stroke-width: var(--anim-edge-thicken-width, 3.5px); }
+
+/* Edge · wiggle */
+.hak-puzzle .piece:hover  .piece__edge--anim-wiggle--hover,
+.hak-puzzle .piece:active .piece__edge--anim-wiggle--click {
   animation: hak-edge-wiggle 320ms ease-in-out;
   transform-box: fill-box; transform-origin: center;
 }
 @keyframes hak-edge-wiggle {
   0%   { transform: translate(0, 0); }
-  20%  { transform: translate(0.6px, -0.6px); }
-  40%  { transform: translate(-0.6px, 0.4px); }
-  60%  { transform: translate(0.4px, 0.6px); }
-  80%  { transform: translate(-0.4px, -0.4px); }
+  20%  { transform: translate(var(--anim-edge-wiggle-intensity, 0.6px), calc(-1 * var(--anim-edge-wiggle-intensity, 0.6px))); }
+  40%  { transform: translate(calc(-1 * var(--anim-edge-wiggle-intensity, 0.6px)), calc(0.7 * var(--anim-edge-wiggle-intensity, 0.6px))); }
+  60%  { transform: translate(calc(0.7 * var(--anim-edge-wiggle-intensity, 0.6px)), var(--anim-edge-wiggle-intensity, 0.6px)); }
+  80%  { transform: translate(calc(-0.6 * var(--anim-edge-wiggle-intensity, 0.6px)), calc(-0.6 * var(--anim-edge-wiggle-intensity, 0.6px))); }
   100% { transform: translate(0, 0); }
 }
-.hak-puzzle .piece:hover .piece__edge--anim-flash {
-  animation: hak-edge-flash 700ms ease-out;
+
+/* Edge · flash */
+.hak-puzzle .piece:hover  .piece__edge--anim-flash--hover,
+.hak-puzzle .piece:active .piece__edge--anim-flash--click {
+  animation: hak-edge-flash var(--anim-edge-flash-duration, 700ms) ease-out;
 }
 @keyframes hak-edge-flash {
   0%   { stroke: #d68b54; filter: drop-shadow(0 0 6px rgba(214,139,84,0.6)); }
   100% { /* falls back to inline stroke */ }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .hak-puzzle .piece[class*="piece--anim-"],
   .hak-puzzle .piece__edge[class*="piece__edge--anim-"] {
     animation: none !important;
     transition: none !important;
   }
-  .hak-puzzle .piece--anim-lift:hover,
-  .hak-puzzle .piece--anim-scale-up:hover,
-  .hak-puzzle .piece--anim-scale-down:hover { transform: none; }
+  .hak-puzzle .piece[class*="piece--anim-lift--"],
+  .hak-puzzle .piece[class*="piece--anim-scale-up--"],
+  .hak-puzzle .piece[class*="piece--anim-scale-down--"] { transform: none; }
 }`.trim();
 
 // Build a single self-contained .jsx file. No imports beyond React.
@@ -163,16 +233,13 @@ export default function PuzzleExport({ width = '100%', height = 'auto', style })
 }
 
 function Piece({ piece }) {
-  const { id, x, y, w, h, label, fill, content, backgrounds, segments, d, cellAnimation } = piece;
+  const { id, x, y, w, h, label, fill, content, backgrounds, segments, d, animClassName, animStyle } = piece;
   const clipId = 'pcx-' + id.replace(/[^a-zA-Z0-9]/g, '');
   const hasContent = content && (content.text || content.src);
   const hasBgs = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBgs;
-  const cellClass = cellAnimation && cellAnimation !== 'none'
-    ? ' piece--anim-' + cellAnimation
-    : '';
   return (
-    <g className={'piece' + cellClass}>
+    <g className={('piece ' + (animClassName || '')).trim()} style={animStyle || undefined}>
       {needsClip && (
         <defs>
           <clipPath id={clipId}><path d={d} /></clipPath>
@@ -203,25 +270,25 @@ function Piece({ piece }) {
         </text>
       ))}
 
-      {/* Per-segment edge strokes — one path per edge so each can carry its
-          own color / opacity / width / hover-animation baked in at export
-          time. The hover-animation triggers on the parent .piece:hover. */}
+      {/* Per-segment edge strokes — one path per edge with its own color /
+          opacity / width / animation classes (each entry → one class +
+          matching CSS vars from the piece's animStyle). Hover/click triggers
+          fire from the parent .piece:hover / :active. */}
       {(segments || []).map((seg, i) => {
         const s = seg.style || {};
-        const animClass = s.hoverAnimation && s.hoverAnimation !== 'none'
-          ? ' piece__edge--anim-' + s.hoverAnimation
-          : '';
+        const segStyle = { ...(seg.animStyle || {}) };
         return (
           <path
             key={i}
             d={seg.d}
-            className={'piece__edge' + animClass}
+            className={('piece__edge ' + (seg.animClassName || '')).trim()}
             fill="none"
             stroke={s.color || '#423a4f'}
             strokeOpacity={s.opacity != null ? s.opacity : 1}
             strokeWidth={s.strokeWidth != null ? s.strokeWidth : 1.5}
             strokeLinejoin="round"
             strokeLinecap="round"
+            style={Object.keys(segStyle).length ? segStyle : undefined}
           />
         );
       })}

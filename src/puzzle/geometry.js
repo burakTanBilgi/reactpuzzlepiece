@@ -318,10 +318,13 @@ function edgeKeyOf(a, b) { return a < b ? `${a}||${b}` : `${b}||${a}`; }
 function pickStyle(cfg) {
   if (!cfg) return undefined;
   const out = {};
-  if (cfg.color != null)          out.color = cfg.color;
-  if (cfg.opacity != null)        out.opacity = cfg.opacity;
-  if (cfg.strokeWidth != null)    out.strokeWidth = cfg.strokeWidth;
-  if (cfg.hoverAnimation != null) out.hoverAnimation = cfg.hoverAnimation;
+  if (cfg.color != null)       out.color = cfg.color;
+  if (cfg.opacity != null)     out.opacity = cfg.opacity;
+  if (cfg.strokeWidth != null) out.strokeWidth = cfg.strokeWidth;
+  // Effects map (v2): { 'glow:hover': { id, trigger, config }, ... }
+  // Compiled in compile.js#assignSide via resolveEdgeEffects; the renderer
+  // emits one class + matching CSS vars per entry.
+  if (cfg.effects && Object.keys(cfg.effects).length) out.effects = cfg.effects;
   return Object.keys(out).length ? out : undefined;
 }
 

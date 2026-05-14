@@ -1,16 +1,20 @@
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
-import AnimationChips from '../interactions/AnimationChips.jsx';
-import { EDGE_ANIMATIONS } from '../interactions/animations.js';
-import { EFFECT_NAMES } from '../../../puzzle';
+import EffectsPicker from '../interactions/EffectsPicker.jsx';
+import { EFFECT_NAMES, EDGE_EFFECTS } from '../../../puzzle';
 import { DEFAULT_WAVE, cap } from './constants.js';
 
-// One card for setting effect + wave config — used by Default, Inner, and
-// Outer layer rows in the Edges panel. When `active` is true the card visually
-// highlights as an override; `onClear` shows a "use default" link if provided.
+// One card for setting effect + wave config + interaction effects — used by
+// Default, Inner, and Outer layer rows in the Edges panel. When `active` is
+// true the card visually highlights as an override; `onClear` shows a "use
+// default" link if provided. The EffectsPicker at the bottom edits this
+// tier's hover/click animation map; lower-tier inheritance is shown via
+// `inheritedEffects`.
 export default function LayerCard({
   title, hint, effect, config,
   active, onSetEffect, onPatchConfig, onClear,
+  // v2 effects
+  ownEffects = {}, inheritedEffects = {}, onChangeEffects,
 }) {
   return (
     <section className={`card ${active ? 'card--accent' : ''}`}>
@@ -48,14 +52,19 @@ export default function LayerCard({
       )}
       <StyleControls config={config} onPatchConfig={onPatchConfig} />
 
-      <div className="form-row form-row--stack">
-        <label className="form-row__label">Hover</label>
-        <AnimationChips
-          options={EDGE_ANIMATIONS}
-          active={config?.hoverAnimation || 'none'}
-          onSelect={(id) => onPatchConfig({ hoverAnimation: id === 'none' ? null : id })}
-        />
-      </div>
+      {onChangeEffects && (
+        <>
+          <div className="form-row form-row--stack">
+            <label className="form-row__label">Edge effects</label>
+          </div>
+          <EffectsPicker
+            catalogue={EDGE_EFFECTS}
+            ownEffects={ownEffects}
+            inheritedEffects={inheritedEffects}
+            onChange={onChangeEffects}
+          />
+        </>
+      )}
     </section>
   );
 }

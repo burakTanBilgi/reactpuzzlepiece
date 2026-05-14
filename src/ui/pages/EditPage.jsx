@@ -37,8 +37,12 @@ export default function EditPage({ project, mode = 'edges' }) {
     clearPieceEdgeOverride,
     setPieceContent,
     updatePieceContent,
-    setDefaultCellHoverAnimation,
-    setCellHoverAnimation,
+    setDefaultCellEffects,
+    setCellEffects,
+    setDefaultEdgeEffects,
+    setLayerEffects,
+    setPieceEdgeEffects,
+    setEdgeEffects,
   } = project;
 
   const [selectedEdges, setSelectedEdges] = useState(() => new Set());
@@ -122,6 +126,10 @@ export default function EditPage({ project, mode = 'edges' }) {
             setPieceEdgeEffect={setPieceEdgeEffect}
             setPieceEdgeConfig={setPieceEdgeConfig}
             clearPieceEdgeOverride={clearPieceEdgeOverride}
+            setDefaultEdgeEffects={setDefaultEdgeEffects}
+            setLayerEffects={setLayerEffects}
+            setPieceEdgeEffects={setPieceEdgeEffects}
+            setEdgeEffects={setEdgeEffects}
           />
         ) : (
           <CellsPanel
@@ -130,8 +138,8 @@ export default function EditPage({ project, mode = 'edges' }) {
             onClearSelection={() => setSelectedPieceId(null)}
             setPieceContent={setPieceContent}
             updatePieceContent={updatePieceContent}
-            setDefaultCellHoverAnimation={setDefaultCellHoverAnimation}
-            setCellHoverAnimation={setCellHoverAnimation}
+            setDefaultCellEffects={setDefaultCellEffects}
+            setCellEffects={setCellEffects}
           />
         )}
       </aside>

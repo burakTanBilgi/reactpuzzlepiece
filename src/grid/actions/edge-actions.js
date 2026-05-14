@@ -95,5 +95,51 @@ export function edgeActions(setProject) {
         return { ...e, byPiece: next };
       });
     },
+
+    // --- Edge effects (v2 hover/click/idle/always animations) ---
+    // Each tier carries its own `effects` map alongside its `effect`/`config`
+    // fields. Cascade merges them (compile.js#resolveEdgeEffects). One setter
+    // per tier — the panel computes the resolved map and writes it whole.
+    setDefaultEdgeEffects(effects) {
+      mutateEdges((e) => ({
+        ...e,
+        default: { ...(e.default || {}), effects: effects || {} },
+      }));
+    },
+
+    setLayerEffects(kind, effects) {
+      mutateEdges((e) => {
+        const cur = e[kind] || { effect: e.default?.effect ?? 'puzzle' };
+        return { ...e, [kind]: { ...cur, effects: effects || {} } };
+      });
+    },
+
+    setPieceEdgeEffects(pieceId, effects) {
+      mutateEdges((e) => {
+        const byPiece = { ...(e.byPiece || {}) };
+        const cur = byPiece[pieceId] || {};
+        const isEmpty = !effects || Object.keys(effects).length === 0;
+        if (isEmpty && !cur.effect && !cur.config) {
+          delete byPiece[pieceId];
+        } else {
+          byPiece[pieceId] = { ...cur, effects: effects || {} };
+        }
+        return { ...e, byPiece };
+      });
+    },
+
+    setEdgeEffects(pairKey, effects) {
+      mutateEdges((e) => {
+        const byEdge = { ...(e.byEdge || {}) };
+        const cur = byEdge[pairKey] || {};
+        const isEmpty = !effects || Object.keys(effects).length === 0;
+        if (isEmpty && !cur.effect && !cur.config) {
+          delete byEdge[pairKey];
+        } else {
+          byEdge[pairKey] = { ...cur, effects: effects || {} };
+        }
+        return { ...e, byEdge };
+      });
+    },
   };
 }

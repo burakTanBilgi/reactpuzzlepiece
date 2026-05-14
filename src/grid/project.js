@@ -14,15 +14,26 @@ export function newProject(name = 'Untitled') {
     updatedAt: now,
     grid: makeFreshGrid(2, 2),
     edges: {
-      default: { effect: 'puzzle' },
-      inner:   null,            // override for shared edges (between two pieces)
-      outer:   null,            // override for outer edges (no neighbor)
-      byPiece: {},              // per-piece (cell) override — applies to every edge of that piece
-      byEdge:  {},              // per-edge overrides — highest priority
+      default: {
+        effect: 'puzzle',
+        // v2 effects map: { 'highlight:hover': { id, trigger, config } }
+        // Higher tiers (inner/outer/byPiece/byEdge) merge on top; null at a
+        // key removes an inherited entry. See compile.js#mergeEffects.
+        effects: { 'highlight:hover': { id: 'highlight', trigger: 'hover', config: {} } },
+      },
+      inner:   null,
+      outer:   null,
+      byPiece: {},
+      byEdge:  {},
     },
     cells: {
-      default: { hoverAnimation: null }, // project-wide default cell hover effect
-      byPiece: {},                       // per-piece overrides: { [pieceId]: { hoverAnimation } }
+      default: {
+        // v2 effects map (same shape as edges' effects). Seeded with
+        // `highlight` on hover so the editor's familiar "fill shifts on
+        // hover" behaviour persists for new projects.
+        effects: { 'highlight:hover': { id: 'highlight', trigger: 'hover', config: {} } },
+      },
+      byPiece: {},
     },
     pieceColors: {},
     pieceContent: {},

@@ -254,6 +254,36 @@
   gap: 4px;
 }
 
+/* === Effects picker (multi-select effect chips + per-effect editor) === */
+.effects-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.effect-active-row {
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.effect-active-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.effect-active-row__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .form-row__label {
   font-size: 11px;
   color: var(--text-muted);

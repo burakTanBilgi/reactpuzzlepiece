@@ -40,31 +40,32 @@ export function pieceActions(setProject) {
       setProject((p) => (p ? { ...p, pieceContent: {} } : p));
     },
 
-    // --- Cell hover-animation tier ---
-    // Lives in `cells: { default, byPiece }`. Two-tier cascade resolves in
-    // compile.js#resolveCellAnimation. Pass null/'none' to clear.
-    setDefaultCellHoverAnimation(animation) {
-      const value = animation === 'none' ? null : animation;
+    // --- Cell effects tier (v2) ---
+    // Project shape: `cells: { default: { effects }, byPiece: { [id]: { effects } } }`
+    // The picker computes the new map (with auto-swap conflict resolution)
+    // and writes it whole — simpler than per-entry CRUD. Two-tier cascade
+    // resolves in compile.js#resolveCellEffects.
+    setDefaultCellEffects(effects) {
       setProject((p) => {
         if (!p) return p;
         const cells = p.cells || { default: {}, byPiece: {} };
         return {
           ...p,
-          cells: { ...cells, default: { ...(cells.default || {}), hoverAnimation: value } },
+          cells: { ...cells, default: { ...(cells.default || {}), effects: effects || {} } },
         };
       });
     },
 
-    setCellHoverAnimation(pieceId, animation) {
-      const value = animation === 'none' ? null : animation;
+    setCellEffects(pieceId, effects) {
       setProject((p) => {
         if (!p) return p;
         const cells = p.cells || { default: {}, byPiece: {} };
         const byPiece = { ...(cells.byPiece || {}) };
-        if (value == null) {
+        const isEmpty = !effects || Object.keys(effects).length === 0;
+        if (isEmpty) {
           delete byPiece[pieceId];
         } else {
-          byPiece[pieceId] = { ...(byPiece[pieceId] || {}), hoverAnimation: value };
+          byPiece[pieceId] = { ...(byPiece[pieceId] || {}), effects };
         }
         return { ...p, cells: { ...cells, byPiece } };
       });

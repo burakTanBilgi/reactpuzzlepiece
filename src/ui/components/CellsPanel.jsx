@@ -1,8 +1,8 @@
 import SliderRow from './SliderRow.jsx';
 import { FIT_OPTIONS } from '../utils/fitOptions.js';
 import { useFileInput } from '../hooks/useFileInput.js';
-import { CELL_ANIMATIONS } from './interactions/animations.js';
-import AnimationChips from './interactions/AnimationChips.jsx';
+import { CELL_EFFECTS } from '../../puzzle';
+import EffectsPicker from './interactions/EffectsPicker.jsx';
 
 const ALIGN_OPTIONS = [
   { value: 'left',   label: '⇤' },
@@ -10,31 +10,38 @@ const ALIGN_OPTIONS = [
   { value: 'right',  label: '⇥' },
 ];
 
-// Side-panel UI for the Cells tab of the Edit page (was "Content" before the
-// rename). Two cards stack vertically:
+// Side-panel UI for the Cells tab of the Edit page. Two cards stack:
 //
-//   1. Default cell card  — chips for the project-wide hover animation that
-//      every piece inherits unless it has a per-piece override.
+//   1. Default cell card  — multi-select effects (highlight / lift / glow /
+//      pulse / etc.) with per-effect trigger + intensity. Applies to every
+//      piece unless overridden in the per-piece card.
 //   2. Selected piece card (when a piece is clicked) — content editor (text/
-//      image/fit/etc.) plus a per-piece Hover chip row that overrides the
-//      default tier above.
+//      image/fit/etc.) plus a per-piece EffectsPicker that overrides /
+//      composes with the default tier above.
 export default function CellsPanel({
   project,
   selectedPiece,
   onClearSelection,
   setPieceContent,
   updatePieceContent,
-  setDefaultCellHoverAnimation,
-  setCellHoverAnimation,
+  setDefaultCellEffects,
+  setCellEffects,
 }) {
-  const defaultCellAnim = project?.cells?.default?.hoverAnimation ?? 'none';
+  const defaultEffects = project?.cells?.default?.effects || {};
 
   return (
     <>
-      <DefaultCellCard
-        animation={defaultCellAnim}
-        onSetAnimation={setDefaultCellHoverAnimation}
-      />
+      <section className="card">
+        <h3 className="card__title">Default cell hover</h3>
+        <p className="hint">Applied to every piece unless overridden in its own card.</p>
+        <EffectsPicker
+          catalogue={CELL_EFFECTS}
+          ownEffects={defaultEffects}
+          inheritedEffects={{}}
+          onChange={setDefaultCellEffects}
+        />
+      </section>
+
       {selectedPiece ? (
         <SelectedPieceCellCard
           piece={selectedPiece}
@@ -42,35 +49,17 @@ export default function CellsPanel({
           onClearSelection={onClearSelection}
           setPieceContent={setPieceContent}
           updatePieceContent={updatePieceContent}
-          setCellHoverAnimation={setCellHoverAnimation}
+          setCellEffects={setCellEffects}
         />
       ) : (
         <section className="card">
           <h3 className="card__title">Selected cell</h3>
-          <p className="hint">Click a piece in the canvas to edit its content and hover effect.</p>
+          <p className="hint">Click a piece in the canvas to edit its content + cell effects.</p>
         </section>
       )}
     </>
   );
 }
-
-// ---------- Default cell card ----------
-
-function DefaultCellCard({ animation, onSetAnimation }) {
-  return (
-    <section className="card">
-      <h3 className="card__title">Default cell hover</h3>
-      <p className="hint">Applied to every piece unless it has its own hover effect below.</p>
-      <AnimationChips
-        options={CELL_ANIMATIONS}
-        active={animation || 'none'}
-        onSelect={onSetAnimation}
-      />
-    </section>
-  );
-}
-
-// ---------- Selected-piece card (content + per-piece hover) ----------
 
 function SelectedPieceCellCard({
   piece,
@@ -78,11 +67,11 @@ function SelectedPieceCellCard({
   onClearSelection,
   setPieceContent,
   updatePieceContent,
-  setCellHoverAnimation,
+  setCellEffects,
 }) {
   const content = piece.content || null;
-  const cellAnim = project?.cells?.byPiece?.[piece.id]?.hoverAnimation ?? null;
-  const inheritedAnim = project?.cells?.default?.hoverAnimation ?? null;
+  const inheritedEffects = project?.cells?.default?.effects || {};
+  const ownEffects = project?.cells?.byPiece?.[piece.id]?.effects || {};
 
   const setType = (type) => {
     if (type === 'none')  return setPieceContent(piece.id, null);
@@ -196,19 +185,15 @@ function SelectedPieceCellCard({
         </div>
       )}
 
-      {/* Per-piece hover effect — overrides the project default above. */}
-      <div className="form-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-        <label className="form-row__label">Hover effect</label>
-        <p className="hint" style={{ margin: 0 }}>
-          {cellAnim
-            ? `Overriding default${inheritedAnim ? ` (${inheritedAnim})` : ''}.`
-            : `Following default${inheritedAnim ? ` (${inheritedAnim})` : ' (none)'}.`}
-        </p>
+      <div className="form-row form-row--stack">
+        <label className="form-row__label">Cell effects</label>
+        <p className="hint" style={{ margin: 0 }}>Compose with the default tier above. Use chips to add / remove.</p>
       </div>
-      <AnimationChips
-        options={CELL_ANIMATIONS}
-        active={cellAnim || 'none'}
-        onSelect={(id) => setCellHoverAnimation(piece.id, id)}
+      <EffectsPicker
+        catalogue={CELL_EFFECTS}
+        inheritedEffects={inheritedEffects}
+        ownEffects={ownEffects}
+        onChange={(map) => setCellEffects(piece.id, map)}
       />
 
       <div className="action-stack">
@@ -220,4 +205,3 @@ function SelectedPieceCellCard({
     </section>
   );
 }
-
