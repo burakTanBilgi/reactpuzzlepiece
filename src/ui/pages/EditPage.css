@@ -4,49 +4,13 @@
   min-height: 0;
 }
 
-/* === Mode switch (Edges / Content tab strip in the side panel) === */
-
-.mode-switch {
+.inspector {
   display: flex;
-  gap: 4px;
-  padding: 3px;
-  background: var(--bg-elev);
-  border: 1px solid var(--stroke-idle);
-  border-radius: 8px;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.mode-switch__btn {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 150ms ease;
-  font-family: inherit;
-}
-
-.mode-switch__btn:hover { color: var(--text); background: var(--surface-2); }
-
-.mode-switch__btn--active {
-  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
-  color: white;
-  box-shadow: 0 2px 8px rgba(184, 96, 42, 0.5);
-  font-weight: 600;
-}
-
-.mode-switch__icon { font-size: 14px; }
-
-/* === Effect-specific config sections (used by EdgesPanel) === */
+/* === Effect-specific config sections === */
 
 .wave-config,
 .puzzle-config,

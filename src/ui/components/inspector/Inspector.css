@@ -1,0 +1,290 @@
+/*
+ * Inspector — selection-driven side panel for the Edit page.
+ * Layout primitives, cascade strip, subcards, tab strip, source pill.
+ */
+
+/* === Sticky cascade strip header === */
+.cascade-strip {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.cascade-strip__pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--stroke-idle);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 3px 9px 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 140ms ease;
+}
+
+.cascade-strip__pill:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--primary-2);
+  background: var(--accent-tint);
+}
+
+.cascade-strip__pill:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.cascade-strip__pill--current {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(184, 96, 42, 0.35);
+}
+
+.cascade-strip__pill--current:hover:not(:disabled) {
+  color: white;
+  background: linear-gradient(135deg, var(--primary-2), var(--accent-2));
+}
+
+.cascade-strip__dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+}
+
+.cascade-strip__pill--has .cascade-strip__dot {
+  background: currentColor;
+}
+
+.cascade-strip__pill--na .cascade-strip__dot {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.cascade-strip__arrow {
+  color: var(--text-dim);
+  font-size: 10px;
+  user-select: none;
+}
+
+/* === Inspector subcard (nested section inside a card) === */
+.inspector-subcard {
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-subcard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--stroke-idle);
+}
+
+.inspector-subcard__title {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.inspector-subcard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.inspector-subcard--accent {
+  border-color: var(--primary-2);
+  box-shadow: 0 0 0 1px rgba(214, 139, 84, 0.18);
+}
+
+/* === Inline tier expander (cascade-pill click target inside the inspector) === */
+.tier-expander {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1px dashed var(--stroke-idle);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.tier-expander__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tier-expander__title {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary-3);
+}
+
+/* === Tab strip (Content | Body | Edges inside PieceInspector) === */
+.inspector-tabs {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+}
+
+.inspector-tabs__btn {
+  appearance: none;
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 140ms ease;
+}
+
+.inspector-tabs__btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.inspector-tabs__btn--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(184, 96, 42, 0.35);
+}
+
+.inspector-tabs__btn--active:hover {
+  color: white;
+}
+
+/* === Source pill (tiny "(from Default)" badge next to a control) === */
+.source-pill {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--stroke-idle);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 120ms ease;
+}
+
+.source-pill:hover {
+  color: var(--primary-3);
+  border-color: var(--primary-2);
+  background: var(--accent-tint);
+}
+
+.source-pill--current {
+  color: var(--primary-3);
+  border-color: var(--primary-2);
+}
+
+/* === Selection header (piece label + clear) === */
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+}
+
+.inspector-header__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.inspector-header__kind {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+.inspector-header__sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* === Section title (Edges, Body, Content) === */
+.inspector-section__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+/* === Edit canvas wrapper class (used by EdgeEditorCanvas) === */
+.edit-canvas--inspector .piece__body {
+  transition: filter 140ms ease, opacity 140ms ease;
+  cursor: pointer;
+}
+
+.edit-canvas--inspector .piece__body:hover {
+  filter: brightness(1.08) saturate(1.05);
+}
+
+/* === Piece override outline (dashed inset on overridden pieces) === */
+.piece-override-outline {
+  fill: none;
+  stroke: var(--accent-2);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* === Edge override dots (on canvas overlay) === */
+.edge-override-dot {
+  pointer-events: none;
+}
+
+.edge-override-dot--style    { fill: var(--accent-2); }
+.edge-override-dot--anim     { fill: var(--primary-3); }
+.edge-override-dot--combo-a  { fill: var(--accent-2); }
+.edge-override-dot--combo-b  { fill: var(--primary-3); }

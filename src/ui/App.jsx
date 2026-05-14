@@ -23,14 +23,14 @@ function loadTheme() {
 }
 
 // On first load, show the Landing page (front door). After the user has
-// visited any page, remember it across reloads. Legacy 'edit' (split into
-// 'edges' + 'cells') maps to the Edges tab so returning users land somewhere
-// sensible.
+// visited any page, remember it across reloads. Legacy 'edges' / 'cells'
+// (the prior split that confused users) collapse back into one 'edit' tab.
 const PAGE_KEY = 'hakoniwa:lastPage';
 function loadInitialPage() {
   try {
     const raw = localStorage.getItem(PAGE_KEY) || 'landing';
-    return raw === 'edit' ? 'edges' : raw;
+    if (raw === 'edges' || raw === 'cells') return 'edit';
+    return raw;
   } catch { return 'landing'; }
 }
 
@@ -65,9 +65,7 @@ export default function App() {
         {page === 'projects' && <ProjectsPage project={project} onNav={setPage} />}
         {page === 'preview'  && <PreviewPage  project={project} onNav={setPage} />}
         {page === 'grid'     && <GridEditorPage project={project} />}
-        {(page === 'edges' || page === 'cells') && (
-          <EditPage project={project} mode={page} />
-        )}
+        {page === 'edit'     && <EditPage project={project} />}
       </main>
     </div>
   );

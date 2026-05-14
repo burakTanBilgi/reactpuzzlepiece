@@ -6,8 +6,7 @@ const PAGES = [
   { id: 'projects', label: 'Projects', icon: '⚏' },
   { id: 'preview',  label: 'Preview',  icon: '◇' },
   { id: 'grid',     label: 'Grid',     icon: '⊞' },
-  { id: 'edges',    label: 'Edges',    icon: '∿' },
-  { id: 'cells',    label: 'Cells',    icon: '✎' },
+  { id: 'edit',     label: 'Edit',     icon: '✎' },
 ];
 
 export default function PageNav({ page, onNav, projectName, theme, onToggleTheme }) {

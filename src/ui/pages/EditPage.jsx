@@ -1,24 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listOuterEdges } from '../../grid/compile.js';
-import EdgesPanel    from '../components/EdgesPanel.jsx';
-import CellsPanel    from '../components/CellsPanel.jsx';
-import EditCanvas    from '../components/EditCanvas.jsx';
-import ViewPanel     from '../components/ViewPanel.jsx';
-import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
+import Inspector       from '../components/inspector/Inspector.jsx';
+import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
+import ViewPanel       from '../components/ViewPanel.jsx';
+import WaveBrandMark   from '../components/meta/WaveBrandMark.jsx';
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
 
-// Combined editor: same canvas, two editing modes selected at the top-nav
-// level (Edges tab vs Cells tab). The mode prop is supplied by App.jsx so
-// the in-page ModeSwitch is gone — the page nav itself is the switch.
-//
-// Selection state stays local to this single mounted instance (App renders
-// from one slot for both 'edges' and 'cells' so React reconciles and
-// preserves state across tab switches):
-//   - selectedEdges    : Set<pairKey>  — edge picks for the per-edge tier
-//   - selectedPieceId  : string | null — piece pick for the cell tier in
-//                                        Edges mode + cell editing in Cells mode
-export default function EditPage({ project, mode = 'edges' }) {
+// Single Edit page: one canvas, one selection-driven Inspector. Selection
+// state is mutually exclusive — clicking a piece clears any edge selection
+// and vice versa. The Inspector reads from this state to decide which view
+// to render (project defaults / piece / edge).
+export default function EditPage({ project }) {
   const {
     project: p,
     pieces,
@@ -49,13 +42,8 @@ export default function EditPage({ project, mode = 'edges' }) {
   const [selectedEdges, setSelectedEdges] = useState(() => new Set());
   const [selectedPieceId, setSelectedPieceId] = useState(null);
 
-  const isOverridden = useCallback(
-    (pairKey) => !!p?.edges.byEdge[pairKey],
-    [p?.edges.byEdge]
-  );
-
-  // Edge clicks clear any existing piece selection — the two are mutually
-  // exclusive in Edges mode so the side panel can show one card at a time.
+  // Edge clicks clear any existing piece selection (mutually exclusive so
+  // the inspector shows one selection at a time).
   const handleSelectEdge = useCallback((pairKey, evt) => {
     setSelectedPieceId(null);
     setSelectedEdges((cur) => {
@@ -76,7 +64,7 @@ export default function EditPage({ project, mode = 'edges' }) {
     setSelectedPieceId(pieceId);
   }, []);
 
-  // Esc clears both selections regardless of mode.
+  // Esc clears both selections.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
@@ -96,7 +84,6 @@ export default function EditPage({ project, mode = 'edges' }) {
 
   const defaultEffect = p.edges.default.effect;
   const defaultConfig = p.edges.default.config ?? DEFAULT_WAVE;
-  const selectedPiece = selectedPieceId ? pieces.find((pc) => pc.id === selectedPieceId) : null;
 
   return (
     <div className="page-edit">
@@ -105,59 +92,50 @@ export default function EditPage({ project, mode = 'edges' }) {
           <WaveBrandMark size="sm" />
         </div>
 
-        {mode === 'edges' ? (
-          <EdgesPanel
-            project={p}
-            pieces={pieces}
-            sharedEdges={sharedEdges}
-            allEdges={allEdges}
-            selected={selectedEdges}
-            onClearEdgeSelection={() => setSelectedEdges(new Set())}
-            selectedPiece={selectedPiece}
-            onClearPieceSelection={() => setSelectedPieceId(null)}
-            setDefaultEdgeEffect={setDefaultEdgeEffect}
-            setDefaultEdgeConfig={setDefaultEdgeConfig}
-            setEdgeEffect={setEdgeEffect}
-            setEdgeConfig={setEdgeConfig}
-            clearEdgeOverride={clearEdgeOverride}
-            resetEdgeOverrides={resetEdgeOverrides}
-            setLayerEffect={setLayerEffect}
-            setLayerConfig={setLayerConfig}
-            clearLayer={clearLayer}
-            setPieceEdgeEffect={setPieceEdgeEffect}
-            setPieceEdgeConfig={setPieceEdgeConfig}
-            clearPieceEdgeOverride={clearPieceEdgeOverride}
-            setDefaultEdgeEffects={setDefaultEdgeEffects}
-            setLayerEffects={setLayerEffects}
-            setPieceEdgeEffects={setPieceEdgeEffects}
-            setEdgeEffects={setEdgeEffects}
-          />
-        ) : (
-          <CellsPanel
-            project={p}
-            selectedPiece={selectedPiece}
-            onClearSelection={() => setSelectedPieceId(null)}
-            setPieceContent={setPieceContent}
-            updatePieceContent={updatePieceContent}
-            setDefaultCellEffects={setDefaultCellEffects}
-            setCellEffects={setCellEffects}
-            resetAllCellEffects={resetAllCellEffects}
-          />
-        )}
+        <Inspector
+          project={p}
+          pieces={pieces}
+          sharedEdges={sharedEdges}
+          selectedEdges={selectedEdges}
+          selectedPieceId={selectedPieceId}
+          onClearEdgeSelection={() => setSelectedEdges(new Set())}
+          onClearPieceSelection={() => setSelectedPieceId(null)}
+          setDefaultEdgeEffect={setDefaultEdgeEffect}
+          setDefaultEdgeConfig={setDefaultEdgeConfig}
+          setDefaultEdgeEffects={setDefaultEdgeEffects}
+          setLayerEffect={setLayerEffect}
+          setLayerConfig={setLayerConfig}
+          clearLayer={clearLayer}
+          setLayerEffects={setLayerEffects}
+          setPieceEdgeEffect={setPieceEdgeEffect}
+          setPieceEdgeConfig={setPieceEdgeConfig}
+          setPieceEdgeEffects={setPieceEdgeEffects}
+          clearPieceEdgeOverride={clearPieceEdgeOverride}
+          setEdgeEffect={setEdgeEffect}
+          setEdgeConfig={setEdgeConfig}
+          clearEdgeOverride={clearEdgeOverride}
+          setEdgeEffects={setEdgeEffects}
+          setPieceContent={setPieceContent}
+          updatePieceContent={updatePieceContent}
+          setDefaultCellEffects={setDefaultCellEffects}
+          setCellEffects={setCellEffects}
+          resetEdgeOverrides={resetEdgeOverrides}
+          resetAllCellEffects={resetAllCellEffects}
+        />
       </aside>
 
       <ViewPanel>
-        <EditCanvas
-          mode={mode}
+        <EdgeEditorCanvas
           pieces={pieces}
           effect={defaultEffect}
           effectConfig={defaultConfig}
           allEdges={allEdges}
           selectedEdgeIds={selectedEdges}
           onSelectEdge={handleSelectEdge}
-          isOverridden={isOverridden}
           selectedPieceId={selectedPieceId}
           onSelectPiece={handleSelectPiece}
+          edgesByEdge={p.edges.byEdge}
+          edgesByPiece={p.edges.byPiece}
         />
       </ViewPanel>
     </div>

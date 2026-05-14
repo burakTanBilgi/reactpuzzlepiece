@@ -1,11 +1,14 @@
 import { useMemo } from 'react';
-import { PuzzleBoard, computeSidePath } from '../../puzzle';
+import { PuzzleBoard, computeSidePath, computePiecePath } from '../../puzzle';
 import { computeViewBox } from '../utils/computeViewBox.js';
+import { tierHasOverride } from './inspector/cascade-source.js';
 
 const HIT_THICKNESS = 24;
 const HIT_HALF = HIT_THICKNESS / 2;
 // Perpendicular padding for clip: must cover puzzle knobs (KNOB_R=30) and waves (max ~40).
 const PERP_PAD = 60;
+
+const STYLE_PROPS = ['color', 'opacity', 'strokeWidth', 'frequency', 'amplitude', 'inverted'];
 
 // Hit-rect geometry for one edge. `b` is the neighbor piece for inner edges,
 // or null for outer edges (then start/end span the full side of `a`).
@@ -34,6 +37,16 @@ function edgeHitGeometry(a, b, side) {
   };
 }
 
+// Classify a byEdge entry into style/animation override flags so the canvas
+// can paint a distinct dot color for each.
+function classifyEdgeOverride(entry) {
+  if (!entry) return { style: false, anim: false };
+  const style = entry.effect != null
+    || STYLE_PROPS.some((k) => entry.config?.[k] != null);
+  const anim = entry.effects && Object.keys(entry.effects).length > 0;
+  return { style: !!style, anim: !!anim };
+}
+
 export default function EdgeEditorCanvas({
   pieces,
   effect,
@@ -41,9 +54,10 @@ export default function EdgeEditorCanvas({
   allEdges,
   selectedEdgeIds,
   onSelectEdge,
-  isOverridden,
   selectedPieceId,
   onSelectPiece,
+  edgesByEdge,
+  edgesByPiece,
 }) {
   const piecesById = useMemo(
     () => new Map(pieces.map((p) => [p.id, p])),
@@ -58,13 +72,14 @@ export default function EdgeEditorCanvas({
   const hitRects = useMemo(() => {
     const out = [];
     for (const e of allEdges) {
-      const overridden = isOverridden?.(e.pairKey) ?? false;
+      const entry = edgesByEdge?.[e.pairKey];
+      const { style, anim } = classifyEdgeOverride(entry);
       if (e.isOuter) {
         const piece = piecesById.get(e.pieceId);
         if (!piece) continue;
         out.push({
           pairKey: e.pairKey, ...edgeHitGeometry(piece, null, e.side),
-          overridden, isOuter: true, pieceId: e.pieceId, side: e.side,
+          styleOv: style, animOv: anim, isOuter: true, pieceId: e.pieceId, side: e.side,
         });
       } else {
         const a = piecesById.get(e.pieceAId);
@@ -72,15 +87,22 @@ export default function EdgeEditorCanvas({
         if (!a || !b) continue;
         out.push({
           pairKey: e.pairKey, ...edgeHitGeometry(a, b, e.sideA),
-          overridden, isOuter: false, pieceAId: e.pieceAId, pieceBId: e.pieceBId, sideA: e.sideA,
+          styleOv: style, animOv: anim, isOuter: false,
+          pieceAId: e.pieceAId, pieceBId: e.pieceBId, sideA: e.sideA,
         });
       }
     }
     return out;
-  }, [allEdges, piecesById, isOverridden]);
+  }, [allEdges, piecesById, edgesByEdge]);
+
+  // Pieces with any byPiece override — render a dashed inset outline.
+  const overriddenPieces = useMemo(() => {
+    if (!edgesByPiece) return [];
+    return pieces.filter((p) => tierHasOverride(edgesByPiece[p.id]));
+  }, [pieces, edgesByPiece]);
 
   return (
-    <div className="edge-canvas">
+    <div className="edge-canvas edit-canvas--inspector">
       <PuzzleBoard
         pieces={pieces}
         effect={effect}
@@ -95,7 +117,6 @@ export default function EdgeEditorCanvas({
         height={viewBox.h}
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* Clip paths: tight along edge, wide perpendicularly to show knobs/waves. */}
         <defs>
           {hitRects.map((r) => {
             const cx = r.isVertical
@@ -109,18 +130,32 @@ export default function EdgeEditorCanvas({
           })}
         </defs>
 
+        {/* Piece override outlines (rendered beneath the edge hit overlay). */}
+        {overriddenPieces.map((p) => (
+          <path
+            key={`po-${p.id}`}
+            d={computePiecePath(p, pieces, effect, effectConfig)}
+            className="piece-override-outline"
+          />
+        ))}
+
         {hitRects.map((r) => {
           const selected = selectedEdgeIds?.has(r.pairKey);
           const sidePath = r.isOuter
             ? computeSidePath(piecesById.get(r.pieceId), pieces, r.side, effect, effectConfig)
             : computeSidePath(piecesById.get(r.pieceAId), pieces, r.sideA, effect, effectConfig);
 
+          const overridden = r.styleOv || r.animOv;
+          const both       = r.styleOv && r.animOv;
+          const mx = (r.lx1 + r.lx2) / 2;
+          const my = (r.ly1 + r.ly2) / 2;
+
           return (
             <g key={r.pairKey}
                className={
                  'edge-hit ' +
                  (selected ? 'edge-hit--selected ' : '') +
-                 (r.overridden ? 'edge-hit--override' : '')
+                 (overridden ? 'edge-hit--override' : '')
                }
                onClick={(e) => { e.stopPropagation(); onSelectEdge(r.pairKey, e); }}>
               <rect x={r.x} y={r.y} width={r.w} height={r.h} className="edge-hit__hit" />
@@ -131,6 +166,20 @@ export default function EdgeEditorCanvas({
                   fill="none"
                   clipPath={`url(#ec-clip-${r.pairKey})`}
                 />
+              )}
+
+              {overridden && !selected && (
+                both ? (
+                  <>
+                    <circle cx={mx - 3} cy={my} r={3}
+                      className="edge-override-dot edge-override-dot--combo-a" />
+                    <circle cx={mx + 3} cy={my} r={3}
+                      className="edge-override-dot edge-override-dot--combo-b" />
+                  </>
+                ) : (
+                  <circle cx={mx} cy={my} r={3.5}
+                    className={`edge-override-dot ${r.styleOv ? 'edge-override-dot--style' : 'edge-override-dot--anim'}`} />
+                )
               )}
             </g>
           );
