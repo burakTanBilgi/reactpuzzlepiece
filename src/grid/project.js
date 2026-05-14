@@ -17,6 +17,7 @@ export function newProject(name = 'Untitled') {
       default: { effect: 'puzzle' },
       inner:   null,            // override for shared edges (between two pieces)
       outer:   null,            // override for outer edges (no neighbor)
+      byPiece: {},              // per-piece (cell) override — applies to every edge of that piece
       byEdge:  {},              // per-edge overrides — highest priority
     },
     pieceColors: {},

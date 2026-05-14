@@ -13,6 +13,13 @@ const MODES = [
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
 
 // Combined editor: same canvas, two editing modes selected from the side panel.
+//
+// Selections (both shared across both modes; mutually exclusive within Edges
+// mode so the side panel can show one card at a time):
+//   - selectedEdges    : Set<pairKey>  — edge picks for the per-edge tier
+//   - selectedPieceId  : string | null — piece pick for the cell tier
+//                                        (Edges mode) or for content editing
+//                                        (Content mode).
 export default function EditPage({ project }) {
   const {
     project: p,
@@ -27,6 +34,9 @@ export default function EditPage({ project }) {
     setLayerEffect,
     setLayerConfig,
     clearLayer,
+    setPieceEdgeEffect,
+    setPieceEdgeConfig,
+    clearPieceEdgeOverride,
     setPieceContent,
     updatePieceContent,
   } = project;
@@ -40,7 +50,10 @@ export default function EditPage({ project }) {
     [p?.edges.byEdge]
   );
 
+  // Edge clicks clear any existing piece selection — the two are mutually
+  // exclusive in Edges mode so the side panel can show one card at a time.
   const handleSelectEdge = useCallback((pairKey, evt) => {
+    setSelectedPieceId(null);
     setSelectedEdges((cur) => {
       const next = new Set(cur);
       if (evt?.shiftKey || evt?.ctrlKey || evt?.metaKey) {
@@ -53,16 +66,22 @@ export default function EditPage({ project }) {
     });
   }, []);
 
-  // Esc clears selection in whichever mode is active.
+  // Piece clicks clear any existing edge selection.
+  const handleSelectPiece = useCallback((pieceId) => {
+    setSelectedEdges(new Set());
+    setSelectedPieceId(pieceId);
+  }, []);
+
+  // Esc clears both selections regardless of mode.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      if (mode === 'edges') setSelectedEdges(new Set());
-      else                  setSelectedPieceId(null);
+      setSelectedEdges(new Set());
+      setSelectedPieceId(null);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mode]);
+  }, []);
 
   const allEdges = useMemo(() => {
     if (!p) return [];
@@ -87,8 +106,9 @@ export default function EditPage({ project }) {
             sharedEdges={sharedEdges}
             allEdges={allEdges}
             selected={selectedEdges}
-            onClearSelection={() => setSelectedEdges(new Set())}
-            onSelectAll={() => setSelectedEdges(new Set(allEdges.map((e) => e.pairKey)))}
+            onClearEdgeSelection={() => setSelectedEdges(new Set())}
+            selectedPiece={selectedPiece}
+            onClearPieceSelection={() => setSelectedPieceId(null)}
             setDefaultEdgeEffect={setDefaultEdgeEffect}
             setDefaultEdgeConfig={setDefaultEdgeConfig}
             setEdgeEffect={setEdgeEffect}
@@ -98,6 +118,9 @@ export default function EditPage({ project }) {
             setLayerEffect={setLayerEffect}
             setLayerConfig={setLayerConfig}
             clearLayer={clearLayer}
+            setPieceEdgeEffect={setPieceEdgeEffect}
+            setPieceEdgeConfig={setPieceEdgeConfig}
+            clearPieceEdgeOverride={clearPieceEdgeOverride}
           />
         ) : (
           <ContentPanel
@@ -120,7 +143,7 @@ export default function EditPage({ project }) {
           onSelectEdge={handleSelectEdge}
           isOverridden={isOverridden}
           selectedPieceId={selectedPieceId}
-          onSelectPiece={setSelectedPieceId}
+          onSelectPiece={handleSelectPiece}
         />
       </ViewPanel>
     </div>

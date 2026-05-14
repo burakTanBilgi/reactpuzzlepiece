@@ -1,27 +1,36 @@
 import HintCard from './edges/HintCard.jsx';
 import LayerCard from './edges/LayerCard.jsx';
 import SelectedEdgeCard from './edges/SelectedEdgeCard.jsx';
+import SelectedPieceCard from './edges/SelectedPieceCard.jsx';
 import { DEFAULT_WAVE } from './edges/constants.js';
 
 // Side-panel UI for the Edges mode of the Edit page. Pure presentation —
 // shared selection state lives on the parent. This file is just an
-// orchestrator: each card (Hint / Selected / Layer) is its own component.
+// orchestrator: each card (Hint / Selected* / Layer) is its own component.
 //
 // Effect/config resolution chain (highest priority first):
-//   per-edge override (selected) > inner/outer layer > default
+//   per-edge override (byEdge)  >  cell (byPiece)  >  inner/outer layer  >  default
 //
-// Ordering rules:
-//   No selection:  Hint     → Default
-//   Inner only:    Selected → Inner   → Default
-//   Outer only:    Selected → Outer   → Default
-//   Mixed:         Selected → Inner   → Outer  → Default
-// Layer cards only surface when their kind is in the selection — keeps the
-// no-selection state minimal and matches the resolution order top-down.
+// Top of panel ordering (mutually exclusive — parent enforces that edge
+// selection and piece selection can't both be non-empty):
+//   No selection      → HintCard
+//   Edge(s) selected  → SelectedEdgeCard
+//   Piece selected    → SelectedPieceCard
+//
+// Layer cards (below the top card) only appear when their kind is in scope:
+//   Edge selection : filter by inner/outer kinds in the selection
+//   Piece selection: filter by inner/outer kinds the piece actually has
+//   No selection   : neither layer shown — only the Default card sits beneath.
 export default function EdgesPanel({
   project, pieces, sharedEdges, allEdges,
-  selected, onClearSelection, onSelectAll,
-  setDefaultEdgeEffect, setDefaultEdgeConfig,
+  // edge selection
+  selected, onClearEdgeSelection,
   setEdgeEffect, setEdgeConfig, clearEdgeOverride, resetEdgeOverrides,
+  // piece selection
+  selectedPiece, onClearPieceSelection,
+  setPieceEdgeEffect, setPieceEdgeConfig, clearPieceEdgeOverride,
+  // default + layers
+  setDefaultEdgeEffect, setDefaultEdgeConfig,
   setLayerEffect, setLayerConfig, clearLayer,
 }) {
   const defaultEffect  = project.edges.default.effect;
@@ -29,10 +38,22 @@ export default function EdgesPanel({
   const innerLayer     = project.edges.inner;
   const outerLayer     = project.edges.outer;
   const overrideCount  = Object.keys(project.edges.byEdge).length;
+  const cellOverrideCount = Object.keys(project.edges.byPiece || {}).length;
 
-  const hasInnerSelected = [...selected].some((pk) => !pk.includes('||outer-'));
-  const hasOuterSelected = [...selected].some((pk) =>  pk.includes('||outer-'));
-  const hasSelection     = selected.size > 0;
+  const hasEdgeSelection  = selected.size > 0;
+  const hasPieceSelection = !!selectedPiece;
+
+  // Which layer cards should appear beneath the top card.
+  const showInnerLayer = hasEdgeSelection
+    ? [...selected].some((pk) => !pk.includes('||outer-'))
+    : hasPieceSelection
+      ? allEdges.some((e) => !e.isOuter && (e.pieceAId === selectedPiece.id || e.pieceBId === selectedPiece.id))
+      : false;
+  const showOuterLayer = hasEdgeSelection
+    ? [...selected].some((pk) => pk.includes('||outer-'))
+    : hasPieceSelection
+      ? allEdges.some((e) => e.isOuter && e.pieceId === selectedPiece.id)
+      : false;
 
   const defaultCard = (
     <LayerCard
@@ -49,7 +70,7 @@ export default function EdgesPanel({
     <LayerCard
       title="Inner edges"
       hint={innerLayer
-        ? 'Override applied to every shared edge. Per-edge picks still win.'
+        ? 'Override applied to every shared edge. Cell + per-edge picks still win.'
         : 'No override — inner edges follow the default. Pick an effect to override.'}
       effect={innerLayer?.effect ?? defaultEffect}
       config={innerLayer?.config ?? defaultConfig}
@@ -64,7 +85,7 @@ export default function EdgesPanel({
     <LayerCard
       title="Outer edges"
       hint={outerLayer
-        ? 'Override applied to every outer edge. Per-edge picks still win.'
+        ? 'Override applied to every outer edge. Cell + per-edge picks still win.'
         : 'No override — outer edges follow the default. Pick an effect to override.'}
       effect={outerLayer?.effect ?? defaultEffect}
       config={outerLayer?.config ?? defaultConfig}
@@ -75,39 +96,48 @@ export default function EdgesPanel({
     />
   );
 
+  const topCard = hasEdgeSelection ? (
+    <SelectedEdgeCard
+      selected={selected}
+      project={project}
+      pieces={pieces}
+      sharedEdges={sharedEdges}
+      onClearSelection={onClearEdgeSelection}
+      setEdgeEffect={setEdgeEffect}
+      setEdgeConfig={setEdgeConfig}
+      clearEdgeOverride={clearEdgeOverride}
+    />
+  ) : hasPieceSelection ? (
+    <SelectedPieceCard
+      piece={selectedPiece}
+      project={project}
+      onClearSelection={onClearPieceSelection}
+      setPieceEdgeEffect={setPieceEdgeEffect}
+      setPieceEdgeConfig={setPieceEdgeConfig}
+      clearPieceEdgeOverride={clearPieceEdgeOverride}
+    />
+  ) : (
+    <HintCard />
+  );
+
+  const hasAnyOverride = overrideCount > 0 || cellOverrideCount > 0;
+
   return (
     <>
-      {hasSelection ? (
-        <SelectedEdgeCard
-          selected={selected}
-          project={project}
-          pieces={pieces}
-          sharedEdges={sharedEdges}
-          onClearSelection={onClearSelection}
-          setEdgeEffect={setEdgeEffect}
-          setEdgeConfig={setEdgeConfig}
-          clearEdgeOverride={clearEdgeOverride}
-        />
-      ) : (
-        <HintCard />
-      )}
+      {topCard}
 
-      {!hasSelection      && defaultCard}
-      {hasInnerSelected   && innerCard}
-      {hasOuterSelected   && outerCard}
-      {hasSelection       && defaultCard}
+      {!hasEdgeSelection && !hasPieceSelection && defaultCard}
+      {showInnerLayer && innerCard}
+      {showOuterLayer && outerCard}
+      {(hasEdgeSelection || hasPieceSelection) && defaultCard}
 
-      <div className="action-stack">
-        <button type="button" className="action-btn action-btn--ghost"
-          onClick={onSelectAll} disabled={allEdges.length === 0}>
-          Select all edges
-        </button>
-        {overrideCount > 0 && (
+      {hasAnyOverride && (
+        <div className="action-stack">
           <button type="button" className="action-btn action-btn--ghost" onClick={resetEdgeOverrides}>
-            Clear all {overrideCount} override{overrideCount === 1 ? '' : 's'}
+            Clear all overrides
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </>
   );
 }

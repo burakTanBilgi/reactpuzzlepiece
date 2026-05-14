@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import SliderRow from '../SliderRow.jsx';
 import StyleControls from './StyleControls.jsx';
 import { EFFECT_NAMES } from '../../../puzzle';
+import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE, MIXED, cap } from './constants.js';
 
 // The accent card at the top of the Edges panel when one or more edges are
@@ -27,15 +28,23 @@ export default function SelectedEdgeCard({
   const defaultConfig = project.edges.default.config ?? DEFAULT_WAVE;
   const innerLayer    = project.edges.inner;
   const outerLayer    = project.edges.outer;
+  const byPiece       = project.edges.byPiece || {};
 
-  // Same priority chain as compile.js#resolveEdge.
+  // Same priority chain as compile.js#resolveEdge:
+  //   per-edge > cell (byPiece) > inner/outer > default
   const resolveSelected = (pk) => {
     const ov = project.edges.byEdge[pk];
     const isOuter = pk.includes('||outer-');
     const layer = isOuter ? outerLayer : innerLayer;
+
+    let cell = null;
+    for (const pid of piecesOfEdge(pk)) {
+      if (byPiece[pid]) { cell = byPiece[pid]; break; }
+    }
+
     return {
-      effect: ov?.effect ?? layer?.effect ?? defaultEffect,
-      cfg:    ov?.config ?? layer?.config ?? defaultConfig,
+      effect: ov?.effect ?? cell?.effect ?? layer?.effect ?? defaultEffect,
+      cfg:    ov?.config ?? cell?.config ?? layer?.config ?? defaultConfig,
     };
   };
 
@@ -61,7 +70,7 @@ export default function SelectedEdgeCard({
     }
     return { effect, cfg };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, project.edges.byEdge, defaultEffect, defaultConfig, innerLayer, outerLayer]);
+  }, [selected, project.edges.byEdge, byPiece, defaultEffect, defaultConfig, innerLayer, outerLayer]);
 
   const applyEffect = (name) => {
     const cfg = name === 'wave'

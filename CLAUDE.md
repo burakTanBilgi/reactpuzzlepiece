@@ -64,10 +64,13 @@ The `src/puzzle/` folder is a **portable drop-in module** — no imports from ou
     default: { effect, config? },                       // 'puzzle' | 'wave' | 'straight'
     inner:   null | { effect, config? },                // override for shared edges
     outer:   null | { effect, config? },                // override for outer edges
+    byPiece: { [pieceId]: { effect, config? } },        // cell-tier override (every edge of the piece)
     byEdge:  { [pairKey]: { effect, config? } },        // per-edge overrides
   },
-  // Effect & style resolution chain (highest first): byEdge > inner/outer > default
-  // (computed by `compile.js#resolveEdge`).
+  // Effect & style resolution chain (highest first):
+  //   byEdge > byPiece > inner/outer > default
+  // (computed by `compile.js#resolveEdge`). For shared edges where both
+  // pieces have a byPiece entry, the lex-smaller id wins (matches edgeKey).
   //
   // `config` is a bag with both effect-specific keys (inverted, frequency,
   // amplitude) AND stroke-style keys (color, opacity, strokeWidth) — they all
@@ -123,7 +126,7 @@ type Background = {
 | Projects | Project library + JSON import.                                              |
 | Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP) at top of side panel. |
 | Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete, **multi-piece background images** (upload or Ctrl+V into selected cells). |
-| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (default + inner/outer + per-edge layers, see compile.js#resolveEdge) and **Content** (text/image content per piece). |
+| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (cascade of default → inner/outer → cell → per-edge; clicking a piece body opens a cell-tier card that bulk-edits all of its edges) and **Content** (text/image content per piece). |
 
 The last visited page is persisted to `localStorage[hakoniwa:lastPage]`; first-time visitors land on Landing.
 

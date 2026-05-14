@@ -46,8 +46,15 @@ vs. the **React hook** that wires them in.
 //     default: { effect, config? },                  // floor
 //     inner:   null | { effect, config? },           // override for shared edges
 //     outer:   null | { effect, config? },           // override for outer edges
+//     byPiece: { [pieceId]: { effect, config? } },   // cell tier — every edge of the piece
 //     byEdge:  { [pairKey]: { effect, config? } },   // per-edge — top priority
 //   }
+//
+// Resolution chain (highest first): byEdge > byPiece > inner/outer > default
+// Helpers in compile.js: `edgeKey(idA, idB)` builds a sorted shared-edge key,
+// `piecesOfEdge(pairKey)` reverses it (returns [pieceId] for outer edges or
+// [idA, idB] sorted for shared). For shared edges where both pieces have a
+// byPiece entry, the lex-smaller id wins.
 ```
 
 ## ContentSpec

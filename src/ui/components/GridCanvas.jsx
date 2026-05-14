@@ -29,6 +29,7 @@ export default function GridCanvas({
   const svgRef = useRef(null);
   const [drag, setDrag] = useState(null);          // cell drag-select state
   const [hdrDrag, setHdrDrag] = useState(null);    // { axis: 'row'|'col', marks: Set<number> }
+  const [hdrHover, setHdrHover] = useState(null);  // { axis: 'row'|'col', idx: number }
 
   const gridW = grid.cols * CELL_PX;
   const gridH = grid.rows * CELL_PX;
@@ -165,44 +166,78 @@ export default function GridCanvas({
   const colHeaders = Array.from({ length: grid.cols }, (_, c) => c);
   const isMarked = (axis, idx) =>
     hdrDrag && hdrDrag.axis === axis && hdrDrag.marks.has(idx);
+  const isHover = (axis, idx) =>
+    !hdrDrag && hdrHover && hdrHover.axis === axis && hdrHover.idx === idx;
+  const isDestructive = (axis, idx) => isMarked(axis, idx) || isHover(axis, idx);
+
+  // Rows/cols highlighted for deletion (union of hover + drag marks). Drives
+  // the red overlay drawn over the affected cells so the user sees, at a
+  // glance, what clicking will delete.
+  const doomedRows = new Set();
+  const doomedCols = new Set();
+  if (hdrDrag) {
+    if (hdrDrag.axis === 'row') hdrDrag.marks.forEach((i) => doomedRows.add(i));
+    else hdrDrag.marks.forEach((i) => doomedCols.add(i));
+  } else if (hdrHover) {
+    if (hdrHover.axis === 'row') doomedRows.add(hdrHover.idx);
+    else doomedCols.add(hdrHover.idx);
+  }
 
   return (
     <div className="grid-canvas-wrap">
       <svg ref={svgRef} className="grid-canvas" width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {/* Column-number headers */}
+        {/* Column-number headers — hover/marked = "click to delete this column" */}
         {colHeaders.map((c) => {
           const x = gx + c * CELL_PX;
           const marked = isMarked('col', c);
+          const hover  = isHover('col', c);
+          const danger = marked || hover;
           return (
             <g key={`ch-${c}`}>
               <rect
                 x={x} y={PADDING} width={CELL_PX} height={HEADER_PX}
-                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''}`}
+                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''} ${hover ? 'is-hovered' : ''}`}
                 onPointerDown={(e) => onHeaderPointerDown(e, 'col', c)}
-              />
-              <text
-                x={x + CELL_PX / 2} y={PADDING + HEADER_PX / 2}
-                className="grid-canvas__header"
-              >{c + 1}</text>
+                onPointerEnter={() => !hdrDrag && setHdrHover({ axis: 'col', idx: c })}
+                onPointerLeave={() => !hdrDrag && setHdrHover(null)}
+              >
+                <title>Click to delete column {c + 1}</title>
+              </rect>
+              {danger ? (
+                <text x={x + CELL_PX / 2} y={PADDING + HEADER_PX / 2}
+                  className="grid-canvas__header-x" pointerEvents="none">×</text>
+              ) : (
+                <text x={x + CELL_PX / 2} y={PADDING + HEADER_PX / 2}
+                  className="grid-canvas__header" pointerEvents="none">{c + 1}</text>
+              )}
             </g>
           );
         })}
 
-        {/* Row-number headers */}
+        {/* Row-number headers — hover/marked = "click to delete this row" */}
         {rowHeaders.map((r) => {
           const y = gy + r * CELL_PX;
           const marked = isMarked('row', r);
+          const hover  = isHover('row', r);
+          const danger = marked || hover;
           return (
             <g key={`rh-${r}`}>
               <rect
                 x={PADDING} y={y} width={HEADER_PX} height={CELL_PX}
-                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''}`}
+                className={`grid-canvas__header-hit ${marked ? 'is-marked' : ''} ${hover ? 'is-hovered' : ''}`}
                 onPointerDown={(e) => onHeaderPointerDown(e, 'row', r)}
-              />
-              <text
-                x={PADDING + HEADER_PX / 2} y={y + CELL_PX / 2}
-                className="grid-canvas__header"
-              >{r + 1}</text>
+                onPointerEnter={() => !hdrDrag && setHdrHover({ axis: 'row', idx: r })}
+                onPointerLeave={() => !hdrDrag && setHdrHover(null)}
+              >
+                <title>Click to delete row {r + 1}</title>
+              </rect>
+              {danger ? (
+                <text x={PADDING + HEADER_PX / 2} y={y + CELL_PX / 2}
+                  className="grid-canvas__header-x" pointerEvents="none">×</text>
+              ) : (
+                <text x={PADDING + HEADER_PX / 2} y={y + CELL_PX / 2}
+                  className="grid-canvas__header" pointerEvents="none">{r + 1}</text>
+              )}
             </g>
           );
         })}
@@ -271,6 +306,26 @@ export default function GridCanvas({
           >
             {g.label}
           </text>
+        ))}
+
+        {/* Destructive overlays — red tint over rows/cols the user is about
+            to delete (either hovering a header, or actively dragging marks).
+            Drawn above content so it's unmissable; transparent to events. */}
+        {[...doomedRows].map((r) => (
+          <rect
+            key={`doom-r-${r}`}
+            x={gx} y={gy + r * CELL_PX} width={gridW} height={CELL_PX}
+            className={`grid-canvas__doom ${hdrDrag ? 'grid-canvas__doom--marked' : ''}`}
+            pointerEvents="none"
+          />
+        ))}
+        {[...doomedCols].map((c) => (
+          <rect
+            key={`doom-c-${c}`}
+            x={gx + c * CELL_PX} y={gy} width={CELL_PX} height={gridH}
+            className={`grid-canvas__doom ${hdrDrag ? 'grid-canvas__doom--marked' : ''}`}
+            pointerEvents="none"
+          />
         ))}
 
         {/* Cell hit area — one overlay rect for the whole grid; the pointer

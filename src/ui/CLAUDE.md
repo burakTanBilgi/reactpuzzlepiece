@@ -20,7 +20,7 @@ State-based routing (no react-router). `App.jsx` owns the page state, the theme,
 - `EditCanvas` — thin shell that picks `EdgeEditorCanvas` or `ContentCanvas` based on mode.
 - `EdgeEditorCanvas` — `PuzzleBoard` + SVG overlay with clip-path-based edge highlights (tight along edge, `PERP_PAD=60` perpendicular for knobs/waves).
 - `ContentCanvas` — `PuzzleBoard` configured with `onSelect` for piece selection.
-- `EdgesPanel`, `ContentPanel` — side-panel UIs for the two Edit modes; pure presentation. `EdgesPanel` is a thin orchestrator over `components/edges/{HintCard, LayerCard, SelectedEdgeCard, StyleControls}.jsx`.
+- `EdgesPanel`, `ContentPanel` — side-panel UIs for the two Edit modes; pure presentation. `EdgesPanel` is a thin orchestrator over `components/edges/{HintCard, LayerCard, SelectedEdgeCard, SelectedPieceCard, StyleControls}.jsx`. The Edge mode supports two mutually-exclusive selections: edges (per-edge tier) or a piece (cell tier — bulk-edits every edge of the selected piece).
 - `BackgroundsPanel` — Grid-page side card: upload / paste image, list existing backgrounds with thumbnail + fit selector + delete.
 - `ImportDialog` — modal: paste textarea + auto-merge toggle + sample button.
 - `SliderRow` — slider + typeable numeric text input. Click value to type, Enter/blur commits, Esc cancels, ↑/↓ steps.

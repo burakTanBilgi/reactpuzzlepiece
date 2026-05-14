@@ -44,8 +44,11 @@ export function edgeActions(setProject) {
       });
     },
 
+    // Clear every override below the layer/default tier — both per-edge
+    // (byEdge) and per-cell (byPiece). The "Clear all overrides" button
+    // surfaces this as a single user-facing action.
     resetEdgeOverrides() {
-      mutateEdges((e) => ({ ...e, byEdge: {} }));
+      mutateEdges((e) => ({ ...e, byEdge: {}, byPiece: {} }));
     },
 
     // --- Layer tier (inner / outer) ---
@@ -62,6 +65,35 @@ export function edgeActions(setProject) {
 
     clearLayer(kind) {
       mutateEdges((e) => ({ ...e, [kind]: null }));
+    },
+
+    // --- Cell tier (byPiece) — applies to every edge of the piece ---
+    setPieceEdgeEffect(pieceId, effect, config) {
+      mutateEdges((e) => ({
+        ...e,
+        byPiece: { ...(e.byPiece || {}), [pieceId]: { effect, ...(config ? { config } : {}) } },
+      }));
+    },
+
+    setPieceEdgeConfig(pieceId, patch) {
+      mutateEdges((e) => {
+        const cur = e.byPiece?.[pieceId] || { effect: e.default?.effect ?? 'puzzle' };
+        return {
+          ...e,
+          byPiece: {
+            ...(e.byPiece || {}),
+            [pieceId]: { ...cur, config: { ...(cur.config || {}), ...patch } },
+          },
+        };
+      });
+    },
+
+    clearPieceEdgeOverride(pieceId) {
+      mutateEdges((e) => {
+        const next = { ...(e.byPiece || {}) };
+        delete next[pieceId];
+        return { ...e, byPiece: next };
+      });
     },
   };
 }

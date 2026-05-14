@@ -21,12 +21,31 @@
   text-align: center;
 }
 
+/* Brand mark — rendered as a literal Hakoniwa puzzle layout (see HeroMark
+   in LandingPage.jsx). The container shrink-fits the SVG; CSS sizes it
+   responsively up to a sensible cap. */
 .landing-hero__mark {
-  font-size: 96px;
-  line-height: 0.9;
-  font-weight: 700;
-  color: var(--primary-2);
-  letter-spacing: -0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-hero__mark .puzzle-board {
+  width: 100%;
+  height: auto;
+  max-width: 280px;
+}
+
+/* Decorative — disable hover/click affordances on the brand mark pieces. */
+.landing-hero__mark .piece {
+  cursor: default;
+}
+.landing-hero__mark .piece--hover .piece__body {
+  fill: var(--puzzle-fill, var(--surface));
+}
+.landing-hero__mark .piece--hover .piece__edge {
+  stroke: var(--puzzle-stroke, var(--stroke-soft));
+  stroke-width: 1.25;
 }
 
 .landing-hero__sub {

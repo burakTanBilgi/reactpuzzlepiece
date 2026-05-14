@@ -42,6 +42,8 @@ export default function EdgeEditorCanvas({
   selectedEdgeIds,
   onSelectEdge,
   isOverridden,
+  selectedPieceId,
+  onSelectPiece,
 }) {
   const piecesById = useMemo(
     () => new Map(pieces.map((p) => [p.id, p])),
@@ -79,7 +81,13 @@ export default function EdgeEditorCanvas({
 
   return (
     <div className="edge-canvas">
-      <PuzzleBoard pieces={pieces} effect={effect} effectConfig={effectConfig} />
+      <PuzzleBoard
+        pieces={pieces}
+        effect={effect}
+        effectConfig={effectConfig}
+        selectedId={selectedPieceId}
+        onSelect={onSelectPiece}
+      />
       <svg
         className="edge-canvas__overlay"
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}

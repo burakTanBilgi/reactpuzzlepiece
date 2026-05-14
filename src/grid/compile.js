@@ -8,6 +8,17 @@ export function edgeKey(idA, idB) {
   return idA < idB ? `${idA}||${idB}` : `${idB}||${idA}`;
 }
 
+// Reverse of edgeKey + outer-edge naming: pull the piece IDs back out of a
+// pairKey. Returns [pieceId] for outer edges, [idA, idB] (lex-sorted) for
+// shared edges. Lets `resolveEdge` consult the cell tier (`byPiece[id]`)
+// from any caller that only has the pairKey.
+export function piecesOfEdge(pairKey) {
+  if (pairKey.includes('||outer-')) {
+    return [pairKey.slice(0, pairKey.indexOf('||outer-'))];
+  }
+  return pairKey.split('||');
+}
+
 // For a piece with cell-bounds `b`, return the backgrounds that overlap it,
 // in pixel-space {x,y,w,h} so the renderer can position the same image across
 // all overlapped pieces (each piece's clipPath handles the slicing).
@@ -35,16 +46,26 @@ function collectBackgrounds(backgrounds, b, cellSize) {
 // --- Effect resolution -------------------------------------------------------
 
 // Chain (highest priority first):
-//   per-edge (byEdge[pairKey]) > inner/outer layer > default
+//   per-edge (byEdge[pairKey])  >  cell (byPiece[id])  >  inner/outer layer  >  default
 //
 // `kind` is 'inner' for shared-edge segments and 'outer' for outer edges.
-export function resolveEdge(edges, pairKey, kind) {
+// `edgePieceIds` lists the piece IDs that touch this edge (one for outer edges,
+// two for shared); used to consult the cell (byPiece) tier. When two pieces
+// of a shared edge both have a byPiece entry, the lex-smaller id wins (matches
+// the edgeKey ordering — predictable, no hidden recency).
+export function resolveEdge(edges, pairKey, kind, edgePieceIds = []) {
   const ov = edges?.byEdge?.[pairKey];
+
+  let cell = null;
+  for (const pid of edgePieceIds) {
+    if (edges?.byPiece?.[pid]) { cell = edges.byPiece[pid]; break; }
+  }
+
   const layer = kind === 'inner' ? edges?.inner : edges?.outer;
   const def = edges?.default;
   return {
-    effect: ov?.effect ?? layer?.effect ?? def?.effect ?? 'puzzle',
-    config: ov?.config ?? layer?.config ?? def?.config,
+    effect: ov?.effect ?? cell?.effect ?? layer?.effect ?? def?.effect ?? 'puzzle',
+    config: ov?.config ?? cell?.config ?? layer?.config ?? def?.config,
   };
 }
 
@@ -88,7 +109,7 @@ export function compileProject(project) {
       if (segs.length === 0) {
         // No neighbors on this side → outer edge. Apply effect with single knob or flat.
         const outerKey = `${piece.id}||outer-${side}`;
-        const { effect, config } = resolveEdge(edges, outerKey, 'outer');
+        const { effect, config } = resolveEdge(edges, outerKey, 'outer', [piece.id]);
 
         // For outer edges, apply the effect (puzzle/wave/straight)
         // Puzzle: single centered tab or socket depending on side convention
@@ -186,10 +207,10 @@ function assignSide(piece, side, segs, edges) {
   const baseKnobType = knobTypeForSide(side);
 
   // One knob per segment, centered on that segment. Honor the inverted flag
-  // following the same chain as effect/config: per-edge > inner > default.
+  // following the same chain as effect/config: per-edge > cell > inner > default.
   const knobs = segs.map((s) => {
     const pairKey = edgeKey(piece.id, s.neighborId);
-    const { config } = resolveEdge(edges, pairKey, 'inner');
+    const { config } = resolveEdge(edges, pairKey, 'inner', [piece.id, s.neighborId]);
     let knobType = baseKnobType;
     if (config?.inverted) {
       knobType = knobType === 'tab' ? 'socket' : 'tab';
@@ -211,7 +232,7 @@ function assignSide(piece, side, segs, edges) {
 
   for (const s of segs) {
     const pairKey = edgeKey(piece.id, s.neighborId);
-    const { effect, config } = resolveEdge(edges, pairKey, 'inner');
+    const { effect, config } = resolveEdge(edges, pairKey, 'inner', [piece.id, s.neighborId]);
     piece.edgeEffects[side][s.neighborId] = effect;
     if (config) piece.edgeEffectConfigs[side][s.neighborId] = config;
   }

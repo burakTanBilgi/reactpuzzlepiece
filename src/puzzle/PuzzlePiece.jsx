@@ -22,6 +22,7 @@ export default function PuzzlePiece({
   const { id, x, y, w, h, label, fill, content, backgrounds } = piece;
   const knobs = computeActiveKnobs(piece, allPieces, effect);
   const clipId = `pc-clip-${id}`;
+  const maskId = `pc-mask-${id}`;
   const hasContent = !!content && (content.text || content.src);
   const hasBackgrounds = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBackgrounds;
@@ -31,6 +32,18 @@ export default function PuzzlePiece({
   const segments = SIDES.flatMap((side) =>
     computeSideSegments(piece, allPieces, side, effect)
   );
+
+  // Knockout pass: any segment whose user-set opacity is 0 should remove the
+  // body where it sits — i.e. a transparent strip the same width as the
+  // (otherwise invisible) stroke would have been. Without this, opacity:0
+  // looks identical to width:0 (the body fills the slot anyway).
+  //
+  // Implemented as an SVG <mask>: the body path is white (= keep) and each
+  // knockout segment paints a black stroke at its width (= punch through).
+  const knockoutSegments = segments.filter(
+    (seg) => seg.style && typeof seg.style.opacity === 'number' && seg.style.opacity <= 0.001
+  );
+  const hasKnockout = knockoutSegments.length > 0;
 
   return (
     <g
@@ -45,33 +58,58 @@ export default function PuzzlePiece({
             <path d={path} />
           </clipPath>
         )}
+        {hasKnockout && (
+          <mask id={maskId} maskUnits="userSpaceOnUse">
+            {/* Start fully opaque inside the body, then carve out each
+                opacity-0 segment with a black stroke at its width. */}
+            <path d={path} fill="white" />
+            {knockoutSegments.map((seg, i) => (
+              <path
+                key={`ko-${seg.pairKey}-${i}`}
+                d={seg.d}
+                fill="none"
+                stroke="black"
+                strokeWidth={seg.style?.strokeWidth ?? 1.25}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ))}
+          </mask>
+        )}
       </defs>
 
-      {/* Body: fill only — the visible stroke comes from per-segment paths
-          rendered on top, so each edge can be styled independently. */}
-      <path d={path} className="piece__body" style={fill ? { fill } : undefined} />
+      {/* Body + visual layers wrapped in the knockout mask when any segment
+          requested opacity:0 — the mask leaves transparent strips along
+          those edges so the page background shows through. */}
+      <g {...(hasKnockout ? { mask: `url(#${maskId})` } : null)}>
+        {/* Body: fill only — the visible stroke comes from per-segment paths
+            rendered on top, so each edge can be styled independently. */}
+        <path d={path} className="piece__body" style={fill ? { fill } : undefined} />
 
-      {hasBackgrounds && (
-        <g clipPath={`url(#${clipId})`} pointerEvents="none">
-          {backgrounds.map((bg) => (
-            <BackgroundImage key={bg.id} bg={bg} />
-          ))}
-        </g>
-      )}
+        {hasBackgrounds && (
+          <g clipPath={`url(#${clipId})`} pointerEvents="none">
+            {backgrounds.map((bg) => (
+              <BackgroundImage key={bg.id} bg={bg} />
+            ))}
+          </g>
+        )}
 
-      {hasContent && (
-        <g clipPath={`url(#${clipId})`} pointerEvents="none">
-          <PieceContent piece={piece} />
-        </g>
-      )}
+        {hasContent && (
+          <g clipPath={`url(#${clipId})`} pointerEvents="none">
+            <PieceContent piece={piece} />
+          </g>
+        )}
 
-      {!hasContent && !hasBackgrounds && label && (
-        <text x={x + w / 2} y={y + h / 2} className="piece__label">
-          {label}
-        </text>
-      )}
+        {!hasContent && !hasBackgrounds && label && (
+          <text x={x + w / 2} y={y + h / 2} className="piece__label">
+            {label}
+          </text>
+        )}
+      </g>
 
-      {/* Per-segment edge strokes (rendered after content so the outline sits on top). */}
+      {/* Per-segment edge strokes (rendered after content so the outline sits
+          on top). Opacity:0 strokes are still emitted but don't paint — the
+          mask above is what creates the visible transparent strip. */}
       <g className="piece__edges" pointerEvents="none">
         {segments.map((seg, i) => {
           const s = seg.style;
