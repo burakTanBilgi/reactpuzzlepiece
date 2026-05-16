@@ -1,0 +1,109 @@
+/* Flat Edit UI (Direction B). One panel; a scope picker at the top
+   chooses where edits land; controls below remain consistent. */
+
+.flat-edit-ui {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--primary-2);
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(214, 139, 84, 0.18);
+  overflow-y: auto;
+}
+
+.flat-edit-ui__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.flat-edit-ui__kicker {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.flat-edit-ui__selection {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
+}
+
+/* === Scope picker (Apply to: …) ================================ */
+
+.flat-edit-ui__scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+}
+
+.flat-edit-ui__scope-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.flat-edit-ui__scope-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: 1;
+}
+
+.flat-scope-pill {
+  appearance: none;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.flat-scope-pill:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.flat-scope-pill--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  box-shadow: 0 2px 6px rgba(184, 96, 42, 0.35);
+}
+
+.flat-scope-pill--active:hover { color: white; }
+
+.flat-scope-pill--na {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* === Body ======================================================= */
+
+.flat-edit-ui__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}

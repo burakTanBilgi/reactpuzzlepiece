@@ -14,7 +14,7 @@ export default function CellTierEditor({
 }) {
   return (
     <InspectorSubcard
-      title={`${title} · Animations`}
+      title="Body animations"
       accent={accent}
       actions={onReset ? <button type="button" className="link-btn" onClick={onReset}>reset</button> : null}
     >

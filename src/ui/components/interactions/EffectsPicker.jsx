@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import SliderRow from '../SliderRow.jsx';
+import Icon from '../Icon.jsx';
 import {
   TRIGGER_LABELS,
   EDGE_SCOPE_LABELS,
@@ -7,16 +8,18 @@ import {
   effectKey,
 } from '../../../puzzle';
 
-// Multi-select effect picker — used by every cascade tier card on the
-// Cells and Edges panels. Renders a chip row to add/remove effects from
-// the current tier, then one collapsible row per active effect with the
-// configurable controls.
+// Picker + editor split:
+//   Left column  — every catalog effect as a small icon button.
+//                  Active (effect is on this tier) shows a subtle fill.
+//                  Editing (current pane shows this one's controls) is
+//                  amber-gradient.
+//   Right column — the selected effect's editor: trigger row, scope row
+//                  (edge effects only), intensity sliders, remove button.
 //
-// Each active row is a <details> that collapses to a one-line summary
-// (`Lift · Hover · 4px`); expand for the full editor (trigger pills,
-// optional scope pills for edge effects, intensity sliders, remove).
-// Newly-added entries auto-expand once so the user can configure them
-// immediately.
+// Click behaviour:
+//   Inactive icon  → add the effect to this tier AND focus the editor.
+//   Active icon    → focus the editor (no removal).
+//   Remove button  → take the effect off this tier (cascade falls back).
 //
 // Props:
 //   catalogue        — CELL_EFFECTS or EDGE_EFFECTS
@@ -24,15 +27,7 @@ import {
 //                      this tier can opt-out via `null` writes)
 //   ownEffects       — this tier's own effects map (the editable layer)
 //   onChange(map)    — called with the new own-effects map
-//   mixed            — show 'mixed' chip + suppress active state
-//
-// Behaviour:
-//   • One entry per effect-id per tier (MVP — multiple triggers/scopes
-//     for the same effect could be supported later via separate keys).
-//   • Chip click toggles ON/OFF. Removing an inherited entry writes
-//     `null` at its key so the cascade drops it.
-//   • Picking an effect whose `group` collides with an active one
-//     auto-swaps (drops the colliding effects from this tier first).
+//   mixed            — show 'mixed' hint + suppress active state
 export default function EffectsPicker({
   catalogue,
   inheritedEffects = {},
@@ -42,37 +37,26 @@ export default function EffectsPicker({
 }) {
   const resolved = mergeOwnAndInherited(inheritedEffects, ownEffects);
 
-  // Collapse to one entry per id (we only support one trigger/scope per id
-  // per tier — multi-key for the same id is reserved for later).
+  // One entry per id (multi-key for the same id is reserved for later).
   const entriesById = new Map();
   for (const entry of Object.values(resolved)) {
     if (entry && !entriesById.has(entry.id)) entriesById.set(entry.id, entry);
   }
   const isActive = (id) => entriesById.has(id);
 
-  // Local state — which entries are expanded right now. Newly-added entries
-  // get auto-opened on the next render via `pendingOpenRef`.
-  const [openIds, setOpenIds] = useState(() => new Set());
-  const pendingOpenRef = useRef(null);
+  const [editingId, setEditingId] = useState(null);
+
+  // Keep editingId valid: if the user removes the focused effect, snap to
+  // the next active one (or null when nothing's active).
   useEffect(() => {
-    if (pendingOpenRef.current != null) {
-      const id = pendingOpenRef.current;
-      pendingOpenRef.current = null;
-      setOpenIds((cur) => {
-        const next = new Set(cur);
-        next.add(id);
-        return next;
-      });
+    if (editingId && entriesById.has(editingId)) return;
+    if (entriesById.size === 0) {
+      setEditingId(null);
+    } else {
+      setEditingId(entriesById.keys().next().value);
     }
-  });
-  const toggleOpen = (id) => {
-    setOpenIds((cur) => {
-      const next = new Set(cur);
-      if (next.has(id)) next.delete(id);
-      else                next.add(id);
-      return next;
-    });
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolved]);
 
   // --- Mutators ---
 
@@ -87,11 +71,7 @@ export default function EffectsPicker({
     return next;
   };
 
-  const handleToggleChip = (id) => {
-    if (isActive(id)) {
-      onChange(removeEffectId(id));
-      return;
-    }
+  const addEffect = (id) => {
     const def = catalogue[id];
     if (!def) return;
     const newEntry = makeEffectEntry(catalogue, id);
@@ -105,24 +85,31 @@ export default function EffectsPicker({
       }
     }
     next[newKey] = newEntry;
-    pendingOpenRef.current = id;     // auto-expand so the user can configure
     onChange(next);
+  };
+
+  const handlePick = (id) => {
+    if (!isActive(id)) addEffect(id);
+    setEditingId(id);
+  };
+
+  const handleRemove = () => {
+    if (!editingId) return;
+    onChange(removeEffectId(editingId));
   };
 
   const handleChangeTrigger = (entry, newTrigger) => {
     const oldKey = effectKey(entry.id, entry.trigger, entry.scope);
     const newKey = effectKey(entry.id, newTrigger,    entry.scope);
     if (oldKey === newKey) return;
-    const next = rekey(ownEffects, inheritedEffects, oldKey, newKey, { ...entry, trigger: newTrigger });
-    onChange(next);
+    onChange(rekey(ownEffects, inheritedEffects, oldKey, newKey, { ...entry, trigger: newTrigger }));
   };
 
   const handleChangeScope = (entry, newScope) => {
     const oldKey = effectKey(entry.id, entry.trigger, entry.scope);
     const newKey = effectKey(entry.id, entry.trigger, newScope);
     if (oldKey === newKey) return;
-    const next = rekey(ownEffects, inheritedEffects, oldKey, newKey, { ...entry, scope: newScope });
-    onChange(next);
+    onChange(rekey(ownEffects, inheritedEffects, oldKey, newKey, { ...entry, scope: newScope }));
   };
 
   const handleChangeConfig = (entry, field, value) => {
@@ -131,113 +118,112 @@ export default function EffectsPicker({
     onChange({ ...ownEffects, [key]: { ...entry, config: cfg } });
   };
 
+  const editingEntry = editingId ? entriesById.get(editingId) : null;
+  const editingDef   = editingId ? catalogue[editingId] : null;
+
   return (
-    <div className="effects-picker">
-      <div className="effect-chips">
-        {Object.entries(catalogue).map(([id, def]) => (
-          <button
-            key={id}
-            type="button"
-            title={def.label}
-            className={`chip chip--sm ${isActive(id) && !mixed ? 'chip--active' : ''}`}
-            onClick={() => handleToggleChip(id)}
-          >
-            {def.label}
-          </button>
-        ))}
-        {mixed && <span className="chip chip--sm chip--mixed">mixed</span>}
+    <div className="picker-split">
+      <div className="picker-split__list" role="tablist" aria-label="Effects">
+        {Object.entries(catalogue).map(([id, def]) => {
+          const active  = isActive(id) && !mixed;
+          const editing = editingId === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={editing}
+              aria-pressed={active}
+              title={def.label}
+              className={`chip chip--pick${active ? ' chip--on' : ''}${editing ? ' chip--editing' : ''}`}
+              onClick={() => handlePick(id)}
+            >
+              <Icon name={`anim-${id}`} size={14} />
+            </button>
+          );
+        })}
       </div>
 
-      {!mixed && [...entriesById.values()].map((entry) => {
-        const def = catalogue[entry.id];
-        if (!def) return null;
-        const hasMultiTriggers = (def.triggers || []).length > 1;
-        const hasMultiScopes   = (def.scopes   || []).length > 1;
-        const hasConfig        = Object.keys(def.config || {}).length > 0;
-        const hasControls      = hasMultiTriggers || hasMultiScopes || hasConfig;
-        if (!hasControls) {
-          // Render as a simple removable chip-row when there's nothing to tweak.
-          return (
-            <div key={entry.id} className="effect-active-row effect-active-row--bare">
-              <span className="effect-active-row__name">{def.label}</span>
-              <button type="button" className="link-btn"
-                onClick={() => handleToggleChip(entry.id)}>remove</button>
-            </div>
-          );
-        }
-        const isOpen = openIds.has(entry.id);
-        return (
-          <details
-            key={entry.id}
-            className="effect-active-row"
-            open={isOpen}
-            onToggle={(e) => {
-              const willOpen = e.currentTarget.open;
-              setOpenIds((cur) => {
-                const next = new Set(cur);
-                if (willOpen) next.add(entry.id); else next.delete(entry.id);
-                return next;
-              });
-            }}
-          >
-            <summary className="effect-active-row__summary">
-              <span className="effect-active-row__name">{def.label}</span>
-              <span className="effect-active-row__hint">
-                {summariseEntry(entry, def)}
-              </span>
-              <button
-                type="button"
-                className="link-btn"
-                onClick={(e) => { e.preventDefault(); handleToggleChip(entry.id); }}
-              >remove</button>
-            </summary>
+      <div className="picker-split__editor" role="tabpanel">
+        {mixed && <p className="picker-split__empty hint">multiple effects mixed</p>}
 
-            <div className="effect-active-row__body">
-              {hasMultiTriggers && (
-                <div className="form-row form-row--stack">
-                  <label className="form-row__label">When</label>
-                  <div className="effect-chips">
-                    {def.triggers.map((t) => (
-                      <button key={t} type="button"
-                        className={`chip chip--sm ${entry.trigger === t ? 'chip--active' : ''}`}
-                        onClick={() => handleChangeTrigger(entry, t)}>
-                        {TRIGGER_LABELS[t] || t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {!mixed && !editingEntry && (
+          <p className="picker-split__empty hint">Pick an effect to add it.</p>
+        )}
 
-              {hasMultiScopes && (
-                <div className="form-row form-row--stack">
-                  <label className="form-row__label">Where</label>
-                  <div className="effect-chips">
-                    {def.scopes.map((s) => (
-                      <button key={s} type="button"
-                        className={`chip chip--sm ${(entry.scope || def.defaultScope) === s ? 'chip--active' : ''}`}
-                        onClick={() => handleChangeScope(entry, s)}>
-                        {EDGE_SCOPE_LABELS[s] || s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {Object.entries(def.config || {}).map(([field, schema]) => (
-                <SliderRow
-                  key={field}
-                  label={schema.label}
-                  min={schema.min} max={schema.max} step={schema.step}
-                  value={entry.config?.[field] ?? schema.default}
-                  format={(v) => `${v}${schema.unit || ''}`}
-                  onChange={(v) => handleChangeConfig(entry, field, v)}
-                />
-              ))}
-            </div>
-          </details>
-        );
-      })}
+        {!mixed && editingEntry && editingDef && (
+          <ActiveEffectEditor
+            entry={editingEntry}
+            def={editingDef}
+            onChangeTrigger={handleChangeTrigger}
+            onChangeScope={handleChangeScope}
+            onChangeConfig={handleChangeConfig}
+            onRemove={handleRemove}
+          />
+        )}
+      </div>
     </div>
+  );
+}
+
+function ActiveEffectEditor({
+  entry, def,
+  onChangeTrigger, onChangeScope, onChangeConfig, onRemove,
+}) {
+  const hasMultiTriggers = (def.triggers || []).length > 1;
+  const hasMultiScopes   = (def.scopes   || []).length > 1;
+  const configFields     = Object.entries(def.config || {});
+
+  return (
+    <>
+      <div className="picker-split__editor-head">
+        <span className="picker-split__editor-name">{def.label}</span>
+        <button type="button" className="link-btn" onClick={onRemove}>
+          remove
+        </button>
+      </div>
+
+      {hasMultiTriggers && (
+        <div className="effect-chips effect-chips--icons" role="radiogroup" aria-label="Trigger">
+          {def.triggers.map((t) => (
+            <button key={t} type="button"
+              className={`chip chip--icon ${entry.trigger === t ? 'chip--active' : ''}`}
+              onClick={() => onChangeTrigger(entry, t)}
+              title={TRIGGER_LABELS[t] || t}
+              aria-label={TRIGGER_LABELS[t] || t}
+              aria-pressed={entry.trigger === t}>
+              <Icon name={`trig-${t}`} size={14} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {hasMultiScopes && (
+        <div className="effect-chips effect-chips--icons" role="radiogroup" aria-label="Scope">
+          {def.scopes.map((s) => (
+            <button key={s} type="button"
+              className={`chip chip--icon ${(entry.scope || def.defaultScope) === s ? 'chip--active' : ''}`}
+              onClick={() => onChangeScope(entry, s)}
+              title={EDGE_SCOPE_LABELS[s] || s}
+              aria-label={EDGE_SCOPE_LABELS[s] || s}
+              aria-pressed={(entry.scope || def.defaultScope) === s}>
+              <Icon name={`scope-${s}`} size={14} />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {configFields.map(([field, schema]) => (
+        <SliderRow
+          key={field}
+          label={schema.label}
+          min={schema.min} max={schema.max} step={schema.step}
+          value={entry.config?.[field] ?? schema.default}
+          format={(v) => `${v}${schema.unit || ''}`}
+          onChange={(v) => onChangeConfig(entry, field, v)}
+        />
+      ))}
+    </>
   );
 }
 
@@ -255,20 +241,8 @@ function mergeOwnAndInherited(inherited, own) {
 // inherited copy when the new key takes effect.
 function rekey(own, inherited, oldKey, newKey, newEntry) {
   const next = { ...own };
-  if (inherited[oldKey] && next[oldKey] === undefined) next[oldKey] = null;
-  else delete next[oldKey];
+  if (oldKey in inherited && !(oldKey in own)) next[oldKey] = null;
+  else                                          delete next[oldKey];
   next[newKey] = newEntry;
   return next;
-}
-
-// Build the one-line collapsed-row summary, e.g. `Hover · Edge · 4px`.
-function summariseEntry(entry, def) {
-  const parts = [];
-  if (def.triggers && def.triggers.length > 1) parts.push(TRIGGER_LABELS[entry.trigger] || entry.trigger);
-  if (def.scopes   && def.scopes.length   > 1) parts.push(EDGE_SCOPE_LABELS[entry.scope || def.defaultScope] || entry.scope);
-  for (const [field, schema] of Object.entries(def.config || {})) {
-    const raw = entry.config?.[field] ?? schema.default;
-    parts.push(`${raw}${schema.unit || ''}`);
-  }
-  return parts.join(' · ');
 }

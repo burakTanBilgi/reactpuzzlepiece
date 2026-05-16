@@ -1,0 +1,128 @@
+/* Layers Edit UI (Direction E). Two stacked panes: layer list on top,
+   property pane below. */
+
+.layers-edit-ui {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 6px;
+}
+
+.layers-edit-ui__panel {
+  flex: 0 0 38%;
+  min-height: 120px;
+  max-height: 320px;
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+  display: flex;
+}
+
+.layers-edit-ui__props {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--primary-2);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px rgba(214, 139, 84, 0.18);
+  padding: 8px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.properties-pane__hint {
+  font-style: italic;
+}
+
+/* === LayersPanel ============================================== */
+
+.layers-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.layers-panel__list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.layers-panel__section {
+  margin-top: 8px;
+  padding: 4px 8px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.layers-panel__section:first-child { margin-top: 0; }
+
+.layers-panel__row {
+  appearance: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  text-align: left;
+  transition: background 130ms ease, border-color 130ms ease, color 130ms ease;
+}
+
+.layers-panel__row:hover { background: var(--surface-2); }
+
+.layers-panel__row.is-active {
+  background: linear-gradient(135deg, rgba(214, 139, 84, 0.22), rgba(214, 139, 84, 0.08));
+  border-color: var(--primary-2);
+  color: var(--primary-3);
+  font-weight: 600;
+}
+
+.layers-panel__row--edge,
+.layers-panel__row--inner,
+.layers-panel__row--outer {
+  padding-left: 16px;
+  font-size: 10.5px;
+}
+
+.layers-panel__row-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layers-panel__row-status {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.layers-panel__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--primary-2);
+  box-shadow: 0 0 4px rgba(214, 139, 84, 0.55);
+}
+
+.layers-panel__chain { color: var(--text-dim); opacity: 0.6; }

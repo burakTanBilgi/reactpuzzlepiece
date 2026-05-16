@@ -1,0 +1,205 @@
+/* Canvas-first Edit UI (Direction A). Slim nav rail on the left,
+   canvas viewport with floating panels overlaid. */
+
+.canvas-edit-ui {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.canvas-edit-ui__viewport {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;     /* anchor floating panels */
+  display: flex;
+  overflow: hidden;
+}
+
+/* ViewPanel + EdgeEditorCanvas fill the viewport. */
+.canvas-edit-ui__viewport > .view-panel {
+  flex: 1;
+}
+
+/* === Slim nav rail ============================================= */
+
+.canvas-nav {
+  width: 48px;
+  flex-shrink: 0;
+  padding: 10px 6px;
+  border-right: 1px solid var(--stroke-idle);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-nav__btn {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--primary-3);
+  cursor: pointer;
+  transition:
+    transform     180ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background    140ms ease,
+    color         140ms ease,
+    border-color  140ms ease,
+    opacity       140ms ease;
+}
+
+.canvas-nav__btn:hover:not(:disabled) {
+  background: var(--accent-tint);
+  border-color: var(--primary-2);
+  transform: translateY(-1px);
+}
+
+.canvas-nav__btn:active:not(:disabled) {
+  transform: scale(0.92);
+  transition-duration: 70ms;
+}
+
+.canvas-nav__btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.canvas-nav__btn--off {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.canvas-nav__btn--on {
+  background: linear-gradient(135deg, rgba(214, 139, 84, 0.22), rgba(214, 139, 84, 0.08));
+  border-color: var(--primary-2);
+  color: var(--primary-3);
+}
+
+.canvas-nav__btn--danger:hover:not(:disabled) {
+  border-color: var(--danger-2);
+  color: var(--danger-2);
+  background: rgba(200, 112, 112, 0.1);
+}
+
+.canvas-nav__divider {
+  width: 22px;
+  height: 1px;
+  background: var(--stroke-idle);
+  margin: 4px 0;
+}
+
+.canvas-nav__spacer { flex: 1; }
+
+.canvas-nav__picker {
+  display: flex;
+  justify-content: center;
+}
+
+/* === Floating panel shell ====================================== */
+
+.floating-panel {
+  position: absolute;
+  width: 320px;
+  max-height: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--primary-2);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(214, 139, 84, 0.16),
+    0 12px 28px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: floating-panel-fade 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 5;
+}
+
+.floating-panel--top-right {
+  top: 16px;
+  right: 16px;
+}
+
+.floating-panel--left-sheet {
+  top: 16px;
+  left: 16px;
+  width: 320px;
+  max-height: calc(100% - 32px);
+  animation: floating-panel-slide-left 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes floating-panel-fade {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes floating-panel-slide-left {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.floating-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: linear-gradient(135deg, rgba(214, 139, 84, 0.18), rgba(214, 139, 84, 0.06));
+  border-bottom: 1px solid var(--stroke-idle);
+}
+
+.floating-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floating-panel__close {
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.floating-panel__close:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--stroke-idle);
+}
+
+.floating-panel__body {
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-nav__btn { transition: none; transform: none !important; }
+  .floating-panel { animation: none; }
+}

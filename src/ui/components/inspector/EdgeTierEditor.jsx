@@ -2,6 +2,7 @@ import SliderRow from '../SliderRow.jsx';
 import StyleControls from '../edges/StyleControls.jsx';
 import EffectsPicker from '../interactions/EffectsPicker.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
+import Icon from '../Icon.jsx';
 import { EFFECT_NAMES, EDGE_EFFECTS } from '../../../puzzle';
 import { DEFAULT_WAVE, MIXED, cap } from '../edges/constants.js';
 
@@ -43,58 +44,70 @@ export default function EdgeTierEditor({
     <>
       {!strokeHidden && (
         <InspectorSubcard
-          title={`${title} · Shape & stroke`}
+          title="Shape & stroke"
           accent={accent}
           actions={onClear ? <button type="button" className="link-btn" onClick={onClear}>reset</button> : null}
         >
-          <div className="effect-chips">
-            {EFFECT_NAMES.map((name) => (
-              <button key={name} type="button"
-                className={`chip chip--sm ${effect === name ? 'chip--active' : ''}`}
-                onClick={() => onSetEffect?.(name)}>
-                {cap(name)}
-              </button>
-            ))}
-            {effect === MIXED && (
-              <span className="chip chip--sm chip--mixed">mixed</span>
-            )}
+          <div className="picker-split">
+            <div className="picker-split__list" role="tablist" aria-label="Connector effect">
+              {EFFECT_NAMES.map((name) => (
+                <button key={name} type="button"
+                  role="tab"
+                  aria-selected={effect === name}
+                  className={`chip chip--pick${effect === name ? ' chip--on chip--editing' : ''}`}
+                  onClick={() => onSetEffect?.(name)}
+                  title={cap(name)}
+                  aria-label={cap(name)}>
+                  <Icon name={`eff-${name}`} size={16} />
+                </button>
+              ))}
+            </div>
+
+            <div className="picker-split__editor" role="tabpanel">
+              {effect === MIXED && (
+                <span className="chip chip--sm chip--mixed">mixed</span>
+              )}
+
+              {showInvert && (
+                <button type="button"
+                  className={`chip chip--icon invert-toggle ${config?.inverted === true ? 'chip--active' : ''}`}
+                  onClick={() => onPatchConfig?.({ inverted: !(config?.inverted === true) })}
+                  title="Invert tab / socket orientation"
+                  aria-label="Invert tab / socket orientation"
+                  aria-pressed={config?.inverted === true}>
+                  <Icon name="invert" size={14} />
+                </button>
+              )}
+
+              {showWave && (
+                <>
+                  <SliderRow
+                    label={<Icon name="prop-freq" size={14} title="Wave frequency" />}
+                    min={0.005} max={0.1} step={0.001}
+                    value={config?.frequency === MIXED
+                      ? DEFAULT_WAVE.frequency
+                      : (config?.frequency ?? DEFAULT_WAVE.frequency)}
+                    format={(v) => config?.frequency === MIXED ? `· ${v.toFixed(3)}` : v.toFixed(3)}
+                    onChange={(v) => onPatchConfig?.({ frequency: v })} />
+                  <SliderRow
+                    label={<Icon name="prop-amp" size={14} title="Wave amplitude" />}
+                    min={0} max={40} step={1}
+                    value={config?.amplitude === MIXED
+                      ? DEFAULT_WAVE.amplitude
+                      : (config?.amplitude ?? DEFAULT_WAVE.amplitude)}
+                    format={(v) => config?.amplitude === MIXED ? `· ${v}` : `${v}`}
+                    onChange={(v) => onPatchConfig?.({ amplitude: v })} />
+                </>
+              )}
+
+              <StyleControls config={config} onPatchConfig={onPatchConfig} />
+            </div>
           </div>
-
-          {showInvert && (
-            <div className="puzzle-config">
-              <button type="button"
-                className={`invert-tabs-btn ${config?.inverted === true ? 'invert-tabs-btn--active' : ''}`}
-                onClick={() => onPatchConfig?.({ inverted: !(config?.inverted === true) })}
-                title="Toggle tab/socket orientation">
-                <span className="invert-tabs-btn__icon">⟷</span>
-                <span>Invert</span>
-              </button>
-            </div>
-          )}
-
-          {showWave && (
-            <div className="wave-config">
-              <SliderRow label="Freq" min={0.005} max={0.1} step={0.001}
-                value={config?.frequency === MIXED
-                  ? DEFAULT_WAVE.frequency
-                  : (config?.frequency ?? DEFAULT_WAVE.frequency)}
-                format={(v) => config?.frequency === MIXED ? `· ${v.toFixed(3)}` : v.toFixed(3)}
-                onChange={(v) => onPatchConfig?.({ frequency: v })} />
-              <SliderRow label="Amp" min={0} max={40} step={1}
-                value={config?.amplitude === MIXED
-                  ? DEFAULT_WAVE.amplitude
-                  : (config?.amplitude ?? DEFAULT_WAVE.amplitude)}
-                format={(v) => config?.amplitude === MIXED ? `· ${v}` : `${v}`}
-                onChange={(v) => onPatchConfig?.({ amplitude: v })} />
-            </div>
-          )}
-
-          <StyleControls config={config} onPatchConfig={onPatchConfig} />
         </InspectorSubcard>
       )}
 
       <InspectorSubcard
-        title={`${title} · Animations`}
+        title="Animations"
         accent={accent}
         actions={onResetEffects ? <button type="button" className="link-btn" onClick={onResetEffects}>reset</button> : null}
       >

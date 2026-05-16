@@ -60,9 +60,18 @@ export function resolveCellEffects(project, pieceId) {
 
 // Edges effect cascade: default → inner/outer layer → per-piece (cell-tier
 // — both endpoints for shared edges) → per-edge.
+//
+// For shared edges where both pieces have a byPiece tier, the lex-smaller
+// piece id wins so both halves of the same edge resolve identically
+// regardless of which piece is rendering. Implementation: sort the piece
+// ids descending so the lex-smaller id is merged LAST, and `mergeEffects`
+// (later wins) hands it the override.
 export function resolveEdgeEffects(edges, pairKey, kind, edgePieceIds = []) {
   const layer = kind === 'inner' ? edges?.inner : edges?.outer;
-  const cellTiers = edgePieceIds.map((id) => tierEffects(edges?.byPiece?.[id]));
+  const ordered = edgePieceIds.length > 1
+    ? [...edgePieceIds].sort().reverse()
+    : edgePieceIds;
+  const cellTiers = ordered.map((id) => tierEffects(edges?.byPiece?.[id]));
   return mergeEffects(
     tierEffects(edges?.default),
     tierEffects(layer),
@@ -103,13 +112,17 @@ function collectBackgrounds(backgrounds, b, cellSize) {
 // `kind` is 'inner' for shared-edge segments and 'outer' for outer edges.
 // `edgePieceIds` lists the piece IDs that touch this edge (one for outer edges,
 // two for shared); used to consult the cell (byPiece) tier. When two pieces
-// of a shared edge both have a byPiece entry, the lex-smaller id wins (matches
-// the edgeKey ordering — predictable, no hidden recency).
+// of a shared edge both have a byPiece entry, the lex-smaller id wins —
+// both halves of the same edge resolve identically regardless of which
+// piece is rendering. We sort here so callers can pass the ids in any order.
 export function resolveEdge(edges, pairKey, kind, edgePieceIds = []) {
   const ov = edges?.byEdge?.[pairKey];
 
   let cell = null;
-  for (const pid of edgePieceIds) {
+  const sortedIds = edgePieceIds.length > 1
+    ? [...edgePieceIds].sort()
+    : edgePieceIds;
+  for (const pid of sortedIds) {
     if (edges?.byPiece?.[pid]) { cell = edges.byPiece[pid]; break; }
   }
 

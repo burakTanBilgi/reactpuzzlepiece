@@ -1,0 +1,10 @@
+.ico {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  color: currentColor;
+}
+
+/* When an icon sits inside a button alongside text, give it a hair of
+   right-margin so the gap from the button's `gap` works either way. */
+.ico--lead { margin-right: 2px; }

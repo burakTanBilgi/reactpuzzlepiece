@@ -7,6 +7,7 @@ import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
 import AccordionCard from '../components/AccordionCard.jsx';
+import Icon from '../components/Icon.jsx';
 import { useFileInput } from '../hooks/useFileInput.js';
 
 const PASSIVE_CARDS = new Set(['dimensions', 'tips', 'import']);
@@ -167,7 +168,8 @@ export default function GridEditorPage({ project }) {
               onClick={doMerge}
               title={canMerge ? 'Merge selected cells' : 'Selection must form a complete rectangle'}
             >
-              ⊞ Merge
+              <Icon name="merge" size={14} />
+              <span>Merge</span>
             </button>
             <button
               type="button"
@@ -175,7 +177,8 @@ export default function GridEditorPage({ project }) {
               disabled={!canUnmerge}
               onClick={doUnmerge}
             >
-              ⊟ Unmerge
+              <Icon name="unmerge" size={14} />
+              <span>Unmerge</span>
             </button>
             <button
               type="button"
@@ -277,7 +280,8 @@ export default function GridEditorPage({ project }) {
           <p className="hint">Paste a spreadsheet, or import a CSV file.</p>
           <div className="action-stack">
             <button type="button" className="action-btn" onClick={() => setShowImport(true)}>
-              ⎘ Paste data
+              <Icon name="paste" size={14} />
+              <span>Paste data</span>
             </button>
             <input
               {...csvInput.inputProps}
@@ -286,7 +290,8 @@ export default function GridEditorPage({ project }) {
               hidden
             />
             <button type="button" className="action-btn action-btn--ghost" onClick={csvInput.open}>
-              ↑ Import CSV/TSV file
+              <Icon name="upload" size={14} />
+              <span>Import CSV/TSV file</span>
             </button>
           </div>
           <p className="hint hint--warn">Importing replaces the current grid.</p>

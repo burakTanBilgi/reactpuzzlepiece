@@ -19,11 +19,6 @@ export default function ProjectDefaultsCard({
 
   return (
     <>
-      <div className="inspector-header">
-        <h3 className="inspector-header__title">Project defaults</h3>
-        <span className="inspector-header__sub">applied to every piece unless overridden</span>
-      </div>
-
       <EdgeTierEditor
         title="Default edges"
         accent

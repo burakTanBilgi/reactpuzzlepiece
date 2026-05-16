@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Icon from './Icon.jsx';
 
 const SAMPLE = `Logo\t\tTheme\tLanguage\tAbout\t\tHow It Works\t\tSign In\t\tSign Up
 Build Your Custom ERP\t\t\t\t\t\t\t\tNo Coding Required\t\t
@@ -21,7 +22,9 @@ export default function ImportDialog({ onClose, onImport }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal__head">
           <h2 className="modal__title">Import grid data</h2>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
+            <Icon name="close" size={14} />
+          </button>
         </header>
 
         <div className="modal__body">

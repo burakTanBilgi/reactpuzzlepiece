@@ -4,6 +4,7 @@ import CellTierEditor from './CellTierEditor.jsx';
 import InspectorTabs from './InspectorTabs.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
 import SliderRow from '../SliderRow.jsx';
+import Icon from '../Icon.jsx';
 import { useFileInput } from '../../hooks/useFileInput.js';
 import { FIT_OPTIONS } from '../../utils/fitOptions.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
@@ -15,9 +16,9 @@ const TABS = [
 ];
 
 const ALIGN_OPTIONS = [
-  { value: 'left',   label: '⇤' },
-  { value: 'center', label: '↔' },
-  { value: 'right',  label: '⇥' },
+  { value: 'left',   icon: 'align-left',   label: 'Align left'   },
+  { value: 'center', icon: 'align-center', label: 'Align center' },
+  { value: 'right',  icon: 'align-right',  label: 'Align right'  },
 ];
 
 // Body of the "Piece" accordion card. Renders the three-tab editor
@@ -182,13 +183,15 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
           />
           <div className="form-row">
             <label className="form-row__label">Align</label>
-            <div className="effect-chips">
+            <div className="effect-chips effect-chips--icons">
               {ALIGN_OPTIONS.map((a) => (
                 <button key={a.value} type="button"
-                  className={`chip chip--sm ${(content.align || 'center') === a.value ? 'chip--active' : ''}`}
+                  className={`chip chip--icon ${(content.align || 'center') === a.value ? 'chip--active' : ''}`}
                   onClick={() => updatePieceContent(piece.id, { align: a.value })}
-                  title={a.value}>
-                  {a.label}
+                  title={a.label}
+                  aria-label={a.label}
+                  aria-pressed={(content.align || 'center') === a.value}>
+                  <Icon name={a.icon} size={14} />
                 </button>
               ))}
             </div>
@@ -215,7 +218,8 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
         <div className="content-config">
           <input {...inputProps} type="file" accept="image/*" hidden />
           <button type="button" className="action-btn action-btn--ghost" onClick={open}>
-            {content.src ? 'Replace image' : '↑ Upload image'}
+            <Icon name="upload" size={14} />
+            <span>{content.src ? 'Replace image' : 'Upload image'}</span>
           </button>
 
           {content.src && (

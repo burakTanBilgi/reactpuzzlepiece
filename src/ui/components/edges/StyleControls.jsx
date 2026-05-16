@@ -1,4 +1,5 @@
 import SliderRow from '../SliderRow.jsx';
+import Icon from '../Icon.jsx';
 import { MIXED } from './constants.js';
 
 // Color / opacity / thickness — apply to every effect. Lives in the same
@@ -7,13 +8,15 @@ import { MIXED } from './constants.js';
 // "Default color" (no entry) is distinct from "transparent": the former
 // inherits the theme stroke color; the latter sets opacity to 0 / a
 // transparent stroke so the page background shows through.
+//
+// Labels are icon-only (prop-color / prop-opacity / prop-width) — the
+// surrounding picker-split column is narrow, so text labels would crowd
+// out the sliders. Hover the icon for a tooltip.
 export default function StyleControls({ config, onPatchConfig }) {
   const colorMixed   = config?.color === MIXED;
   const opacityMixed = config?.opacity === MIXED;
   const widthMixed   = config?.strokeWidth === MIXED;
 
-  // For the color picker we always need a concrete hex value to satisfy
-  // <input type="color">. Default to a neutral grey when nothing is set.
   const colorValue = (typeof config?.color === 'string' && config.color !== MIXED)
     ? config.color
     : '#888888';
@@ -21,13 +24,16 @@ export default function StyleControls({ config, onPatchConfig }) {
 
   return (
     <div className="style-controls">
-      <div className="form-row">
-        <label className="form-row__label">Color</label>
+      <div className="form-row" title="Stroke color">
+        <span className="form-row__icon" aria-hidden="true">
+          <Icon name="prop-color" size={14} />
+        </span>
         <input
           type="color"
           className="form-row__color"
           value={colorValue}
           onChange={(e) => onPatchConfig({ color: e.target.value })}
+          aria-label="Stroke color"
         />
         {colorIsSet ? (
           <button type="button" className="link-btn" onClick={() => onPatchConfig({ color: undefined })}>
@@ -39,7 +45,7 @@ export default function StyleControls({ config, onPatchConfig }) {
       </div>
 
       <SliderRow
-        label="Opacity"
+        label={<Icon name="prop-opacity" size={14} title="Opacity" />}
         min={0} max={1} step={0.01}
         value={opacityMixed ? 1 : (config?.opacity ?? 1)}
         format={(v) => `${Math.round(v * 100)}%`}
@@ -47,7 +53,7 @@ export default function StyleControls({ config, onPatchConfig }) {
       />
 
       <SliderRow
-        label="Width"
+        label={<Icon name="prop-width" size={14} title="Stroke width" />}
         min={0} max={10} step={0.25}
         value={widthMixed ? 1.25 : (config?.strokeWidth ?? 1.25)}
         format={(v) => `${v}px`}

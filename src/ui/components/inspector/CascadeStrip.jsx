@@ -28,8 +28,8 @@ export default function CascadeStrip({ states, currentTier, onSelectTier }) {
   });
 
   return (
-    <nav className="cascade-strip" aria-label="Override cascade">
-      {visible.map((t, i) => {
+    <nav className="cascade-strip" aria-label="Override cascade" role="tablist">
+      {visible.map((t) => {
         const st = states?.[t.id] || { applicable: false, hasOverride: false };
         const isCurrent = currentTier === t.id;
         const classes = [
@@ -39,25 +39,25 @@ export default function CascadeStrip({ states, currentTier, onSelectTier }) {
           isCurrent ? 'cascade-strip__pill--current' : '',
         ].filter(Boolean).join(' ');
         return (
-          <span key={t.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            {i > 0 && <span className="cascade-strip__arrow" aria-hidden>›</span>}
-            <button
-              type="button"
-              className={classes}
-              disabled={!st.applicable}
-              onClick={() => st.applicable && onSelectTier?.(t.id)}
-              title={
-                !st.applicable
-                  ? `${t.label}: not applicable for this selection`
-                  : st.hasOverride
-                    ? `${t.label}: override set`
-                    : `${t.label}: inheriting`
-              }
-            >
-              <span className="cascade-strip__dot" aria-hidden />
-              {t.label}
-            </button>
-          </span>
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={isCurrent}
+            className={classes}
+            disabled={!st.applicable}
+            onClick={() => st.applicable && onSelectTier?.(t.id)}
+            title={
+              !st.applicable
+                ? `${t.label}: not applicable for this selection`
+                : st.hasOverride
+                  ? `${t.label}: override set`
+                  : `${t.label}: inheriting`
+            }
+          >
+            <span className="cascade-strip__dot" aria-hidden />
+            {t.label}
+          </button>
         );
       })}
     </nav>

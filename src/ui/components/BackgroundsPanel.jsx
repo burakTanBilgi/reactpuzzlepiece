@@ -1,5 +1,6 @@
 import { FIT_OPTIONS } from '../utils/fitOptions.js';
 import { useFileInput } from '../hooks/useFileInput.js';
+import Icon from './Icon.jsx';
 
 // Side-panel UI for project-wide background images. Each background covers a
 // rectangular range of cells and renders sliced across whatever pieces happen
@@ -28,7 +29,8 @@ export default function BackgroundsPanel({
           className="action-btn"
           onClick={open}
         >
-          ↑ Upload image
+          <Icon name="upload" size={14} />
+          <span>Upload image</span>
         </button>
         <p className="hint">Or paste an image (Ctrl+V) — it goes into the current selection.</p>
       </div>
@@ -48,8 +50,9 @@ export default function BackgroundsPanel({
                       className="bg-item__del"
                       onClick={() => onRemove(bg.id)}
                       title="Delete this background"
+                      aria-label="Delete background"
                     >
-                      ✕
+                      <Icon name="trash" size={13} />
                     </button>
                   </div>
                   <div className="effect-chips">

@@ -154,14 +154,24 @@
 .slider-control {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 11px;
   color: var(--text-dim);
 }
 
 .slider-control__label {
   font-weight: 500;
-  min-width: 50px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;          /* icon-only label slot */
+  color: var(--text-muted);
+}
+
+.slider-control__label .ico {
+  display: block;
 }
 
 .slider-control input[type='range'] {
@@ -218,6 +228,45 @@
 
 .slider-control__input { -moz-appearance: textfield; }
 
+/* === Tile presets (Direction D — preset-tiles mode) ============= */
+.tile-presets {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.tile-preset {
+  appearance: none;
+  flex: 1;
+  min-width: 28px;
+  padding: 3px 4px;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile-preset:hover {
+  color: var(--text);
+  border-color: var(--primary-2);
+}
+
+.tile-preset--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 2px 5px rgba(184, 96, 42, 0.35);
+}
+
+.tile-preset--active:hover { color: white; }
+
 /* === Chips === */
 .chip {
   appearance: none;
@@ -254,6 +303,150 @@
 
 .chip--sm { padding: 4px 9px; font-size: 11px; }
 
+/* Square icon-only chip. Tooltip + aria-label carry the meaning; the SVG
+   gives the visual cue. Used for connector effects (puzzle/wave/straight)
+   and animation effects (highlight, lift, glow, …). */
+.chip--icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--stroke-idle);
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+.chip--icon:hover:not(.chip--active) {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--primary-2);
+}
+
+.chip--icon.chip--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  border-color: transparent;
+}
+
+.effect-chips--icons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* === Picker + editor split ============================================
+   Used inside every tier sub-card (Shape & stroke / Animations /
+   Body animations). Narrow scrollable icon column on the left; the right
+   column shows the controls for whichever picker entry is currently
+   "editing." The picker stays at its own natural height (align-items:
+   flex-start) and scrolls when it has more icons than fit in the cap
+   below. */
+.picker-split {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  min-height: 0;
+}
+
+.picker-split__list {
+  flex: 0 0 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 7px;
+  overflow-y: auto;
+  /* 2 padding + 4 × 28 icon + 3 × 2 gap + 2 padding = 122 px (~4 visible). */
+  max-height: 122px;
+  scrollbar-gutter: stable;
+}
+
+.picker-split__editor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.picker-split__editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.picker-split__editor-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.picker-split__empty {
+  margin: 0;
+  padding: 6px 4px;
+  font-style: italic;
+}
+
+/* Compact icon chip used inside the picker column. The column itself
+   carries the chrome; the chip is just a 28x28 hit target. */
+.chip--pick {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    transform     160ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background    140ms ease,
+    color         140ms ease,
+    border-color  140ms ease,
+    box-shadow    140ms ease;
+}
+
+.chip--pick:hover:not(.chip--on) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.chip--pick:active {
+  transform: scale(0.92);
+  transition-duration: 70ms;
+}
+
+/* Active = the effect is on this tier (still in the resolved set). */
+.chip--pick.chip--on {
+  background: var(--surface-2);
+  color: var(--primary-3);
+  border-color: var(--primary-2);
+}
+
+/* Editing = the right pane currently shows this effect's controls.
+   Active+editing is the strongest state — full amber gradient. */
+.chip--pick.chip--editing {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(184, 96, 42, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip--pick {
+    transition: none;
+    transform: none !important;
+  }
+}
+
 .chip--mixed {
   background: var(--surface-3);
   color: var(--text-dim);
@@ -270,7 +463,18 @@
 .form-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+}
+
+/* Icon-only label slot. Same width as .slider-control__label so all
+   rows in a Shape & stroke editor align left-to-right. */
+.form-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--text-muted);
 }
 
 /* Stack label above the control instead of putting them on one row.
@@ -280,82 +484,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-}
-
-/* === Effects picker (multi-select effect chips + per-effect editor) === */
-.effects-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.effect-active-row {
-  background: var(--surface-2);
-  border: 1px solid var(--stroke-idle);
-  border-radius: 6px;
-  padding: 6px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* Native <details>/<summary> styling — collapse to a single-line summary. */
-.effect-active-row[open] {
-  padding-bottom: 8px;
-}
-
-.effect-active-row__summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-  font-size: 12px;
-}
-
-.effect-active-row__summary::-webkit-details-marker { display: none; }
-
-.effect-active-row__summary::before {
-  content: '▸';
-  display: inline-block;
-  width: 10px;
-  font-size: 9px;
-  color: var(--text-dim);
-  transition: transform 120ms ease;
-}
-
-.effect-active-row[open] .effect-active-row__summary::before {
-  transform: rotate(90deg);
-}
-
-.effect-active-row__name {
-  font-weight: 600;
-  color: var(--text);
-}
-
-.effect-active-row__hint {
-  flex: 1;
-  font-size: 11px;
-  color: var(--text-dim);
-  text-align: right;
-  margin-right: 4px;
-}
-
-.effect-active-row__body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 2px;
-}
-
-/* Bare row variant — used when an effect has no controls at all
-   (e.g. Highlight has no intensity / multi-trigger). */
-.effect-active-row--bare {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 10px;
 }
 
 .form-row__label {
@@ -402,6 +530,8 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+.modal--narrow { width: min(420px, 92vw); }
 
 .modal__head {
   display: flex;
@@ -483,6 +613,8 @@
   border-top: 1px solid var(--stroke-idle);
   background: var(--bg-elev);
 }
+
+.modal__foot--right { justify-content: flex-end; }
 
 /* === Reduced motion: collapse every transition / animation to a no-op so
    users with vestibular sensitivities don't feel the bounce. Static visuals

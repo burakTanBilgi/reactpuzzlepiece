@@ -1,15 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listOuterEdges } from '../../grid/compile.js';
-import Inspector       from '../components/inspector/Inspector.jsx';
 import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
 import ViewPanel       from '../components/ViewPanel.jsx';
+import ConfirmDialog   from '../components/ConfirmDialog.jsx';
+import CanvasEditUi    from '../components/edit-ui/CanvasEditUi.jsx';
+import LayersEditUi    from '../components/edit-ui/LayersEditUi.jsx';
+import FlatEditUi      from '../components/edit-ui/FlatEditUi.jsx';
+import WorkflowEditUi  from '../components/edit-ui/WorkflowEditUi.jsx';
+import EditModePicker  from '../components/edit-ui/EditModePicker.jsx';
+import { useEditUiMode } from '../hooks/useEditUiMode.js';
+import { TilesContext } from '../hooks/TilesContext.jsx';
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
 
-// Single Edit page: one canvas, one selection-driven Inspector. Selection
-// state is mutually exclusive — clicking a piece clears any edge selection
-// and vice versa. The Inspector reads from this state to decide which view
-// to render (project defaults / piece / edge).
+// Edit page = the canvas + selection state + a user-pickable UI shell.
+// The shell is one of:
+//   'canvas' (default)  — slim left rail + floating popovers
+//   'layers'            — layers list on top + properties pane below
+//   'flat' / 'modes'    — reserved for future modes (picker disables them)
+//
+// EditPage itself owns selection, the hover/click toggles, and the
+// confirm-clear modal. Each shell receives the same props and decides
+// how to render them.
 export default function EditPage({ project }) {
   const {
     project: p,
@@ -27,6 +39,7 @@ export default function EditPage({ project }) {
     setPieceEdgeEffect,
     setPieceEdgeConfig,
     clearPieceEdgeOverride,
+    setPieceColor,
     setPieceContent,
     updatePieceContent,
     setDefaultCellEffects,
@@ -42,9 +55,10 @@ export default function EditPage({ project }) {
   const [selectedPieceId, setSelectedPieceId] = useState(null);
   const [hoverFxEnabled, setHoverFxEnabled] = useState(true);
   const [clickFxEnabled, setClickFxEnabled] = useState(true);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
-  // Edge clicks clear any existing piece selection (mutually exclusive so
-  // the inspector shows one selection at a time).
+  const { mode, setMode, tiles, setTiles } = useEditUiMode();
+
   const handleSelectEdge = useCallback((pairKey, evt) => {
     setSelectedPieceId(null);
     setSelectedEdges((cur) => {
@@ -59,7 +73,6 @@ export default function EditPage({ project }) {
     });
   }, []);
 
-  // Piece clicks clear any existing edge selection.
   const handleSelectPiece = useCallback((pieceId) => {
     setSelectedEdges(new Set());
     setSelectedPieceId(pieceId);
@@ -81,107 +94,211 @@ export default function EditPage({ project }) {
     return [...sharedEdges, ...listOuterEdges(p)];
   }, [p, sharedEdges]);
 
+  const selectedPiece = useMemo(
+    () => (selectedPieceId && pieces ? pieces.find((pp) => pp.id === selectedPieceId) : null),
+    [pieces, selectedPieceId]
+  );
+
   if (!p) return null;
 
   const defaultEffect = p.edges.default.effect;
   const defaultConfig = p.edges.default.config ?? DEFAULT_WAVE;
 
+  const hasAnyEdgeOverride =
+    Object.keys(p.edges.byEdge || {}).length > 0 ||
+    Object.keys(p.edges.byPiece || {}).length > 0;
+  const hasAnyCellOverride =
+    Object.keys(p?.cells?.default?.effects || {}).length > 0 ||
+    Object.keys(p?.cells?.byPiece || {}).length > 0;
+  const hasOverrides = hasAnyEdgeOverride || hasAnyCellOverride;
+
+  const handleClearOverrides = () => {
+    if (!hasOverrides) return;
+    setConfirmClearOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    resetEdgeOverrides();
+    resetAllCellEffects();
+    setConfirmClearOpen(false);
+  };
+
+  const canvas = (
+    <ViewPanel>
+      <EdgeEditorCanvas
+        pieces={pieces}
+        effect={defaultEffect}
+        effectConfig={defaultConfig}
+        allEdges={allEdges}
+        selectedEdgeIds={selectedEdges}
+        onSelectEdge={handleSelectEdge}
+        selectedPieceId={selectedPieceId}
+        onSelectPiece={handleSelectPiece}
+        edgesByEdge={p.edges.byEdge}
+        edgesByPiece={p.edges.byPiece}
+        hoverFxEnabled={hoverFxEnabled}
+        clickFxEnabled={clickFxEnabled}
+      />
+    </ViewPanel>
+  );
+
+  const modePickerEl = (
+    <EditModePicker
+      mode={mode}
+      onChangeMode={setMode}
+      tiles={tiles}
+      onChangeTiles={setTiles}
+    />
+  );
+
+  // Shared props every UI shell needs.
+  const sharedProps = {
+    project: p,
+    pieces,
+    sharedEdges,
+    selectedEdges,
+    selectedPieceId,
+    selectedPiece,
+    onSelectPiece: handleSelectPiece,
+    onSelectEdges: setSelectedEdges,
+    onClearPieceSelection: () => setSelectedPieceId(null),
+    onClearEdgeSelection: () => setSelectedEdges(new Set()),
+    hoverFxEnabled,
+    onToggleHover: () => setHoverFxEnabled((v) => !v),
+    clickFxEnabled,
+    onToggleClick: () => setClickFxEnabled((v) => !v),
+    hasOverrides,
+    onClearOverrides: handleClearOverrides,
+    modePickerSlot: modePickerEl,
+    // setters
+    setDefaultEdgeEffect, setDefaultEdgeConfig, setDefaultEdgeEffects,
+    setLayerEffect, setLayerConfig, clearLayer, setLayerEffects,
+    setPieceEdgeEffect, setPieceEdgeConfig, setPieceEdgeEffects, clearPieceEdgeOverride,
+    setEdgeEffect, setEdgeConfig, clearEdgeOverride, setEdgeEffects,
+    setPieceContent, updatePieceContent,
+    setDefaultCellEffects, setCellEffects,
+    setPieceColor,
+  };
+
   return (
+    <TilesContext.Provider value={tiles}>
     <div className="page-edit">
-      <aside className="side-tools">
-        <div className="fx-toggle-group" role="group" aria-label="Interaction previews">
-          <button
-            type="button"
-            className={`fx-icon-btn${hoverFxEnabled ? '' : ' fx-icon-btn--off'}`}
-            onClick={() => setHoverFxEnabled((v) => !v)}
-            title={`Hover previews: ${hoverFxEnabled ? 'on (click to disable)' : 'off (click to enable)'}`}
-            aria-label={`Toggle hover previews (currently ${hoverFxEnabled ? 'on' : 'off'})`}
-            aria-pressed={hoverFxEnabled}
-          >
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path
-                d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z"
-                fill="currentColor"
-              />
-              <path
-                d="M2 14 Q4.5 12.5 7 14 T12.5 14"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                fill="none"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={`fx-icon-btn${clickFxEnabled ? '' : ' fx-icon-btn--off'}`}
-            onClick={() => setClickFxEnabled((v) => !v)}
-            title={`Click previews: ${clickFxEnabled ? 'on (click to disable)' : 'off (click to enable)'}`}
-            aria-label={`Toggle click previews (currently ${clickFxEnabled ? 'on' : 'off'})`}
-            aria-pressed={clickFxEnabled}
-          >
-            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-              <path
-                d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z"
-                fill="currentColor"
-              />
-              <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-                <line x1="12.5" y1="3.5" x2="14.5" y2="1.5" />
-                <line x1="13" y1="6"   x2="15.4" y2="6" />
-                <line x1="12.5" y1="8.5" x2="14.5" y2="10.5" />
-              </g>
-            </svg>
-          </button>
-        </div>
+      {mode === 'canvas' && <CanvasEditUi {...sharedProps} canvas={canvas} />}
+      {mode === 'layers' && (
+        <LayersShell {...sharedProps} canvas={canvas} />
+      )}
+      {mode === 'flat' && (
+        <RailShell {...sharedProps} canvas={canvas} body={<FlatEditUi {...sharedProps} />} />
+      )}
+      {mode === 'modes' && (
+        <RailShell {...sharedProps} canvas={canvas} body={<WorkflowEditUi {...sharedProps} />} />
+      )}
 
-        <Inspector
-          project={p}
-          pieces={pieces}
-          sharedEdges={sharedEdges}
-          selectedEdges={selectedEdges}
-          selectedPieceId={selectedPieceId}
-          onClearEdgeSelection={() => setSelectedEdges(new Set())}
-          onClearPieceSelection={() => setSelectedPieceId(null)}
-          setDefaultEdgeEffect={setDefaultEdgeEffect}
-          setDefaultEdgeConfig={setDefaultEdgeConfig}
-          setDefaultEdgeEffects={setDefaultEdgeEffects}
-          setLayerEffect={setLayerEffect}
-          setLayerConfig={setLayerConfig}
-          clearLayer={clearLayer}
-          setLayerEffects={setLayerEffects}
-          setPieceEdgeEffect={setPieceEdgeEffect}
-          setPieceEdgeConfig={setPieceEdgeConfig}
-          setPieceEdgeEffects={setPieceEdgeEffects}
-          clearPieceEdgeOverride={clearPieceEdgeOverride}
-          setEdgeEffect={setEdgeEffect}
-          setEdgeConfig={setEdgeConfig}
-          clearEdgeOverride={clearEdgeOverride}
-          setEdgeEffects={setEdgeEffects}
-          setPieceContent={setPieceContent}
-          updatePieceContent={updatePieceContent}
-          setDefaultCellEffects={setDefaultCellEffects}
-          setCellEffects={setCellEffects}
-          resetEdgeOverrides={resetEdgeOverrides}
-          resetAllCellEffects={resetAllCellEffects}
+      {confirmClearOpen && (
+        <ConfirmDialog
+          title="Clear all overrides?"
+          body={(
+            <>
+              <p>This will wipe every per-edge, per-piece, inner, and outer
+              override along with every per-piece body animation, and fall
+              back to the project defaults.</p>
+              <p className="hint hint--warn">This action cannot be undone.</p>
+            </>
+          )}
+          confirmLabel="Clear overrides"
+          danger
+          onCancel={() => setConfirmClearOpen(false)}
+          onConfirm={handleConfirmClear}
         />
-      </aside>
-
-      <ViewPanel>
-        <EdgeEditorCanvas
-          pieces={pieces}
-          effect={defaultEffect}
-          effectConfig={defaultConfig}
-          allEdges={allEdges}
-          selectedEdgeIds={selectedEdges}
-          onSelectEdge={handleSelectEdge}
-          selectedPieceId={selectedPieceId}
-          onSelectPiece={handleSelectPiece}
-          edgesByEdge={p.edges.byEdge}
-          edgesByPiece={p.edges.byPiece}
-          hoverFxEnabled={hoverFxEnabled}
-          clickFxEnabled={clickFxEnabled}
-        />
-      </ViewPanel>
+      )}
     </div>
+    </TilesContext.Provider>
+  );
+}
+
+// Generic rail shell — used by Flat and Workflow modes. Renders the
+// shared top action row (toggles + clear + picker) above a body that
+// the mode provides, with the canvas on the right.
+function RailShell({ canvas, body, ...rest }) {
+  return (
+    <>
+      <aside className="side-tools">
+        <TopActionRow {...rest} />
+        {body}
+      </aside>
+      {canvas}
+    </>
+  );
+}
+
+// Shared top-action row for rail-style modes (Layers / Flat / Workflow).
+function TopActionRow({
+  hoverFxEnabled, onToggleHover,
+  clickFxEnabled, onToggleClick,
+  hasOverrides, onClearOverrides,
+  modePickerSlot,
+}) {
+  return (
+    <div className="edit-top-row">
+      <div className="fx-toggle-group" role="group" aria-label="Interaction previews">
+        <button
+          type="button"
+          className={`fx-icon-btn${hoverFxEnabled ? '' : ' fx-icon-btn--off'}`}
+          onClick={onToggleHover}
+          title={`Hover previews: ${hoverFxEnabled ? 'on' : 'off'}`}
+          aria-pressed={hoverFxEnabled}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
+            <path d="M2 14 Q4.5 12.5 7 14 T12.5 14" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          className={`fx-icon-btn${clickFxEnabled ? '' : ' fx-icon-btn--off'}`}
+          onClick={onToggleClick}
+          title={`Click previews: ${clickFxEnabled ? 'on' : 'off'}`}
+          aria-pressed={clickFxEnabled}
+        >
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
+            <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+              <line x1="12.5" y1="3.5" x2="14.5" y2="1.5" />
+              <line x1="13" y1="6" x2="15.4" y2="6" />
+              <line x1="12.5" y1="8.5" x2="14.5" y2="10.5" />
+            </g>
+          </svg>
+        </button>
+      </div>
+      <button
+        type="button"
+        className="clear-overrides-btn"
+        onClick={onClearOverrides}
+        disabled={!hasOverrides}
+        title={hasOverrides ? 'Clear all overrides' : 'No overrides set'}
+        aria-label="Clear all overrides"
+      >
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 8 A5 5 0 1 0 5.2 4" />
+          <path d="M3 2 L3 5 L6 5" />
+        </svg>
+      </button>
+      <div className="edit-top-row__picker">{modePickerSlot}</div>
+    </div>
+  );
+}
+
+// Layers mode shell: a 280-px rail with the shared top-action row +
+// LayersEditUi inside; canvas on the right.
+function LayersShell(props) {
+  const { canvas, ...rest } = props;
+  return (
+    <>
+      <aside className="side-tools">
+        <TopActionRow {...rest} />
+        <LayersEditUi {...rest} />
+      </aside>
+      {canvas}
+    </>
   );
 }
