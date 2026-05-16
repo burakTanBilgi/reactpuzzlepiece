@@ -58,6 +58,8 @@ export default function EdgeEditorCanvas({
   onSelectPiece,
   edgesByEdge,
   edgesByPiece,
+  hoverFxEnabled = true,
+  clickFxEnabled = true,
 }) {
   const piecesById = useMemo(
     () => new Map(pieces.map((p) => [p.id, p])),
@@ -102,7 +104,7 @@ export default function EdgeEditorCanvas({
   }, [pieces, edgesByPiece]);
 
   return (
-    <div className="edge-canvas edit-canvas--inspector">
+    <div className={`edge-canvas edit-canvas--inspector${hoverFxEnabled ? '' : ' edge-canvas--no-hover-fx'}${clickFxEnabled ? '' : ' edge-canvas--no-click-fx'}`}>
       <PuzzleBoard
         pieces={pieces}
         effect={effect}

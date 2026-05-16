@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
 import CellTierEditor from './CellTierEditor.jsx';
 import InspectorTabs from './InspectorTabs.jsx';
@@ -143,6 +144,32 @@ export default function PieceInspector({
 
 function ContentTab({ piece, setPieceContent, updatePieceContent }) {
   const content = piece.content || null;
+  const textareaRef = useRef(null);
+
+  // Type-to-fill: while the piece is selected on the Content tab with no
+  // content yet, the first printable keypress (outside any input) seeds a
+  // text content and focuses the textarea so typing continues naturally.
+  useEffect(() => {
+    if (content) return;
+    const onKey = (e) => {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (typeof e.key !== 'string' || e.key.length !== 1) return;
+      e.preventDefault();
+      const ch = e.key;
+      setPieceContent(piece.id, { type: 'text', text: ch });
+      requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [content, piece.id, setPieceContent]);
 
   const setType = (type) => {
     if (type === 'none')  return setPieceContent(piece.id, null);
@@ -191,6 +218,7 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
       {content?.type === 'text' && (
         <div className="content-config">
           <textarea
+            ref={textareaRef}
             className="modal__textarea"
             style={{ minHeight: 80 }}
             placeholder="Enter text…"

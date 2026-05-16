@@ -79,3 +79,48 @@
   transform: scaleX(-1);
   color: var(--primary-2);
 }
+
+/* === Interaction-previews toggle (hover / click icon pair) === */
+
+.fx-toggle-group {
+  display: flex;
+  gap: 4px;
+  align-self: center;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+}
+
+.fx-icon-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: linear-gradient(135deg, rgba(214, 139, 84, 0.22), rgba(214, 139, 84, 0.08));
+  color: var(--primary-3);
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+.fx-icon-btn:hover {
+  box-shadow: 0 0 6px rgba(214, 139, 84, 0.3);
+}
+
+.fx-icon-btn--off {
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.fx-icon-btn--off:hover {
+  color: var(--text);
+  opacity: 0.85;
+  box-shadow: none;
+}

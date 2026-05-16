@@ -58,3 +58,55 @@
   filter: drop-shadow(0 0 3px var(--primary-tint))
           drop-shadow(0 0 8px var(--primary-tint));
 }
+
+/* Interaction-previews-off modes: suppress :hover-driven and/or :active-driven
+   visual signals inside the canvas. The wrapper carries one or both of the
+   `--no-hover-fx` / `--no-click-fx` modifier classes, independently controlling
+   each pseudo-state.
+
+   Selection states (.piece--selected, .edge-hit--selected) and always/idle-
+   triggered effects are intentionally untouched. The doubled-class prefix
+   (`.edge-canvas.edge-canvas--no-*-fx`) bumps specificity to (0,4,0) so we
+   win over the puzzle module's animation rules without needing !important —
+   which keeps user-set inline fill/stroke colours intact. `filter`,
+   `transform`, `animation`, `opacity` get !important because nothing else
+   sets them inline and the value (none / 0) is unambiguous. */
+
+/* --- Hover off ---------------------------------------------------------- */
+.edge-canvas.edge-canvas--no-hover-fx .edge-hit__hit:hover ~ .edge-hit__line {
+  opacity: 0 !important;
+  stroke: transparent;
+  filter: none !important;
+}
+.edge-canvas.edge-canvas--no-hover-fx .piece:hover .piece__body {
+  fill: var(--puzzle-fill, var(--surface, #161b22));
+  filter: none !important;
+}
+.edge-canvas.edge-canvas--no-hover-fx .piece:hover {
+  transform: none !important;
+  filter: none !important;
+}
+.edge-canvas.edge-canvas--no-hover-fx .piece:hover .piece__edge,
+.edge-canvas.edge-canvas--no-hover-fx .piece__edge:hover {
+  stroke: var(--puzzle-stroke, var(--stroke-soft, #3a414d));
+  stroke-width: 1.25;
+  filter: none !important;
+  animation: none !important;
+}
+
+/* --- Click (mouse-down / :active) off ----------------------------------- */
+.edge-canvas.edge-canvas--no-click-fx .piece:active .piece__body {
+  fill: var(--puzzle-fill, var(--surface, #161b22));
+  filter: none !important;
+}
+.edge-canvas.edge-canvas--no-click-fx .piece:active {
+  transform: none !important;
+  filter: none !important;
+}
+.edge-canvas.edge-canvas--no-click-fx .piece:active .piece__edge,
+.edge-canvas.edge-canvas--no-click-fx .piece__edge:active {
+  stroke: var(--puzzle-stroke, var(--stroke-soft, #3a414d));
+  stroke-width: 1.25;
+  filter: none !important;
+  animation: none !important;
+}
