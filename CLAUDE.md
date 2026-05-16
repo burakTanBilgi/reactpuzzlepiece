@@ -35,13 +35,18 @@ src/
     useProject.js             — React hook: state + auto-save + lifecycle
     CLAUDE.md
   ui/                         — App shell + pages + components
-    App.jsx                   — page switcher + theme state
-    components/               — PageNav, GridCanvas, EditCanvas,
-                                EdgesPanel, ContentPanel, EdgeEditorCanvas,
-                                ContentCanvas, ImportDialog, SliderRow,
-                                ViewPanel, PreviewSvg, BackgroundsPanel
-    components/edges/         — HintCard, LayerCard, SelectedEdgeCard,
-                                StyleControls, constants
+    App.jsx                   — page switcher + theme state (lazy-loads non-landing pages)
+    components/               — PageNav, GridCanvas, EdgeEditorCanvas,
+                                ImportDialog, SliderRow, ViewPanel,
+                                PreviewSvg, BackgroundsPanel, AccordionCard
+    components/inspector/     — Inspector (accordion of tier cards),
+                                CascadeStrip, ProjectDefaultsCard,
+                                PieceInspector, EdgeInspector,
+                                EdgeTierEditor, CellTierEditor,
+                                InspectorSubcard, InspectorTabs, SourcePill,
+                                cascade-source (pure helpers)
+    components/interactions/  — EffectsPicker (per-tier animation editor)
+    components/edges/         — StyleControls, constants
     pages/                    — Landing / Docs / Projects / Preview / Grid / Edit
     hooks/useFileInput.js     — hidden-input + open-button boilerplate
     utils/formatTime.js       — relative-time helper
@@ -126,11 +131,11 @@ type Background = {
 | Projects | Project library + JSON import.                                              |
 | Preview  | Large preview of current project; rename it; jump to Grid or Edit; **export menu** (JSON / single-file / ZIP) at top of side panel. |
 | Grid     | Cell grid (in `ViewPanel` for pan/zoom): drag-select, merge/unmerge, resize, color, **paste/CSV import**, click/drag row & column numbers to delete, **multi-piece background images** (upload or Ctrl+V into selected cells). |
-| Edit     | Same canvas (in `ViewPanel`), two modes selected from the side panel: **Edges** (cascade of default → inner/outer → cell → per-edge; clicking a piece body opens a cell-tier card that bulk-edits all of its edges) and **Content** (text/image content per piece). |
+| Edit     | Same canvas (in `ViewPanel`). Selection-driven side panel: clicking a piece or edge opens a tier-aware Inspector with five accordion cards — `Default → Inner → Outer → Piece → Edge` — that share `expandedTier` state with the cascade strip. One card open at a time; only that card's body scrolls. A pair of icon toggles above the inspector independently silences hover- and click-state previews on the canvas. |
 
 The last visited page is persisted to `localStorage[hakoniwa:lastPage]`; first-time visitors land on Landing.
 
-The Edit page wires shared canvas + a `ModeSwitch` in the side panel; the underlying `PuzzleBoard` renders identically in both modes — only the overlay/interaction changes (`EdgeEditorCanvas` vs `ContentCanvas`). Selection state is preserved per mode across mode switches.
+The Edit page uses one canvas (`EdgeEditorCanvas`) with both edge hit-rects and piece clicks always live; the Inspector adapts to selection without the user picking a mode. Selection state lives on `EditPage` so the canvas can read it; edge and piece selections are mutually exclusive. Non-landing pages are `React.lazy`-loaded so the initial bundle stays small.
 
 ## Export options
 

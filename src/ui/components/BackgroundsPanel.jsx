@@ -14,8 +14,7 @@ export default function BackgroundsPanel({
   const { inputProps, open } = useFileInput(onAddImage);
 
   return (
-    <section className="card">
-      <h3 className="card__title">Backgrounds</h3>
+    <>
       <p className="hint">
         {selectionRect
           ? `Image will fill ${selectionRect.cMax - selectionRect.cMin + 1}×${selectionRect.rMax - selectionRect.rMin + 1} selected cells, sliced across the underlying pieces.`
@@ -72,6 +71,6 @@ export default function BackgroundsPanel({
           })}
         </div>
       )}
-    </section>
+    </>
   );
 }

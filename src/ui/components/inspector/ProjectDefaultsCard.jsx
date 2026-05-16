@@ -2,26 +2,18 @@ import EdgeTierEditor from './EdgeTierEditor.jsx';
 import CellTierEditor from './CellTierEditor.jsx';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 
-// Inspector view shown when nothing is selected on the canvas. Surfaces the
-// project-wide defaults plus any inner/outer layer overrides. Clicking a
-// cascade strip pill toggles the corresponding tier — `expandedTier` from
-// the parent decides which non-default tier is currently open.
+// Body of the "Default" accordion card. The Inner / Outer / Piece / Edge
+// tiers are owned by Inspector.jsx as sibling accordion cards now, so this
+// component only renders the project-wide default editors.
 export default function ProjectDefaultsCard({
   project,
-  expandedTier, // 'default' | 'inner' | 'outer' | null
-  // edge setters
   setDefaultEdgeEffect, setDefaultEdgeConfig, setDefaultEdgeEffects,
-  setLayerEffect, setLayerConfig, clearLayer, setLayerEffects,
-  // cell setters
   setDefaultCellEffects,
 }) {
   const defaultEdge = project.edges.default;
   const defaultEdgeEffect = defaultEdge.effect;
   const defaultEdgeConfig = defaultEdge.config ?? DEFAULT_WAVE;
   const defaultEdgeEffects = defaultEdge.effects || {};
-
-  const innerLayer = project.edges.inner;
-  const outerLayer = project.edges.outer;
 
   const defaultCellEffects = project?.cells?.default?.effects || {};
 
@@ -34,7 +26,7 @@ export default function ProjectDefaultsCard({
 
       <EdgeTierEditor
         title="Default edges"
-        accent={expandedTier === 'default'}
+        accent
         effect={defaultEdgeEffect}
         config={defaultEdgeConfig}
         ownEffects={defaultEdgeEffects}
@@ -46,41 +38,11 @@ export default function ProjectDefaultsCard({
 
       <CellTierEditor
         title="Default body"
-        accent={expandedTier === 'default'}
+        accent
         ownEffects={defaultCellEffects}
         inheritedEffects={{}}
         onChange={setDefaultCellEffects}
       />
-
-      {expandedTier === 'inner' && (
-        <EdgeTierEditor
-          title="Inner edges"
-          accent
-          effect={innerLayer?.effect ?? defaultEdgeEffect}
-          config={innerLayer?.config ?? defaultEdgeConfig}
-          ownEffects={innerLayer?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave' ? (innerLayer?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setLayerConfig('inner', patch)}
-          onChangeEffects={(map) => setLayerEffects('inner', map)}
-          onClear={innerLayer ? () => clearLayer('inner') : null}
-        />
-      )}
-
-      {expandedTier === 'outer' && (
-        <EdgeTierEditor
-          title="Outer edges"
-          accent
-          effect={outerLayer?.effect ?? defaultEdgeEffect}
-          config={outerLayer?.config ?? defaultEdgeConfig}
-          ownEffects={outerLayer?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave' ? (outerLayer?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setLayerConfig('outer', patch)}
-          onChangeEffects={(map) => setLayerEffects('outer', map)}
-          onClear={outerLayer ? () => clearLayer('outer') : null}
-        />
-      )}
     </>
   );
 }

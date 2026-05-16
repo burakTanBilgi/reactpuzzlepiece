@@ -1,27 +1,23 @@
-/* Sidebar layout shared by Grid / Edges / Content editor pages. */
+/* Sidebar layout shared by Grid + Edit pages.
+ *
+ * The rail is height-bounded by its flex parent (the page row, which has
+ * min-height: 0 set in App.css). It never scrolls; its children are
+ * AccordionCard sections that decide internally which one is open and
+ * flex-grows. Closed cards stay header-only at 32px. The single open card
+ * scrolls its own body when content overflows.
+ */
 
 .side-tools {
   width: 280px;
   flex-shrink: 0;
-  padding: 18px 16px;
+  padding: 12px 14px;
   border-right: 1px solid var(--stroke-idle);
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  gap: 8px;                /* tighter — wave dividers carry the spacing */
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.side-tools__brand {
-  display: flex;
-  justify-content: center;
-  padding: 4px 0 6px;
-}
-
-.side-tools .wave-divider {
-  margin: 2px 0;
-  color: var(--stroke-idle);
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 720px) {

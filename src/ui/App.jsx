@@ -1,13 +1,17 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useProject } from '../grid/useProject.js';
 import PageNav from './components/PageNav.jsx';
 import LandingPage from './pages/LandingPage.jsx';
-import DocsPage from './pages/DocsPage.jsx';
-import ProjectsPage from './pages/ProjectsPage.jsx';
-import PreviewPage from './pages/PreviewPage.jsx';
-import GridEditorPage from './pages/GridEditorPage.jsx';
-import EditPage from './pages/EditPage.jsx';
 import './styles/App.css';
+
+// Non-landing pages are code-split: only Landing + PageNav are in the
+// initial bundle, so first paint stays light. Each lazy chunk loads on
+// demand the first time the user navigates to that page.
+const DocsPage       = lazy(() => import('./pages/DocsPage.jsx'));
+const ProjectsPage   = lazy(() => import('./pages/ProjectsPage.jsx'));
+const PreviewPage    = lazy(() => import('./pages/PreviewPage.jsx'));
+const GridEditorPage = lazy(() => import('./pages/GridEditorPage.jsx'));
+const EditPage       = lazy(() => import('./pages/EditPage.jsx'));
 
 const THEME_KEY = 'hakoniwa:theme';
 const LEGACY_THEME_KEY = 'puzzle-studio:theme';
@@ -60,12 +64,16 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
       <main className="app__page">
-        {page === 'landing'  && <LandingPage  onNav={setPage} />}
-        {page === 'docs'     && <DocsPage     onNav={setPage} />}
-        {page === 'projects' && <ProjectsPage project={project} onNav={setPage} />}
-        {page === 'preview'  && <PreviewPage  project={project} onNav={setPage} />}
-        {page === 'grid'     && <GridEditorPage project={project} />}
-        {page === 'edit'     && <EditPage project={project} />}
+        {page === 'landing'  && <LandingPage onNav={setPage} />}
+        {page !== 'landing'  && (
+          <Suspense fallback={<div className="app__page-loading" aria-live="polite">Loading…</div>}>
+            {page === 'docs'     && <DocsPage     onNav={setPage} />}
+            {page === 'projects' && <ProjectsPage project={project} onNav={setPage} />}
+            {page === 'preview'  && <PreviewPage  project={project} onNav={setPage} />}
+            {page === 'grid'     && <GridEditorPage project={project} />}
+            {page === 'edit'     && <EditPage     project={project} />}
+          </Suspense>
+        )}
       </main>
     </div>
   );

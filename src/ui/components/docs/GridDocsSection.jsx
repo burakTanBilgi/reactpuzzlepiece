@@ -33,9 +33,18 @@ export default function GridDocsSection({ onNav }) {
       <h3>Merging cells into pieces</h3>
       <ul className="doc__list">
         <li>The <strong>Merge</strong> button lights up only when the selection is a complete rectangle.</li>
-        <li><strong>Unmerge</strong> splits the selected groups back into single cells.</li>
+        <li><strong>Unmerge</strong> splits the selected groups back into single cells — the original group's color is copied onto each resulting singleton, so unmerging never silently wipes your color choice.</li>
         <li>Merged groups show their dimensions ({'2×3'} etc.) right in the canvas.</li>
       </ul>
+
+      <h3>The side panel</h3>
+      <p>
+        The Grid page rail is a stack of accordion cards — Selection, Color,
+        Backgrounds, Dimensions, Import, Tips — with one open at a time so
+        every header stays visible. When you select cells while a passive card
+        is open, the rail auto-snaps to <strong>Selection</strong> so Merge / Unmerge / Clear
+        is one click away.
+      </p>
 
       <h3>Sizing and deleting</h3>
       <ul className="doc__list">

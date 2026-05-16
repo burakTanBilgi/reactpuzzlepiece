@@ -3,25 +3,17 @@ import EdgeTierEditor from './EdgeTierEditor.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE, MIXED } from '../edges/constants.js';
 
-// Inspector view for one or more selected edges. The "current" tier is
-// per-edge (byEdge[pairKey]). Lower tiers (default, inner/outer, piece) are
-// shown inline when the user clicks their cascade-strip pill via
-// `expandedTier`.
+// Body of the "Edge" accordion card. Renders the per-edge tier editor for
+// one or more selected edges (collapsing properties that disagree across
+// the selection to MIXED). Higher tiers (default / inner / outer / piece)
+// are owned by Inspector.jsx as sibling accordion cards now.
 export default function EdgeInspector({
   selected, // Set<pairKey>
   project,
   pieces,
   sharedEdges,
-  expandedTier, // 'default' | 'inner' | 'outer' | 'piece' | null
   onClearSelection,
-  // per-edge tier setters
   setEdgeEffect, setEdgeConfig, clearEdgeOverride, setEdgeEffects,
-  // default tier
-  setDefaultEdgeEffect, setDefaultEdgeConfig, setDefaultEdgeEffects,
-  // layer tier
-  setLayerEffect, setLayerConfig, clearLayer, setLayerEffects,
-  // piece tier
-  setPieceEdgeEffect, setPieceEdgeConfig, setPieceEdgeEffects, clearPieceEdgeOverride,
 }) {
   const piecesById = useMemo(() => new Map(pieces.map((p) => [p.id, p])), [pieces]);
 
@@ -29,15 +21,11 @@ export default function EdgeInspector({
   const defaultEdge = edges.default;
   const defaultEdgeEffect = defaultEdge.effect;
   const defaultEdgeConfig = defaultEdge.config ?? DEFAULT_WAVE;
-  const defaultEdgeEffects = defaultEdge.effects || {};
 
   const pairKeys = useMemo(() => [...selected], [selected]);
   const firstPk = pairKeys[0];
   const isOuter = firstPk?.includes('||outer-');
-  const layerKind = isOuter ? 'outer' : 'inner';
-  const layer = edges[layerKind];
 
-  // First touching piece (used for piece-tier editing from edge selection).
   const firstPiece = useMemo(() => {
     if (!firstPk) return null;
     const [pid] = piecesOfEdge(firstPk);
@@ -123,7 +111,6 @@ export default function EdgeInspector({
     for (const pk of pairKeys) clearEdgeOverride(pk);
   };
 
-  // Header label (single edge: "A ↔ B" or "Outer · A")
   const headerSub = (() => {
     if (pairKeys.length !== 1) return `${pairKeys.length} edges`;
     if (isOuter) {
@@ -163,49 +150,6 @@ export default function EdgeInspector({
         onChangeEffects={applyEdgeEffects}
         onClear={resetSelected}
       />
-
-      {expandedTier === 'piece' && firstPiece && (
-        <EdgeTierEditor
-          title={`Piece · ${firstPiece.label || firstPiece.id}`}
-          effect={edges.byPiece?.[firstPiece.id]?.effect ?? defaultEdgeEffect}
-          config={edges.byPiece?.[firstPiece.id]?.config ?? defaultEdgeConfig}
-          ownEffects={edges.byPiece?.[firstPiece.id]?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setPieceEdgeEffect(firstPiece.id, name, name === 'wave'
-            ? (edges.byPiece?.[firstPiece.id]?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setPieceEdgeConfig(firstPiece.id, patch)}
-          onChangeEffects={(map) => setPieceEdgeEffects(firstPiece.id, map)}
-          onClear={edges.byPiece?.[firstPiece.id] ? () => clearPieceEdgeOverride(firstPiece.id) : null}
-        />
-      )}
-
-      {(expandedTier === 'inner' || expandedTier === 'outer') && (
-        <EdgeTierEditor
-          title={expandedTier === 'inner' ? 'Inner edges' : 'Outer edges'}
-          effect={edges[expandedTier]?.effect ?? defaultEdgeEffect}
-          config={edges[expandedTier]?.config ?? defaultEdgeConfig}
-          ownEffects={edges[expandedTier]?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setLayerEffect(expandedTier, name, name === 'wave'
-            ? (edges[expandedTier]?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setLayerConfig(expandedTier, patch)}
-          onChangeEffects={(map) => setLayerEffects(expandedTier, map)}
-          onClear={edges[expandedTier] ? () => clearLayer(expandedTier) : null}
-        />
-      )}
-
-      {expandedTier === 'default' && (
-        <EdgeTierEditor
-          title="Default edges"
-          effect={defaultEdgeEffect}
-          config={defaultEdgeConfig}
-          ownEffects={defaultEdgeEffects}
-          inheritedEffects={{}}
-          onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultEdgeConfig : undefined)}
-          onPatchConfig={setDefaultEdgeConfig}
-          onChangeEffects={setDefaultEdgeEffects}
-        />
-      )}
     </>
   );
 }

@@ -6,9 +6,10 @@ import BackgroundsPanel from '../components/BackgroundsPanel.jsx';
 import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
-import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
-import WaveDivider from '../components/meta/WaveDivider.jsx';
+import AccordionCard from '../components/AccordionCard.jsx';
 import { useFileInput } from '../hooks/useFileInput.js';
+
+const PASSIVE_CARDS = new Set(['dimensions', 'tips', 'import']);
 
 // Curated palette — warm, sophisticated, mode-agnostic.
 const PALETTE = [
@@ -24,6 +25,7 @@ export default function GridEditorPage({ project }) {
   } = project;
   const [selection, setSelection] = useState([]);
   const [showImport, setShowImport] = useState(false);
+  const [openCard, setOpenCard] = useState('selection');
 
   // Bounding rect of the current selection in cell coordinates, or null.
   const selectionRect = useMemo(() => {
@@ -70,6 +72,14 @@ export default function GridEditorPage({ project }) {
     return () => document.removeEventListener('paste', handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectionRect, p?.grid.rows, p?.grid.cols]);
+
+  // Auto-swap to the Selection card the first time the user picks cells while
+  // a non-selection-related card is open. Doesn't override an explicit user
+  // pick of Color / Backgrounds — they're directly relevant to a selection.
+  useEffect(() => {
+    if (selection.length === 0) return;
+    setOpenCard((cur) => (PASSIVE_CARDS.has(cur) ? 'selection' : cur));
+  }, [selection.length]);
 
   const handleImportText = (text, opts) => {
     try {
@@ -137,51 +147,13 @@ export default function GridEditorPage({ project }) {
   return (
     <div className="page-grid">
       <aside className="side-tools">
-        <div className="side-tools__brand">
-          <WaveBrandMark size="sm" />
-        </div>
-
-        <section className="card">
-          <h3 className="card__title">Dimensions</h3>
-          <SliderRow
-            label="Rows" min={MIN_GRID} max={MAX_GRID}
-            value={p.grid.rows}
-            onChange={(v) => setGrid({ rows: v })}
-          />
-          <SliderRow
-            label="Cols" min={MIN_GRID} max={MAX_GRID}
-            value={p.grid.cols}
-            onChange={(v) => setGrid({ cols: v })}
-          />
-          <p className="hint">{p.grid.rows} × {p.grid.cols} cells (max {MAX_GRID}×{MAX_GRID}).</p>
-        </section>
-
-        <WaveDivider amplitude={3} height={10} />
-
-        <section className="card">
-          <h3 className="card__title">Import</h3>
-          <p className="hint">Paste a spreadsheet, or import a CSV file.</p>
-          <div className="action-stack">
-            <button type="button" className="action-btn" onClick={() => setShowImport(true)}>
-              ⎘ Paste data
-            </button>
-            <input
-              {...csvInput.inputProps}
-              type="file"
-              accept=".csv,.tsv,.txt,text/csv"
-              hidden
-            />
-            <button type="button" className="action-btn action-btn--ghost" onClick={csvInput.open}>
-              ↑ Import CSV/TSV file
-            </button>
-          </div>
-          <p className="hint hint--warn">Importing replaces the current grid.</p>
-        </section>
-
-        <WaveDivider amplitude={3} height={10} />
-
-        <section className="card">
-          <h3 className="card__title">Selection</h3>
+        <AccordionCard
+          id="selection"
+          title="Selection"
+          badge={selection.length > 0 ? selection.length : null}
+          open={openCard === 'selection'}
+          onToggle={setOpenCard}
+        >
           <p className="hint">
             {selection.length === 0
               ? 'Drag across cells, or click + Shift to add cells.'
@@ -219,59 +191,113 @@ export default function GridEditorPage({ project }) {
               Selection isn't rectangular — merge requires every cell in a complete rectangle.
             </p>
           )}
-        </section>
+        </AccordionCard>
 
-        <WaveDivider amplitude={3} height={10} />
-
-        {selectedGroupIds.length > 0 && (
-          <section className="card">
-            <h3 className="card__title">
-              Color {selectedGroupIds.length > 1 ? `(${selectedGroupIds.length} pieces)` : ''}
-            </h3>
-            <div className="color-grid">
+        <AccordionCard
+          id="color"
+          title="Color"
+          badge={selectedGroupIds.length > 1 ? selectedGroupIds.length : null}
+          open={openCard === 'color'}
+          onToggle={setOpenCard}
+          disabled={selectedGroupIds.length === 0}
+        >
+          <div className="color-grid">
+            <button
+              type="button"
+              className={`color-swatch color-swatch--clear ${currentColor == null ? 'color-swatch--active' : ''}`}
+              onClick={() => applyColor(null)}
+              title="Clear color"
+              aria-label="Clear color"
+            />
+            {PALETTE.map((c) => (
               <button
+                key={c}
                 type="button"
-                className={`color-swatch color-swatch--clear ${currentColor == null ? 'color-swatch--active' : ''}`}
-                onClick={() => applyColor(null)}
-                title="Clear color"
-                aria-label="Clear color"
+                className={`color-swatch ${currentColor === c ? 'color-swatch--active' : ''}`}
+                style={{ background: c }}
+                onClick={() => applyColor(c)}
+                title={c}
+                aria-label={`Color ${c}`}
               />
-              {PALETTE.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`color-swatch ${currentColor === c ? 'color-swatch--active' : ''}`}
-                  style={{ background: c }}
-                  onClick={() => applyColor(c)}
-                  title={c}
-                  aria-label={`Color ${c}`}
-                />
-              ))}
-              <label className="color-swatch color-swatch--custom" title="Custom color">
-                <input
-                  type="color"
-                  value={currentColor || '#888888'}
-                  onChange={(e) => applyColor(e.target.value)}
-                />
-              </label>
-            </div>
-          </section>
-        )}
+            ))}
+            <label className="color-swatch color-swatch--custom" title="Custom color">
+              <input
+                type="color"
+                value={currentColor || '#888888'}
+                onChange={(e) => applyColor(e.target.value)}
+              />
+            </label>
+          </div>
+          {selectedGroupIds.length === 0 && (
+            <p className="hint">Select cells to colour them.</p>
+          )}
+        </AccordionCard>
 
-        {selectedGroupIds.length > 0 && <WaveDivider amplitude={3} height={10} />}
+        <AccordionCard
+          id="backgrounds"
+          title="Backgrounds"
+          badge={p.backgrounds?.length || null}
+          open={openCard === 'backgrounds'}
+          onToggle={setOpenCard}
+        >
+          <BackgroundsPanel
+            backgrounds={p.backgrounds || []}
+            selectionRect={selectionRect}
+            onAddImage={addImageFromFile}
+            onUpdate={updateBackground}
+            onRemove={removeBackground}
+          />
+        </AccordionCard>
 
-        <BackgroundsPanel
-          backgrounds={p.backgrounds || []}
-          selectionRect={selectionRect}
-          onAddImage={addImageFromFile}
-          onUpdate={updateBackground}
-          onRemove={removeBackground}
-        />
+        <AccordionCard
+          id="dimensions"
+          title="Dimensions"
+          open={openCard === 'dimensions'}
+          onToggle={setOpenCard}
+        >
+          <SliderRow
+            label="Rows" min={MIN_GRID} max={MAX_GRID}
+            value={p.grid.rows}
+            onChange={(v) => setGrid({ rows: v })}
+          />
+          <SliderRow
+            label="Cols" min={MIN_GRID} max={MAX_GRID}
+            value={p.grid.cols}
+            onChange={(v) => setGrid({ cols: v })}
+          />
+          <p className="hint">{p.grid.rows} × {p.grid.cols} cells (max {MAX_GRID}×{MAX_GRID}).</p>
+        </AccordionCard>
 
-        <WaveDivider amplitude={3} height={10} />
+        <AccordionCard
+          id="import"
+          title="Import"
+          open={openCard === 'import'}
+          onToggle={setOpenCard}
+        >
+          <p className="hint">Paste a spreadsheet, or import a CSV file.</p>
+          <div className="action-stack">
+            <button type="button" className="action-btn" onClick={() => setShowImport(true)}>
+              ⎘ Paste data
+            </button>
+            <input
+              {...csvInput.inputProps}
+              type="file"
+              accept=".csv,.tsv,.txt,text/csv"
+              hidden
+            />
+            <button type="button" className="action-btn action-btn--ghost" onClick={csvInput.open}>
+              ↑ Import CSV/TSV file
+            </button>
+          </div>
+          <p className="hint hint--warn">Importing replaces the current grid.</p>
+        </AccordionCard>
 
-        <section className="card">
-          <h3 className="card__title">Tips</h3>
+        <AccordionCard
+          id="tips"
+          title="Tips"
+          open={openCard === 'tips'}
+          onToggle={setOpenCard}
+        >
           <ul className="tip-list">
             <li>Drag from any cell to box-select.</li>
             <li>Shift-click to add or remove individual cells.</li>
@@ -281,7 +307,7 @@ export default function GridEditorPage({ project }) {
             <li><strong>Scroll</strong> to zoom; middle-drag or Ctrl+drag to pan.</li>
             <li>Select cells, then <strong>paste an image</strong> (Ctrl+V) to span it across them.</li>
           </ul>
-        </section>
+        </AccordionCard>
       </aside>
 
       <ViewPanel>

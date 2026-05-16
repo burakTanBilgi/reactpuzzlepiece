@@ -17,6 +17,7 @@ vs. the **React hook** that wires them in.
 - `zip.js` — minimal pure-JS ZIP encoder (STORE method, no compression). No external deps.
 - `actions/` — pure mutation factories. Each exports a `xxxActions(setProject) → bag-of-methods` so headless callers (a future API server, tests) can apply the same mutations without React.
   - `grid-actions.js`, `edge-actions.js`, `piece-actions.js`, `background-actions.js`.
+  - **`unmerge` preserves piece colors**: when a multi-cell group is split back into singletons, `pieceColors[oldGroupId]` is copied to each new singleton's id (and the orphaned old key dropped). Same logic kicks in for single-cell "unmerges" so a color set on an unmerged cell survives the no-op group-id reissue.
 
 ### Browser-only
 - `browser-storage.js` — localStorage CRUD (`loadProjects`, `saveProject`, `deleteProject`, `loadCurrentId`, `saveCurrentId`). Keys live under the `hakoniwa:` namespace (with one-time migration from the legacy `puzzle-studio:` keys).
@@ -33,41 +34,39 @@ vs. the **React hook** that wires them in.
   id, name, createdAt, updatedAt,
   grid: { rows, cols, cellSize, groups: string[][] },
   edges: {
-    default: { effect, config? },
-    byEdge: { [pairKey]: { effect, config? } },
+    default: { effect, config?, effects? },             // effects = v2 animation map
+    inner:   null | { effect, config?, effects? },
+    outer:   null | { effect, config?, effects? },
+    byPiece: { [pieceId]: { effect, config?, effects? } },
+    byEdge:  { [pairKey]: { effect, config?, effects? } },
   },
   cells: {
-    default: { hoverAnimation? },                       // project-wide cell hover effect
-    byPiece: { [pieceId]: { hoverAnimation? } },        // per-cell override
+    default: { effects? },                              // project-wide cell effects map
+    byPiece: { [pieceId]: { effects? } },               // per-piece override
   },
   pieceColors:  { [groupId]: '#hex' },
   pieceContent: { [groupId]: ContentSpec },
   backgrounds:  Background[],
 }
 
-// edges shape:
-//   {
-//     default: { effect, config? },                  // floor
-//     inner:   null | { effect, config? },           // override for shared edges
-//     outer:   null | { effect, config? },           // override for outer edges
-//     byPiece: { [pieceId]: { effect, config? } },   // cell tier — every edge of the piece
-//     byEdge:  { [pairKey]: { effect, config? } },   // per-edge — top priority
-//   }
-//
 // Resolution chain (highest first): byEdge > byPiece > inner/outer > default
 // Helpers in compile.js: `edgeKey(idA, idB)` builds a sorted shared-edge key,
 // `piecesOfEdge(pairKey)` reverses it (returns [pieceId] for outer edges or
 // [idA, idB] sorted for shared). For shared edges where both pieces have a
 // byPiece entry, the lex-smaller id wins.
 //
-// Edge `config` also carries an optional `hoverAnimation` (e.g. 'glow',
-// 'wiggle') that rides through the same cascade — see the catalogue in
-// src/ui/components/interactions/animations.js.
+// `config` carries effect-specific keys (frequency, amplitude, inverted) AND
+// stroke-style keys (color, opacity, strokeWidth) — they all cascade through
+// the same chain.
 //
-// Cell hover animations have their own simpler two-tier cascade:
-//   byPiece[pieceId].hoverAnimation > default.hoverAnimation
-// Resolved by `compile.js#resolveCellAnimation` and attached to each piece
-// as `piece.cellAnimation` so PuzzlePiece can apply the matching CSS class.
+// `effects` is the v2 animation map, shaped as:
+//   { '<id>:<trigger>': { id, trigger, scope?, config } }
+// Multiple entries can coexist as long as they target different
+// exclusivity groups in the catalogue (src/puzzle/effects-catalog.js).
+// Cell effects cascade two-deep: byPiece[id].effects > default.effects.
+// Edge effects cascade through all five tiers like the rest of `config`.
+// `newProject()` seeds `'highlight:hover'` on both cells.default and
+// edges.default so a fresh project shows hover feedback out of the box.
 ```
 
 ## ContentSpec

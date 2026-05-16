@@ -20,26 +20,21 @@ const ALIGN_OPTIONS = [
   { value: 'right',  label: '⇥' },
 ];
 
-// Inspector view for a selected piece. Three tabs (Content / Body / Edges)
-// hold the three concerns the previous Edges / Cells split awkwardly mixed.
-// The "current" tier is `Piece`; clicking a strip pill expands a lower-tier
-// sub-card inline beneath the current-tier editor.
+// Body of the "Piece" accordion card. Renders the three-tab editor
+// (Content / Body / Edges) scoped to the selected piece. Lower / higher
+// tiers are owned by Inspector.jsx as sibling accordion cards now.
 export default function PieceInspector({
   piece,
   project,
   activeTab,
   onChangeTab,
-  expandedTier, // 'default' | 'inner' | 'outer' | null
   onClearSelection,
   // content
   setPieceContent, updatePieceContent,
   // cells
-  setCellEffects, setDefaultCellEffects,
+  setCellEffects,
   // edges
   setPieceEdgeEffect, setPieceEdgeConfig, setPieceEdgeEffects, clearPieceEdgeOverride,
-  // higher edge tiers (inline expansion)
-  setDefaultEdgeEffect, setDefaultEdgeConfig, setDefaultEdgeEffects,
-  setLayerEffect, setLayerConfig, clearLayer, setLayerEffects,
 }) {
   const edges = project.edges;
   const defaultEdgeEffect = edges.default.effect;
@@ -74,69 +69,29 @@ export default function PieceInspector({
       )}
 
       {activeTab === 'body' && (
-        <>
-          <CellTierEditor
-            title="This piece's body"
-            accent
-            ownEffects={pieceCellEffects}
-            inheritedEffects={defaultCellEffects}
-            onChange={(map) => setCellEffects(piece.id, map)}
-          />
-          {expandedTier === 'default' && (
-            <CellTierEditor
-              title="Default body"
-              ownEffects={defaultCellEffects}
-              inheritedEffects={{}}
-              onChange={setDefaultCellEffects}
-            />
-          )}
-        </>
+        <CellTierEditor
+          title="This piece's body"
+          accent
+          ownEffects={pieceCellEffects}
+          inheritedEffects={defaultCellEffects}
+          onChange={(map) => setCellEffects(piece.id, map)}
+        />
       )}
 
       {activeTab === 'edges' && (
-        <>
-          <EdgeTierEditor
-            title="This piece's edges"
-            accent
-            effect={pieceEdgeEffect}
-            config={pieceEdgeConfig}
-            ownEffects={cellOverride?.effects || {}}
-            inheritedEffects={defaultEdgeEffects}
-            onSetEffect={(name) => setPieceEdgeEffect(piece.id, name, name === 'wave'
-              ? (cellOverride?.config ?? defaultEdgeConfig) : undefined)}
-            onPatchConfig={(patch) => setPieceEdgeConfig(piece.id, patch)}
-            onChangeEffects={(map) => setPieceEdgeEffects(piece.id, map)}
-            onClear={cellOverride ? () => clearPieceEdgeOverride(piece.id) : null}
-          />
-
-          {(expandedTier === 'inner' || expandedTier === 'outer') && (
-            <EdgeTierEditor
-              title={expandedTier === 'inner' ? 'Inner edges' : 'Outer edges'}
-              effect={edges[expandedTier]?.effect ?? defaultEdgeEffect}
-              config={edges[expandedTier]?.config ?? defaultEdgeConfig}
-              ownEffects={edges[expandedTier]?.effects || {}}
-              inheritedEffects={defaultEdgeEffects}
-              onSetEffect={(name) => setLayerEffect(expandedTier, name, name === 'wave'
-                ? (edges[expandedTier]?.config ?? defaultEdgeConfig) : undefined)}
-              onPatchConfig={(patch) => setLayerConfig(expandedTier, patch)}
-              onChangeEffects={(map) => setLayerEffects(expandedTier, map)}
-              onClear={edges[expandedTier] ? () => clearLayer(expandedTier) : null}
-            />
-          )}
-
-          {expandedTier === 'default' && (
-            <EdgeTierEditor
-              title="Default edges"
-              effect={defaultEdgeEffect}
-              config={defaultEdgeConfig}
-              ownEffects={defaultEdgeEffects}
-              inheritedEffects={{}}
-              onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultEdgeConfig : undefined)}
-              onPatchConfig={setDefaultEdgeConfig}
-              onChangeEffects={setDefaultEdgeEffects}
-            />
-          )}
-        </>
+        <EdgeTierEditor
+          title="This piece's edges"
+          accent
+          effect={pieceEdgeEffect}
+          config={pieceEdgeConfig}
+          ownEffects={cellOverride?.effects || {}}
+          inheritedEffects={defaultEdgeEffects}
+          onSetEffect={(name) => setPieceEdgeEffect(piece.id, name, name === 'wave'
+            ? (cellOverride?.config ?? defaultEdgeConfig) : undefined)}
+          onPatchConfig={(patch) => setPieceEdgeConfig(piece.id, patch)}
+          onChangeEffects={(map) => setPieceEdgeEffects(piece.id, map)}
+          onClear={cellOverride ? () => clearPieceEdgeOverride(piece.id) : null}
+        />
       )}
     </>
   );

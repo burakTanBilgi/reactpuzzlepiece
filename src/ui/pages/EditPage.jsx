@@ -3,7 +3,6 @@ import { listOuterEdges } from '../../grid/compile.js';
 import Inspector       from '../components/inspector/Inspector.jsx';
 import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
 import ViewPanel       from '../components/ViewPanel.jsx';
-import WaveBrandMark   from '../components/meta/WaveBrandMark.jsx';
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
 
@@ -90,10 +89,6 @@ export default function EditPage({ project }) {
   return (
     <div className="page-edit">
       <aside className="side-tools">
-        <div className="side-tools__brand">
-          <WaveBrandMark size="sm" />
-        </div>
-
         <div className="fx-toggle-group" role="group" aria-label="Interaction previews">
           <button
             type="button"
