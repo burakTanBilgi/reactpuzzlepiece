@@ -96,26 +96,28 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  padding: 3px 8px;
+  gap: 4px;
+  padding: 2px 7px;
+  min-height: 22px;
   background: var(--bg-elev);
   border-bottom: 1px solid var(--stroke-idle);
 }
 
 .inspector-subcard__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
 }
 
 .inspector-subcard__body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 5px 7px 6px;
 }
 
 .inspector-subcard--accent {
@@ -235,10 +237,11 @@
 }
 
 .inspector-header__kind {
+  font-family: var(--font-display);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
   margin-right: 6px;
 }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listOuterEdges } from '../../grid/compile.js';
 import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
 import ViewPanel       from '../components/ViewPanel.jsx';
+import Tooltip         from '../components/Tooltip.jsx';
 import ConfirmDialog   from '../components/ConfirmDialog.jsx';
 import CanvasEditUi    from '../components/edit-ui/CanvasEditUi.jsx';
 import LayersEditUi    from '../components/edit-ui/LayersEditUi.jsx';
@@ -241,48 +242,53 @@ function TopActionRow({
   return (
     <div className="edit-top-row">
       <div className="fx-toggle-group" role="group" aria-label="Interaction previews">
-        <button
-          type="button"
-          className={`fx-icon-btn${hoverFxEnabled ? '' : ' fx-icon-btn--off'}`}
-          onClick={onToggleHover}
-          title={`Hover previews: ${hoverFxEnabled ? 'on' : 'off'}`}
-          aria-pressed={hoverFxEnabled}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
-            <path d="M2 14 Q4.5 12.5 7 14 T12.5 14" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          className={`fx-icon-btn${clickFxEnabled ? '' : ' fx-icon-btn--off'}`}
-          onClick={onToggleClick}
-          title={`Click previews: ${clickFxEnabled ? 'on' : 'off'}`}
-          aria-pressed={clickFxEnabled}
-        >
-          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-            <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
-            <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-              <line x1="12.5" y1="3.5" x2="14.5" y2="1.5" />
-              <line x1="13" y1="6" x2="15.4" y2="6" />
-              <line x1="12.5" y1="8.5" x2="14.5" y2="10.5" />
-            </g>
-          </svg>
-        </button>
+        <Tooltip label={`Hover previews: ${hoverFxEnabled ? 'on' : 'off'}`}>
+          <button
+            type="button"
+            className={`fx-icon-btn${hoverFxEnabled ? '' : ' fx-icon-btn--off'}`}
+            onClick={onToggleHover}
+            aria-pressed={hoverFxEnabled}
+            aria-label="Toggle hover previews"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
+              <path d="M2 14 Q4.5 12.5 7 14 T12.5 14" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+            </svg>
+          </button>
+        </Tooltip>
+        <Tooltip label={`Click previews: ${clickFxEnabled ? 'on' : 'off'}`}>
+          <button
+            type="button"
+            className={`fx-icon-btn${clickFxEnabled ? '' : ' fx-icon-btn--off'}`}
+            onClick={onToggleClick}
+            aria-pressed={clickFxEnabled}
+            aria-label="Toggle click previews"
+          >
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+              <path d="M3 2 L3 11 L6 8 L8 12 L9.4 11.4 L7.4 8 L11 8 Z" fill="currentColor" />
+              <g stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+                <line x1="12.5" y1="3.5" x2="14.5" y2="1.5" />
+                <line x1="13" y1="6" x2="15.4" y2="6" />
+                <line x1="12.5" y1="8.5" x2="14.5" y2="10.5" />
+              </g>
+            </svg>
+          </button>
+        </Tooltip>
       </div>
-      <button
-        type="button"
-        className="clear-overrides-btn"
-        onClick={onClearOverrides}
-        disabled={!hasOverrides}
-        title={hasOverrides ? 'Clear all overrides' : 'No overrides set'}
-        aria-label="Clear all overrides"
-      >
-        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 8 A5 5 0 1 0 5.2 4" />
-          <path d="M3 2 L3 5 L6 5" />
-        </svg>
-      </button>
+      <Tooltip label={hasOverrides ? 'Clear all overrides' : 'No overrides set'}>
+        <button
+          type="button"
+          className="clear-overrides-btn"
+          onClick={onClearOverrides}
+          disabled={!hasOverrides}
+          aria-label="Clear all overrides"
+        >
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 8 A5 5 0 1 0 5.2 4" />
+            <path d="M3 2 L3 5 L6 5" />
+          </svg>
+        </button>
+      </Tooltip>
       <div className="edit-top-row__picker">{modePickerSlot}</div>
     </div>
   );

@@ -5,6 +5,7 @@ import InspectorTabs from './InspectorTabs.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
 import SliderRow from '../SliderRow.jsx';
 import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { useFileInput } from '../../hooks/useFileInput.js';
 import { FIT_OPTIONS } from '../../utils/fitOptions.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
@@ -56,7 +57,11 @@ export default function PieceInspector({
           <span className="inspector-header__kind">Piece</span>
           <span className="inspector-header__title">{piece.label || piece.id}</span>
         </div>
-        <button type="button" className="link-btn" onClick={onClearSelection}>clear</button>
+        <Tooltip label="Clear selection">
+          <button type="button" className="icon-action-btn" aria-label="Clear selection" onClick={onClearSelection}>
+            <Icon name="close" size={13} />
+          </button>
+        </Tooltip>
       </div>
 
       <InspectorTabs tabs={TABS} active={activeTab} onPick={onChangeTab} />
@@ -153,8 +158,15 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
       title="Content"
       accent
       actions={content
-        ? <button type="button" className="link-btn"
-            onClick={() => setPieceContent(piece.id, null)}>clear</button>
+        ? (
+          <Tooltip label="Clear content">
+            <button type="button" className="icon-action-btn icon-action-btn--danger"
+              aria-label="Clear content"
+              onClick={() => setPieceContent(piece.id, null)}>
+              <Icon name="trash" size={13} />
+            </button>
+          </Tooltip>
+        )
         : null}
     >
       <div className="effect-chips">
@@ -185,14 +197,15 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
             <label className="form-row__label">Align</label>
             <div className="effect-chips effect-chips--icons">
               {ALIGN_OPTIONS.map((a) => (
-                <button key={a.value} type="button"
-                  className={`chip chip--icon ${(content.align || 'center') === a.value ? 'chip--active' : ''}`}
-                  onClick={() => updatePieceContent(piece.id, { align: a.value })}
-                  title={a.label}
-                  aria-label={a.label}
-                  aria-pressed={(content.align || 'center') === a.value}>
-                  <Icon name={a.icon} size={14} />
-                </button>
+                <Tooltip key={a.value} label={a.label}>
+                  <button type="button"
+                    className={`chip chip--icon ${(content.align || 'center') === a.value ? 'chip--active' : ''}`}
+                    onClick={() => updatePieceContent(piece.id, { align: a.value })}
+                    aria-label={a.label}
+                    aria-pressed={(content.align || 'center') === a.value}>
+                    <Icon name={a.icon} size={14} />
+                  </button>
+                </Tooltip>
               ))}
             </div>
           </div>
@@ -231,12 +244,13 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
                 <label className="form-row__label">Fit</label>
                 <div className="effect-chips">
                   {FIT_OPTIONS.map((f) => (
-                    <button key={f.value} type="button"
-                      className={`chip chip--sm ${(content.fit || 'cover') === f.value ? 'chip--active' : ''}`}
-                      onClick={() => updatePieceContent(piece.id, { fit: f.value })}
-                      title={f.hint}>
-                      {f.label}
-                    </button>
+                    <Tooltip key={f.value} label={f.hint}>
+                      <button type="button"
+                        className={`chip chip--sm ${(content.fit || 'cover') === f.value ? 'chip--active' : ''}`}
+                        onClick={() => updatePieceContent(piece.id, { fit: f.value })}>
+                        {f.label}
+                      </button>
+                    </Tooltip>
                   ))}
                 </div>
               </div>

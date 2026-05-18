@@ -157,9 +157,10 @@
 }
 
 .floating-panel__title {
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--primary-3);
   white-space: nowrap;
@@ -190,16 +191,79 @@
 }
 
 .floating-panel__body {
-  padding: 10px;
+  padding: 8px 6px 10px 8px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  scrollbar-gutter: stable;
 }
+
+/* Tighten the panel body's scrollbar so it doesn't crowd the rounded
+   bottom-right corner. The thumb is shorter than the full track so the
+   rounded radius is preserved visually. */
+.floating-panel__body::-webkit-scrollbar { width: 6px; }
+.floating-panel__body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 6px 0 10px;
+}
+.floating-panel__body::-webkit-scrollbar-thumb {
+  background: var(--stroke-soft);
+  border-radius: 3px;
+}
+.floating-panel__body::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-2);
+}
+
+/* === Tier pills inside the Defaults drawer ===================== */
+
+.canvas-defaults__tiers {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--bg-elev);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+}
+
+.canvas-defaults__pill {
+  appearance: none;
+  flex: 1;
+  padding: 5px 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background    140ms ease,
+    color         140ms ease,
+    border-color  140ms ease,
+    box-shadow    140ms ease;
+}
+
+.canvas-defaults__pill:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.canvas-defaults__pill--active {
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 6px rgba(184, 96, 42, 0.35);
+}
+
+.canvas-defaults__pill--active:hover { color: white; }
 
 @media (prefers-reduced-motion: reduce) {
   .canvas-nav__btn { transition: none; transform: none !important; }
   .floating-panel { animation: none; }
+  .canvas-defaults__pill { transition: none; }
 }

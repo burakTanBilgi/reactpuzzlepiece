@@ -1,6 +1,7 @@
 import { FIT_OPTIONS } from '../utils/fitOptions.js';
 import { useFileInput } from '../hooks/useFileInput.js';
 import Icon from './Icon.jsx';
+import Tooltip from './Tooltip.jsx';
 
 // Side-panel UI for project-wide background images. Each background covers a
 // rectangular range of cells and renders sliced across whatever pieces happen
@@ -45,27 +46,28 @@ export default function BackgroundsPanel({
                 <div className="bg-item__body">
                   <div className="bg-item__head">
                     <span className="bg-item__label">#{i + 1} · {cells}</span>
-                    <button
-                      type="button"
-                      className="bg-item__del"
-                      onClick={() => onRemove(bg.id)}
-                      title="Delete this background"
-                      aria-label="Delete background"
-                    >
-                      <Icon name="trash" size={13} />
-                    </button>
+                    <Tooltip label="Delete this background">
+                      <button
+                        type="button"
+                        className="bg-item__del"
+                        onClick={() => onRemove(bg.id)}
+                        aria-label="Delete background"
+                      >
+                        <Icon name="trash" size={13} />
+                      </button>
+                    </Tooltip>
                   </div>
                   <div className="effect-chips">
                     {FIT_OPTIONS.map((f) => (
-                      <button
-                        key={f.value}
-                        type="button"
-                        className={`chip chip--sm ${(bg.fit || 'cover') === f.value ? 'chip--active' : ''}`}
-                        onClick={() => onUpdate(bg.id, { fit: f.value })}
-                        title={f.hint}
-                      >
-                        {f.label}
-                      </button>
+                      <Tooltip key={f.value} label={f.hint}>
+                        <button
+                          type="button"
+                          className={`chip chip--sm ${(bg.fit || 'cover') === f.value ? 'chip--active' : ''}`}
+                          onClick={() => onUpdate(bg.id, { fit: f.value })}
+                        >
+                          {f.label}
+                        </button>
+                      </Tooltip>
                     ))}
                   </div>
                 </div>

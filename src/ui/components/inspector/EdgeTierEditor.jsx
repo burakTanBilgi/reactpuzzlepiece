@@ -3,6 +3,15 @@ import StyleControls from '../edges/StyleControls.jsx';
 import EffectsPicker from '../interactions/EffectsPicker.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
 import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
+
+const ResetButton = ({ onClick, label = 'Reset' }) => (
+  <Tooltip label={label}>
+    <button type="button" className="icon-action-btn" aria-label={label} onClick={onClick}>
+      <Icon name="reset" size={13} />
+    </button>
+  </Tooltip>
+);
 import { EFFECT_NAMES, EDGE_EFFECTS } from '../../../puzzle';
 import { DEFAULT_WAVE, MIXED, cap } from '../edges/constants.js';
 
@@ -46,20 +55,21 @@ export default function EdgeTierEditor({
         <InspectorSubcard
           title="Shape & stroke"
           accent={accent}
-          actions={onClear ? <button type="button" className="link-btn" onClick={onClear}>reset</button> : null}
+          actions={onClear ? <ResetButton onClick={onClear} /> : null}
         >
           <div className="picker-split">
             <div className="picker-split__list" role="tablist" aria-label="Connector effect">
               {EFFECT_NAMES.map((name) => (
-                <button key={name} type="button"
-                  role="tab"
-                  aria-selected={effect === name}
-                  className={`chip chip--pick${effect === name ? ' chip--on chip--editing' : ''}`}
-                  onClick={() => onSetEffect?.(name)}
-                  title={cap(name)}
-                  aria-label={cap(name)}>
-                  <Icon name={`eff-${name}`} size={16} />
-                </button>
+                <Tooltip key={name} label={cap(name)} side="right">
+                  <button type="button"
+                    role="tab"
+                    aria-selected={effect === name}
+                    className={`chip chip--pick${effect === name ? ' chip--on chip--editing' : ''}`}
+                    onClick={() => onSetEffect?.(name)}
+                    aria-label={cap(name)}>
+                    <Icon name={`eff-${name}`} size={16} />
+                  </button>
+                </Tooltip>
               ))}
             </div>
 
@@ -69,20 +79,27 @@ export default function EdgeTierEditor({
               )}
 
               {showInvert && (
-                <button type="button"
-                  className={`chip chip--icon invert-toggle ${config?.inverted === true ? 'chip--active' : ''}`}
-                  onClick={() => onPatchConfig?.({ inverted: !(config?.inverted === true) })}
-                  title="Invert tab / socket orientation"
-                  aria-label="Invert tab / socket orientation"
-                  aria-pressed={config?.inverted === true}>
-                  <Icon name="invert" size={14} />
-                </button>
+                <Tooltip label="Invert tab / socket orientation">
+                  <button type="button"
+                    className={`chip chip--icon invert-toggle ${config?.inverted === true ? 'chip--active' : ''}`}
+                    onClick={() => onPatchConfig?.({ inverted: !(config?.inverted === true) })}
+                    aria-label="Invert tab / socket orientation"
+                    aria-pressed={config?.inverted === true}>
+                    <Icon name="invert" size={14} />
+                  </button>
+                </Tooltip>
               )}
 
               {showWave && (
                 <>
                   <SliderRow
-                    label={<Icon name="prop-freq" size={14} title="Wave frequency" />}
+                    label={
+                      <Tooltip label="Wave frequency">
+                        <span className="sc-label-icon" aria-label="Wave frequency">
+                          <Icon name="prop-freq" size={14} />
+                        </span>
+                      </Tooltip>
+                    }
                     min={0.005} max={0.1} step={0.001}
                     value={config?.frequency === MIXED
                       ? DEFAULT_WAVE.frequency
@@ -90,7 +107,13 @@ export default function EdgeTierEditor({
                     format={(v) => config?.frequency === MIXED ? `· ${v.toFixed(3)}` : v.toFixed(3)}
                     onChange={(v) => onPatchConfig?.({ frequency: v })} />
                   <SliderRow
-                    label={<Icon name="prop-amp" size={14} title="Wave amplitude" />}
+                    label={
+                      <Tooltip label="Wave amplitude">
+                        <span className="sc-label-icon" aria-label="Wave amplitude">
+                          <Icon name="prop-amp" size={14} />
+                        </span>
+                      </Tooltip>
+                    }
                     min={0} max={40} step={1}
                     value={config?.amplitude === MIXED
                       ? DEFAULT_WAVE.amplitude
@@ -109,7 +132,7 @@ export default function EdgeTierEditor({
       <InspectorSubcard
         title="Animations"
         accent={accent}
-        actions={onResetEffects ? <button type="button" className="link-btn" onClick={onResetEffects}>reset</button> : null}
+        actions={onResetEffects ? <ResetButton onClick={onResetEffects} /> : null}
       >
         <EffectsPicker
           catalogue={EDGE_EFFECTS}

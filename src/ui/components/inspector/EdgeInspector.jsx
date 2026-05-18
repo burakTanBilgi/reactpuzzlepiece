@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
+import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE, MIXED } from '../edges/constants.js';
 
@@ -134,7 +136,11 @@ export default function EdgeInspector({
           </span>
           {headerSub && <div className="inspector-header__sub">{headerSub}</div>}
         </div>
-        <button type="button" className="link-btn" onClick={onClearSelection}>clear</button>
+        <Tooltip label="Clear selection">
+          <button type="button" className="icon-action-btn" aria-label="Clear selection" onClick={onClearSelection}>
+            <Icon name="close" size={13} />
+          </button>
+        </Tooltip>
       </div>
 
       <EdgeTierEditor

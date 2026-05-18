@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import EdgeTierEditor from '../inspector/EdgeTierEditor.jsx';
 import CellTierEditor from '../inspector/CellTierEditor.jsx';
+import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 import './FlatEditUi.css';
@@ -174,14 +176,19 @@ export default function FlatEditUi(props) {
           <p className="flat-edit-ui__selection">{selectionLabel}</p>
         </div>
         {(pieceSelected || edgeSelected) && (
-          <button
-            type="button"
-            className="link-btn"
-            onClick={() => {
-              if (pieceSelected) onClearPieceSelection?.();
-              if (edgeSelected)  onClearEdgeSelection?.();
-            }}
-          >clear</button>
+          <Tooltip label="Clear selection">
+            <button
+              type="button"
+              className="icon-action-btn"
+              aria-label="Clear selection"
+              onClick={() => {
+                if (pieceSelected) onClearPieceSelection?.();
+                if (edgeSelected)  onClearEdgeSelection?.();
+              }}
+            >
+              <Icon name="close" size={13} />
+            </button>
+          </Tooltip>
         )}
       </header>
 

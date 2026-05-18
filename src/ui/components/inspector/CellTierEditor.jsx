@@ -1,5 +1,7 @@
 import EffectsPicker from '../interactions/EffectsPicker.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
+import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { CELL_EFFECTS } from '../../../puzzle';
 
 // Reusable editor for any cell-animation cascade tier (default or per-piece).
@@ -16,7 +18,13 @@ export default function CellTierEditor({
     <InspectorSubcard
       title="Body animations"
       accent={accent}
-      actions={onReset ? <button type="button" className="link-btn" onClick={onReset}>reset</button> : null}
+      actions={onReset ? (
+        <Tooltip label="Reset">
+          <button type="button" className="icon-action-btn" aria-label="Reset" onClick={onReset}>
+            <Icon name="reset" size={13} />
+          </button>
+        </Tooltip>
+      ) : null}
     >
       <EffectsPicker
         catalogue={CELL_EFFECTS}

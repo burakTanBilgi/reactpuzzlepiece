@@ -1,3 +1,4 @@
+import Tooltip from '../Tooltip.jsx';
 import { tierLabel } from './cascade-source.js';
 
 // Inline badge that shows where a single property's value comes from in the
@@ -13,13 +14,14 @@ export default function SourcePill({ source, current = false, onJump }) {
   if (!source || source.tier === 'none') return null;
   const label = tierLabel(source.tier, source.kind);
   return (
-    <button
-      type="button"
-      className={`source-pill ${current ? 'source-pill--current' : ''}`}
-      onClick={() => onJump?.(source.tier === 'layer' ? source.kind : source.tier)}
-      title={`Edit at: ${label}`}
-    >
-      from {label}
-    </button>
+    <Tooltip label={`Edit at: ${label}`}>
+      <button
+        type="button"
+        className={`source-pill ${current ? 'source-pill--current' : ''}`}
+        onClick={() => onJump?.(source.tier === 'layer' ? source.kind : source.tier)}
+      >
+        from {label}
+      </button>
+    </Tooltip>
   );
 }

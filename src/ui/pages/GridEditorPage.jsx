@@ -8,6 +8,7 @@ import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
 import AccordionCard from '../components/AccordionCard.jsx';
 import Icon from '../components/Icon.jsx';
+import Tooltip from '../components/Tooltip.jsx';
 import { useFileInput } from '../hooks/useFileInput.js';
 
 const PASSIVE_CARDS = new Set(['dimensions', 'tips', 'import']);
@@ -161,16 +162,17 @@ export default function GridEditorPage({ project }) {
               : `${selection.length} cell${selection.length === 1 ? '' : 's'} selected.`}
           </p>
           <div className="action-stack">
-            <button
-              type="button"
-              className="action-btn action-btn--primary"
-              disabled={!canMerge}
-              onClick={doMerge}
-              title={canMerge ? 'Merge selected cells' : 'Selection must form a complete rectangle'}
-            >
-              <Icon name="merge" size={14} />
-              <span>Merge</span>
-            </button>
+            <Tooltip label={canMerge ? 'Merge selected cells' : 'Selection must form a complete rectangle'}>
+              <button
+                type="button"
+                className="action-btn action-btn--primary"
+                disabled={!canMerge}
+                onClick={doMerge}
+              >
+                <Icon name="merge" size={14} />
+                <span>Merge</span>
+              </button>
+            </Tooltip>
             <button
               type="button"
               className="action-btn"
@@ -205,31 +207,34 @@ export default function GridEditorPage({ project }) {
           disabled={selectedGroupIds.length === 0}
         >
           <div className="color-grid">
-            <button
-              type="button"
-              className={`color-swatch color-swatch--clear ${currentColor == null ? 'color-swatch--active' : ''}`}
-              onClick={() => applyColor(null)}
-              title="Clear color"
-              aria-label="Clear color"
-            />
-            {PALETTE.map((c) => (
+            <Tooltip label="Clear color">
               <button
-                key={c}
                 type="button"
-                className={`color-swatch ${currentColor === c ? 'color-swatch--active' : ''}`}
-                style={{ background: c }}
-                onClick={() => applyColor(c)}
-                title={c}
-                aria-label={`Color ${c}`}
+                className={`color-swatch color-swatch--clear ${currentColor == null ? 'color-swatch--active' : ''}`}
+                onClick={() => applyColor(null)}
+                aria-label="Clear color"
               />
+            </Tooltip>
+            {PALETTE.map((c) => (
+              <Tooltip key={c} label={c}>
+                <button
+                  type="button"
+                  className={`color-swatch ${currentColor === c ? 'color-swatch--active' : ''}`}
+                  style={{ background: c }}
+                  onClick={() => applyColor(c)}
+                  aria-label={`Color ${c}`}
+                />
+              </Tooltip>
             ))}
-            <label className="color-swatch color-swatch--custom" title="Custom color">
-              <input
-                type="color"
-                value={currentColor || '#888888'}
-                onChange={(e) => applyColor(e.target.value)}
-              />
-            </label>
+            <Tooltip label="Custom color">
+              <label className="color-swatch color-swatch--custom">
+                <input
+                  type="color"
+                  value={currentColor || '#888888'}
+                  onChange={(e) => applyColor(e.target.value)}
+                />
+              </label>
+            </Tooltip>
           </div>
           {selectedGroupIds.length === 0 && (
             <p className="hint">Select cells to colour them.</p>

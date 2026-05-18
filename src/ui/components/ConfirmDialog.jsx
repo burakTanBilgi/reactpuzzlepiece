@@ -45,7 +45,7 @@ export default function ConfirmDialog({
             type="button"
             className="modal__close"
             onClick={onCancel}
-            aria-label="Cancel"
+            aria-label="Close"
           >
             <Icon name="close" size={14} />
           </button>

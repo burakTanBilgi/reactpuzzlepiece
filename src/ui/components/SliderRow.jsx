@@ -61,7 +61,6 @@ export default function SliderRow({
               type="button"
               className={`tile-preset${i === closestIdx ? ' tile-preset--active' : ''}`}
               onClick={() => onChange(p)}
-              title={format ? format(p) : String(p)}
             >
               {format ? format(p) : String(p)}
             </button>

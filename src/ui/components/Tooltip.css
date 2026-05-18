@@ -1,0 +1,157 @@
+/* Floating tooltip — portalled to document.body so it escapes any
+   `overflow: hidden` ancestor clipping. Positioned via getBoundingClientRect
+   in Tooltip.jsx; this stylesheet only handles look + arrow placement.
+
+   Look: soft pill with a warm amber-tinted glass surface, a hair of
+   accent on the leading edge, and a generous shadow that fades out
+   slowly so the chip floats rather than slabs against the page. */
+
+.tip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg,
+      rgba(36, 30, 47, 0.97) 0%,
+      rgba(28, 23, 38, 0.97) 100%);
+  color: var(--text);
+  border: 1px solid rgba(214, 139, 84, 0.22);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  white-space: nowrap;
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(214, 139, 84, 0.06);
+  animation: tip-fade 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translate(-50%, -100%);
+}
+
+:root[data-theme='light'] .tip {
+  background:
+    linear-gradient(180deg,
+      rgba(255, 252, 247, 0.98) 0%,
+      rgba(248, 242, 232, 0.98) 100%);
+  border-color: rgba(184, 96, 42, 0.22);
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(74, 55, 32, 0.08),
+    0 8px 24px rgba(74, 55, 32, 0.18);
+}
+
+.tip--bottom { transform: translate(-50%, 0); }
+.tip--left   { transform: translate(-100%, -50%); }
+.tip--right  { transform: translate(0, -50%); }
+
+/* Soft dot-arrow — a small amber dot rather than a sharp wedge.
+   Reads as decorative direction, not visual noise. */
+.tip::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-2), var(--primary-1));
+  box-shadow: 0 0 6px rgba(214, 139, 84, 0.5);
+}
+
+.tip--top::after    { bottom: -3px;  left: 50%; margin-left: -2.5px; }
+.tip--bottom::after { top: -3px;     left: 50%; margin-left: -2.5px; }
+.tip--left::after   { right: -3px;   top: 50%;  margin-top: -2.5px;  }
+.tip--right::after  { left: -3px;    top: 50%;  margin-top: -2.5px;  }
+
+@keyframes tip-fade {
+  from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)) scale(0.94); }
+  to   { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+
+/* Adjust fade origin for non-top sides — the animation's transform must
+   match the resting transform so the entry doesn't snap. */
+.tip--bottom { animation-name: tip-fade-bottom; }
+.tip--left   { animation-name: tip-fade-left; }
+.tip--right  { animation-name: tip-fade-right; }
+
+@keyframes tip-fade-bottom {
+  from { opacity: 0; transform: translate(-50%, -4px) scale(0.94); }
+  to   { opacity: 1; transform: translate(-50%, 0)    scale(1); }
+}
+
+@keyframes tip-fade-left {
+  from { opacity: 0; transform: translate(calc(-100% + 4px), -50%) scale(0.94); }
+  to   { opacity: 1; transform: translate(-100%, -50%)              scale(1); }
+}
+
+@keyframes tip-fade-right {
+  from { opacity: 0; transform: translate(-4px, -50%) scale(0.94); }
+  to   { opacity: 1; transform: translate(0, -50%)    scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip { animation: none; }
+}
+
+/* === Icon action button ===========================================
+   Compact square button used as an icon-only "reset" / "clear" /
+   "remove" trigger. Paired with <Tooltip> for the text label. */
+.icon-action-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition:
+    transform     160ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    color         140ms ease,
+    background    140ms ease,
+    border-color  140ms ease;
+}
+
+.icon-action-btn:hover:not(:disabled) {
+  color: var(--primary-3);
+  background: var(--accent-tint);
+  border-color: var(--primary-2);
+  transform: translateY(-1px);
+}
+
+.icon-action-btn:active:not(:disabled) {
+  transform: scale(0.9);
+  transition-duration: 60ms;
+}
+
+.icon-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.icon-action-btn--danger:hover:not(:disabled) {
+  color: var(--danger-2);
+  background: rgba(200, 112, 112, 0.10);
+  border-color: var(--danger-2);
+}
+
+.icon-action-btn--sm {
+  width: 18px;
+  height: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-action-btn { transition: none; transform: none !important; }
+}

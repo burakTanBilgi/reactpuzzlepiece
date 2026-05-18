@@ -92,7 +92,7 @@ export default function ViewPanel({ children, ...props }) {
     <section className="view-panel">
       <div className="view-panel__hud">
         <span className="view-panel__zoom">{Math.round(scale * 100)}%</span>
-        <button type="button" className="view-panel__reset" onClick={resetView} title="Reset view">
+        <button type="button" className="view-panel__reset" onClick={resetView}>
           Reset View
         </button>
         <span className="view-panel__hint">Scroll to zoom · Middle-drag or Ctrl+drag to pan</span>

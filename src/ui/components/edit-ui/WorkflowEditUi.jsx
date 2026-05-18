@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import EdgeTierEditor from '../inspector/EdgeTierEditor.jsx';
 import CellTierEditor from '../inspector/CellTierEditor.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
@@ -28,18 +29,19 @@ export default function WorkflowEditUi(props) {
     <div className="workflow-edit-ui">
       <div className="workflow-edit-ui__strip" role="tablist" aria-label="Edit task">
         {TASKS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={task === t.id}
-            className={`workflow-tab${task === t.id ? ' workflow-tab--active' : ''}`}
-            onClick={() => setTask(t.id)}
-            title={t.blurb}
-          >
-            <Icon name={t.icon} size={14} />
-            <span>{t.label}</span>
-          </button>
+          <Tooltip key={t.id} label={t.blurb}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={task === t.id}
+              aria-label={t.label}
+              className={`workflow-tab${task === t.id ? ' workflow-tab--active' : ''}`}
+              onClick={() => setTask(t.id)}
+            >
+              <Icon name={t.icon} size={14} />
+              <span className="workflow-tab__label">{t.label}</span>
+            </button>
+          </Tooltip>
         ))}
       </div>
 
@@ -147,34 +149,37 @@ function PaintTask({ project, selectedPieceId, selectedEdges, setPieceColor }) {
             </p>
           )}
           <div className="color-grid">
-            <button
-              type="button"
-              className={`color-swatch color-swatch--clear${currentColor == null ? ' color-swatch--active' : ''}`}
-              onClick={() => setColor(null)}
-              disabled={!hasSelection}
-              title="Clear color"
-              aria-label="Clear color"
-            />
-            {PALETTE.map((c) => (
+            <Tooltip label="Clear color">
               <button
-                key={c}
                 type="button"
-                className={`color-swatch${currentColor === c ? ' color-swatch--active' : ''}`}
-                style={{ background: c }}
-                onClick={() => setColor(c)}
+                className={`color-swatch color-swatch--clear${currentColor == null ? ' color-swatch--active' : ''}`}
+                onClick={() => setColor(null)}
                 disabled={!hasSelection}
-                title={c}
-                aria-label={`Color ${c}`}
+                aria-label="Clear color"
               />
+            </Tooltip>
+            {PALETTE.map((c) => (
+              <Tooltip key={c} label={c}>
+                <button
+                  type="button"
+                  className={`color-swatch${currentColor === c ? ' color-swatch--active' : ''}`}
+                  style={{ background: c }}
+                  onClick={() => setColor(c)}
+                  disabled={!hasSelection}
+                  aria-label={`Color ${c}`}
+                />
+              </Tooltip>
             ))}
-            <label className="color-swatch color-swatch--custom" title="Custom color">
-              <input
-                type="color"
-                value={currentColor || '#888888'}
-                onChange={(e) => setColor(e.target.value)}
-                disabled={!hasSelection}
-              />
-            </label>
+            <Tooltip label="Custom color">
+              <label className="color-swatch color-swatch--custom">
+                <input
+                  type="color"
+                  value={currentColor || '#888888'}
+                  onChange={(e) => setColor(e.target.value)}
+                  disabled={!hasSelection}
+                />
+              </label>
+            </Tooltip>
           </div>
         </div>
       }

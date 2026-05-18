@@ -76,7 +76,6 @@ export default function PreviewPage({ project, onNav }) {
           <h1
             className="preview-info__name"
             onClick={() => setEditingName(true)}
-            title="Click to rename"
           >
             {p.name || 'Untitled'}
           </h1>

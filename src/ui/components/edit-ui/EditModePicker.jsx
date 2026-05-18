@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { ThumbCanvas, ThumbLayers, ThumbFlat, ThumbModes } from './preview-thumbs.jsx';
 import './EditModePicker.css';
 
@@ -80,18 +81,19 @@ export default function EditModePicker({ mode, onChangeMode, tiles, onChangeTile
 
   return (
     <>
-      <button
-        ref={btnRef}
-        type="button"
-        className={`mode-picker__btn${open ? ' mode-picker__btn--open' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-        title={`Layout: ${activeMode.label} (click to switch)`}
-        aria-label={`Switch Edit layout (current: ${activeMode.label})`}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-      >
-        <Icon name="mode-picker" size={14} />
-      </button>
+      <Tooltip label={`Layout: ${activeMode.label} (click to switch)`} side="right" disabled={open}>
+        <button
+          ref={btnRef}
+          type="button"
+          className={`mode-picker__btn${open ? ' mode-picker__btn--open' : ''}`}
+          onClick={() => setOpen((v) => !v)}
+          aria-label={`Switch Edit layout (current: ${activeMode.label})`}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+        >
+          <Icon name="mode-picker" size={14} />
+        </button>
+      </Tooltip>
 
       {open && createPortal(
         <div

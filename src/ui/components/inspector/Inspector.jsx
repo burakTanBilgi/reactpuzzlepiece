@@ -6,7 +6,6 @@ import EdgeInspector from './EdgeInspector.jsx';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
 import { computeTierStates } from './cascade-source.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
-import './Inspector.css';
 
 // Top-level selection-driven inspector. Three modes:
 //

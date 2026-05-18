@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import PreviewSvg from '../components/PreviewSvg.jsx';
+import Tooltip from '../components/Tooltip.jsx';
 import { formatTime } from '../utils/formatTime.js';
 import WaveBrandMark from '../components/meta/WaveBrandMark.jsx';
 import WaveDivider from '../components/meta/WaveDivider.jsx';
@@ -72,11 +73,13 @@ export default function ProjectsPage({ project, onNav }) {
                     {proj.grid.rows}×{proj.grid.cols} · {formatTime(proj.updatedAt)}
                   </div>
                 </button>
-                <button type="button" className="project-tile__del"
-                  onClick={() => { if (confirm(`Delete "${proj.name}"?`)) removeProject(proj.id); }}
-                  title="Delete">
-                  ✕
-                </button>
+                <Tooltip label="Delete project">
+                  <button type="button" className="project-tile__del"
+                    aria-label="Delete project"
+                    onClick={() => { if (confirm(`Delete "${proj.name}"?`)) removeProject(proj.id); }}>
+                    ✕
+                  </button>
+                </Tooltip>
               </div>
             );
           })}

@@ -1,6 +1,15 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { HexColorPicker } from 'react-colorful';
 import SliderRow from '../SliderRow.jsx';
 import Icon from '../Icon.jsx';
+import Tooltip from '../Tooltip.jsx';
 import { MIXED } from './constants.js';
+
+const POP_W = 208;            // 192px picker + 8px×2 padding
+const POP_H_EST = 220;        // height estimate; refined post-mount
+const POP_GAP = 6;
+const VIEWPORT_PAD = 12;
 
 // Color / opacity / thickness — apply to every effect. Lives in the same
 // `config` bag so it cascades through the existing priority chain.
@@ -9,9 +18,9 @@ import { MIXED } from './constants.js';
 // inherits the theme stroke color; the latter sets opacity to 0 / a
 // transparent stroke so the page background shows through.
 //
-// Labels are icon-only (prop-color / prop-opacity / prop-width) — the
-// surrounding picker-split column is narrow, so text labels would crowd
-// out the sliders. Hover the icon for a tooltip.
+// The colour input is `react-colorful`'s `HexColorPicker` revealed in
+// a small popover — replaces the native `<input type="color">` whose
+// grey OS chrome clashed with the dark amber aesthetic.
 export default function StyleControls({ config, onPatchConfig }) {
   const colorMixed   = config?.color === MIXED;
   const opacityMixed = config?.opacity === MIXED;
@@ -22,30 +31,148 @@ export default function StyleControls({ config, onPatchConfig }) {
     : '#888888';
   const colorIsSet = typeof config?.color === 'string' && config.color !== MIXED;
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0, flip: false });
+  const popRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  // Position the portalled popover relative to the swatch via viewport
+  // coordinates. Auto-flip above when the swatch sits near the viewport
+  // bottom, and clamp horizontally so the popover never spills off-screen.
+  useLayoutEffect(() => {
+    if (!pickerOpen) return;
+    const place = () => {
+      const trig = triggerRef.current;
+      if (!trig) return;
+      const r = trig.getBoundingClientRect();
+      const popH = popRef.current?.offsetHeight ?? POP_H_EST;
+      const wantTopBelow = r.bottom + POP_GAP;
+      const overflowsBottom = wantTopBelow + popH > window.innerHeight - VIEWPORT_PAD;
+      const flip = overflowsBottom;
+      const top = flip
+        ? Math.max(VIEWPORT_PAD, r.top - POP_GAP - popH)
+        : wantTopBelow;
+      // Anchor to the swatch's left edge, then clamp inside the viewport.
+      let left = r.left;
+      if (left + POP_W > window.innerWidth - VIEWPORT_PAD) {
+        left = window.innerWidth - VIEWPORT_PAD - POP_W;
+      }
+      if (left < VIEWPORT_PAD) left = VIEWPORT_PAD;
+      setCoords({ top, left, flip });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [pickerOpen]);
+
+  // Outside-click + Esc dismiss for the colour popover.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onClick = (e) => {
+      if (popRef.current?.contains(e.target)) return;
+      if (triggerRef.current?.contains(e.target)) return;
+      setPickerOpen(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [pickerOpen]);
+
   return (
     <div className="style-controls">
-      <div className="form-row" title="Stroke color">
-        <span className="form-row__icon" aria-hidden="true">
-          <Icon name="prop-color" size={14} />
-        </span>
-        <input
-          type="color"
-          className="form-row__color"
-          value={colorValue}
-          onChange={(e) => onPatchConfig({ color: e.target.value })}
-          aria-label="Stroke color"
+      <div className="form-row sc-color-row">
+        <Tooltip label="Stroke color">
+          <span className="form-row__icon" aria-label="Stroke color">
+            <Icon name="prop-color" size={14} />
+          </span>
+        </Tooltip>
+
+        <button
+          ref={triggerRef}
+          type="button"
+          className={`sc-color-swatch${colorIsSet ? '' : ' sc-color-swatch--unset'}`}
+          style={colorIsSet ? { background: colorValue } : undefined}
+          onClick={() => setPickerOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={pickerOpen}
+          aria-label={colorIsSet ? `Stroke color ${colorValue}` : 'Pick stroke color'}
         />
+
+        {pickerOpen && createPortal(
+          <div
+            ref={popRef}
+            className={`sc-color-pop${coords.flip ? ' sc-color-pop--up' : ''}`}
+            role="dialog"
+            aria-label="Pick a color"
+            style={{ top: coords.top, left: coords.left }}
+          >
+            <HexColorPicker
+              color={colorValue}
+              onChange={(c) => onPatchConfig({ color: c })}
+            />
+            <div className="sc-color-pop__foot">
+              <input
+                type="text"
+                className="sc-color-pop__hex"
+                value={colorIsSet ? colorValue : ''}
+                placeholder="#rrggbb"
+                spellCheck={false}
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  if (/^#?[0-9a-fA-F]{6}$/.test(v)) {
+                    onPatchConfig({ color: v.startsWith('#') ? v : `#${v}` });
+                  }
+                }}
+              />
+              {colorIsSet && (
+                <Tooltip label="Reset to theme">
+                  <button
+                    type="button"
+                    className="icon-action-btn icon-action-btn--sm"
+                    aria-label="Reset to theme"
+                    onClick={() => { onPatchConfig({ color: undefined }); setPickerOpen(false); }}
+                  >
+                    <Icon name="reset" size={12} />
+                  </button>
+                </Tooltip>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )}
+
         {colorIsSet ? (
-          <button type="button" className="link-btn" onClick={() => onPatchConfig({ color: undefined })}>
-            reset
-          </button>
+          <Tooltip label="Reset color">
+            <button
+              type="button"
+              className="icon-action-btn icon-action-btn--sm"
+              aria-label="Reset color"
+              onClick={() => onPatchConfig({ color: undefined })}
+            >
+              <Icon name="reset" size={12} />
+            </button>
+          </Tooltip>
         ) : (
           <span className="hint" style={{ marginLeft: 4 }}>{colorMixed ? 'mixed' : 'theme'}</span>
         )}
       </div>
 
       <SliderRow
-        label={<Icon name="prop-opacity" size={14} title="Opacity" />}
+        label={
+          <Tooltip label="Opacity">
+            <span className="sc-label-icon" aria-label="Opacity">
+              <Icon name="prop-opacity" size={14} />
+            </span>
+          </Tooltip>
+        }
         min={0} max={1} step={0.01}
         value={opacityMixed ? 1 : (config?.opacity ?? 1)}
         format={(v) => `${Math.round(v * 100)}%`}
@@ -53,7 +180,13 @@ export default function StyleControls({ config, onPatchConfig }) {
       />
 
       <SliderRow
-        label={<Icon name="prop-width" size={14} title="Stroke width" />}
+        label={
+          <Tooltip label="Stroke width">
+            <span className="sc-label-icon" aria-label="Stroke width">
+              <Icon name="prop-width" size={14} />
+            </span>
+          </Tooltip>
+        }
         min={0} max={10} step={0.25}
         value={widthMixed ? 1.25 : (config?.strokeWidth ?? 1.25)}
         format={(v) => `${v}px`}

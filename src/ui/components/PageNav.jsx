@@ -1,4 +1,5 @@
 import WaveDivider from './meta/WaveDivider.jsx';
+import Tooltip from './Tooltip.jsx';
 
 const PAGES = [
   { id: 'landing',  label: 'Landing',  icon: '⌂' },
@@ -25,15 +26,16 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
         )}
       </div>
 
-      <button
-        type="button"
-        className="page-nav__theme"
-        onClick={onToggleTheme}
-        title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-        aria-label="Toggle theme"
-      >
-        <span aria-hidden>{isDark ? '☾' : '☀'}</span>
-      </button>
+      <Tooltip label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}>
+        <button
+          type="button"
+          className="page-nav__theme"
+          onClick={onToggleTheme}
+          aria-label="Toggle theme"
+        >
+          <span aria-hidden>{isDark ? '☾' : '☀'}</span>
+        </button>
+      </Tooltip>
 
       <nav className="page-nav__tabs">
         {PAGES.map((p) => (

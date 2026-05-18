@@ -238,6 +238,64 @@ const ICONS = {
       <path d="M3.8 5 L5 3.6 L6.2 5" />
     </>
   ),
+  // Radius: dot at center + dashed circle + a labelled spoke.
+  'prop-radius': (
+    <>
+      <circle cx="8" cy="8" r="5" strokeDasharray="1.8 1.4" />
+      <line x1="8" y1="8" x2="12.6" y2="4.6" />
+      <circle cx="8" cy="8" r="1.3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  // Duration: a clock face.
+  'prop-duration': (
+    <>
+      <circle cx="8" cy="8" r="5.5" />
+      <line x1="8" y1="8" x2="8" y2="4.5" />
+      <line x1="8" y1="8" x2="10.5" y2="9.5" />
+    </>
+  ),
+  // Distance: two points connected by a measured bar.
+  'prop-distance': (
+    <>
+      <line x1="3" y1="8" x2="13" y2="8" />
+      <line x1="3" y1="5.5" x2="3" y2="10.5" />
+      <line x1="13" y1="5.5" x2="13" y2="10.5" />
+    </>
+  ),
+  // Intensity: small dot → big dot, ramping.
+  'prop-intensity': (
+    <>
+      <circle cx="3.5" cy="11.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="9" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="5.5" r="2.4" fill="currentColor" stroke="none" />
+    </>
+  ),
+  // Speed: motion lines + arrow.
+  'prop-speed': (
+    <>
+      <path d="M2 5 L9 5" />
+      <path d="M2 8 L11 8" />
+      <path d="M2 11 L9 11" />
+      <path d="M13 8 L10 5.5 M13 8 L10 10.5" />
+    </>
+  ),
+  // Amount: stacked layers (filling a bucket).
+  'prop-amount': (
+    <>
+      <rect x="3" y="3" width="10" height="10" rx="1.2" strokeOpacity="0.5" />
+      <rect x="3" y="9" width="10" height="4" rx="1.2" fill="currentColor" fillOpacity="0.3" stroke="none" />
+      <line x1="3" y1="9" x2="13" y2="9" />
+    </>
+  ),
+  // Size: arrows expanding from center.
+  'prop-size': (
+    <>
+      <path d="M5 5 L3 3 M3 3 L3 5.5 M3 3 L5.5 3" />
+      <path d="M11 11 L13 13 M13 13 L13 10.5 M13 13 L10.5 13" />
+      <path d="M11 5 L13 3 M13 3 L10.5 3 M13 3 L13 5.5" />
+      <path d="M5 11 L3 13 M3 13 L3 10.5 M3 13 L5.5 13" />
+    </>
+  ),
 
   // === Edit-UI mode picker ===========================================
   // 2×2 grid hinting "layout choices".

@@ -1,3 +1,5 @@
+import Tooltip from '../Tooltip.jsx';
+
 // Sticky horizontal cascade visualization at the top of the Inspector.
 // Renders one pill per tier in priority order (left → right is *low → high*
 // because we read the chain bottom-up: a `Default` floor first, then layered
@@ -38,26 +40,25 @@ export default function CascadeStrip({ states, currentTier, onSelectTier }) {
           st.hasOverride && st.applicable ? 'cascade-strip__pill--has' : '',
           isCurrent ? 'cascade-strip__pill--current' : '',
         ].filter(Boolean).join(' ');
+        const tipLabel = !st.applicable
+          ? `${t.label}: not applicable for this selection`
+          : st.hasOverride
+            ? `${t.label}: override set`
+            : `${t.label}: inheriting`;
         return (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={isCurrent}
-            className={classes}
-            disabled={!st.applicable}
-            onClick={() => st.applicable && onSelectTier?.(t.id)}
-            title={
-              !st.applicable
-                ? `${t.label}: not applicable for this selection`
-                : st.hasOverride
-                  ? `${t.label}: override set`
-                  : `${t.label}: inheriting`
-            }
-          >
-            <span className="cascade-strip__dot" aria-hidden />
-            {t.label}
-          </button>
+          <Tooltip key={t.id} label={tipLabel}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isCurrent}
+              className={classes}
+              disabled={!st.applicable}
+              onClick={() => st.applicable && onSelectTier?.(t.id)}
+            >
+              <span className="cascade-strip__dot" aria-hidden />
+              {t.label}
+            </button>
+          </Tooltip>
         );
       })}
     </nav>

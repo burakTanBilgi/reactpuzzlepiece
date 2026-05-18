@@ -23,7 +23,7 @@ export default function LayersPanel({ rows, activeRowId, onPickRow }) {
                 className={`layers-panel__row layers-panel__row--${r.kind}${active ? ' is-active' : ''}`}
                 onClick={() => onPickRow(r)}
                 aria-pressed={active}
-                title={r.label}
+                aria-label={r.label}
               >
                 <span className="layers-panel__row-label">{r.label}</span>
                 <span className="layers-panel__row-status" aria-hidden="true">

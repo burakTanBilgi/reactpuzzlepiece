@@ -15,6 +15,9 @@
 @import '../components/BackgroundsPanel.css';
 @import '../components/AccordionCard.css';
 @import '../components/Icon.css';
+@import '../components/Tooltip.css';
+@import '../components/inspector/Inspector.css';
+@import '../components/edges/StyleControls.css';
 @import '../components/edit-ui/EditModePicker.css';
 @import '../components/edit-ui/CanvasEditUi.css';
 @import '../components/edit-ui/LayersEditUi.css';

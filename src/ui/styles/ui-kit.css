@@ -21,10 +21,11 @@
 
 .card__title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: var(--text-dim);
 }
 
@@ -155,6 +156,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 20px;
   font-size: 11px;
   color: var(--text-dim);
 }
@@ -167,12 +169,27 @@
   justify-content: center;
   flex-shrink: 0;
   width: 18px;          /* icon-only label slot */
+  height: 18px;
   color: var(--text-muted);
 }
 
 .slider-control__label .ico {
   display: block;
 }
+
+/* Wrapper used inside SliderRow labels when the icon needs a hit-target
+   for a Tooltip — keeps the icon centered in the 20px label slot. */
+.sc-label-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--text-muted);
+  transition: color 140ms ease;
+}
+
+.sc-label-icon:hover { color: var(--primary-3); }
 
 .slider-control input[type='range'] {
   flex: 1;
@@ -182,7 +199,7 @@
 }
 
 .slider-control__value {
-  min-width: 36px;
+  min-width: 30px;
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--primary-3);
@@ -196,13 +213,14 @@
   border: 1px solid transparent;
   border-radius: 4px;
   font: inherit;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--primary-3);
-  width: 56px;
+  width: 46px;
+  flex-shrink: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
-  padding: 1px 4px;
+  padding: 1px 3px;
   cursor: text;
   transition: all 120ms ease;
   font-family: inherit;
@@ -307,8 +325,8 @@
    gives the visual cue. Used for connector effects (puzzle/wave/straight)
    and animation effects (highlight, lift, glow, …). */
 .chip--icon {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -332,7 +350,7 @@
 
 .effect-chips--icons {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   flex-wrap: wrap;
 }
 
@@ -340,49 +358,84 @@
    Used inside every tier sub-card (Shape & stroke / Animations /
    Body animations). Narrow scrollable icon column on the left; the right
    column shows the controls for whichever picker entry is currently
-   "editing." The picker stays at its own natural height (align-items:
-   flex-start) and scrolls when it has more icons than fit in the cap
-   below. */
+   "editing." Both columns are bounded so the sub-card never stretches
+   uncontrollably; each column scrolls independently and shows a soft
+   top + bottom fade at all times. The fade is intentionally always-on
+   (not state-driven) so the affordance reads consistently from first
+   load, and the chips' inner padding keeps the first/last icon legible
+   under the 10-px mask edge. */
 .picker-split {
   display: flex;
-  gap: 6px;
-  align-items: flex-start;
+  gap: 5px;
+  align-items: stretch;
   min-height: 0;
 }
 
 .picker-split__list {
-  flex: 0 0 38px;
+  flex: 0 0 32px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
-  padding: 2px;
+  padding: 3px 2px;
   background: var(--bg-elev);
   border: 1px solid var(--stroke-idle);
   border-radius: 7px;
   overflow-y: auto;
-  /* 2 padding + 4 × 28 icon + 3 × 2 gap + 2 padding = 122 px (~4 visible). */
-  max-height: 122px;
-  scrollbar-gutter: stable;
+  /* All 6 cell effects fit naturally: 3 pad + 6×24 + 5×2 + 3 pad = 160px.
+     Edge picker (5 effects) fits in ~134px. Catalogs longer than 6 scroll
+     under the soft mask. */
+  max-height: 160px;
+  align-self: flex-start;
+  /* Narrow column — hide the scrollbar to reclaim horizontal real estate.
+     Scroll still works via wheel/touch, and the icons themselves indicate
+     position in the list. */
+  scrollbar-width: none;
+  /* Soft 5-px fade at each edge — a hint of "more above/below" without
+     dimming the active chip when content fits the column. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 5px,
+    black calc(100% - 5px),
+    transparent 100%
+  );
+          mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 5px,
+    black calc(100% - 5px),
+    transparent 100%
+  );
 }
 
+.picker-split__list::-webkit-scrollbar { width: 0; height: 0; }
+
 .picker-split__editor {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  /* No nested scrollbar — when the editor has many controls, the outer
+     panel (floating-panel__body / .layers-edit-ui__props / .flat-edit-ui /
+     .workflow-edit-ui) scrolls naturally. One scrollbar per panel keeps
+     thumb proportions honest and avoids stacked thumbs of different
+     lengths inside a single sub-card. */
 }
 
 .picker-split__editor-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
+  min-height: 20px;
 }
 
 .picker-split__editor-name {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: -0.005em;
   color: var(--text);
 }
 
@@ -393,14 +446,15 @@
 }
 
 /* Compact icon chip used inside the picker column. The column itself
-   carries the chrome; the chip is just a 28x28 hit target. */
+   carries the chrome; the chip is just a 24x24 hit target. */
 .chip--pick {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   border: 1px solid transparent;
   border-radius: 5px;
   background: transparent;
@@ -464,6 +518,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 20px;
 }
 
 /* Icon-only label slot. Same width as .slider-control__label so all
@@ -473,6 +528,7 @@
   align-items: center;
   justify-content: center;
   width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--text-muted);
 }
