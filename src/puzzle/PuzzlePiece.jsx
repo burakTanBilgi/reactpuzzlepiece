@@ -1,5 +1,7 @@
+import { useContext } from 'react';
 import { KNOB_R, TAB, computeActiveKnobs, computeSideSegments, knobHitCenter } from './geometry.js';
 import { cellEffectAttrs, edgeEffectAttrs } from './effect-attrs.js';
+import { EmbedContext } from './EmbedContext.js';
 
 const SIDES = ['top', 'right', 'bottom', 'left'];
 
@@ -24,7 +26,7 @@ export default function PuzzlePiece({
   const knobs = computeActiveKnobs(piece, allPieces, effect);
   const clipId = `pc-clip-${id}`;
   const maskId = `pc-mask-${id}`;
-  const hasContent = !!content && (content.text || content.src);
+  const hasContent = !!content && (content.text || content.src || content.type === 'doxa-embed');
   const hasBackgrounds = backgrounds && backgrounds.length > 0;
   const needsClip = hasContent || hasBackgrounds;
   const cellAnim = cellEffectAttrs(cellEffects);
@@ -197,7 +199,36 @@ function BackgroundImage({ bg }) {
 //   none → xMidYMid meet at natural size (we still meet for safety)
 function PieceContent({ piece }) {
   const { x, y, w, h, content } = piece;
+  const embedRender = useContext(EmbedContext);
   const PAD = 18;
+
+  // Doxa embed (or any future foreignObject-style content). The host
+  // app supplies the renderer via EmbedContext; without one we drop a
+  // small "[Doxa embed]" placeholder so headless export pipelines and
+  // the standalone ZIP bundle still render *something* legible.
+  if (content.type === 'doxa-embed') {
+    const node = typeof embedRender === 'function' ? embedRender(content, piece) : null;
+    if (node) {
+      return (
+        <foreignObject x={x} y={y} width={w} height={h}>
+          <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: '100%', height: '100%' }}>
+            {node}
+          </div>
+        </foreignObject>
+      );
+    }
+    return (
+      <text
+        x={x + w / 2}
+        y={y + h / 2}
+        className="piece__content"
+        textAnchor="middle"
+        style={{ fontSize: 12, fill: 'var(--text-dim, #888)' }}
+      >
+        [Doxa embed]
+      </text>
+    );
+  }
 
   if (content.type === 'image' && content.src) {
     const fit = content.fit || 'cover';
