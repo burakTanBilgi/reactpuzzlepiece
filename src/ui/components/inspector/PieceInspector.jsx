@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
 import CellTierEditor from './CellTierEditor.jsx';
 import InspectorTabs from './InspectorTabs.jsx';
@@ -10,6 +10,11 @@ import Tooltip from '../Tooltip.jsx';
 import { useFileInput } from '../../hooks/useFileInput.js';
 import { FIT_OPTIONS } from '../../utils/fitOptions.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
+
+// Doxa picker is heavy (modal + Supabase query layer) and only matters
+// when a piece is being assigned a Doxa embed — lazy-load so the
+// Inspector chunk stays light.
+const DoxaEmbedPicker = lazy(() => import('../../../embeds/DoxaEmbedPicker.jsx'));
 
 const TABS = [
   { id: 'content', label: 'Content' },
@@ -113,6 +118,7 @@ export default function PieceInspector({
 function ContentTab({ piece, setPieceContent, updatePieceContent }) {
   const content = piece.content || null;
   const textareaRef = useRef(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Type-to-fill: while the piece is selected on the Content tab with no
   // content yet, the first printable keypress (outside any input) seeds a
@@ -143,6 +149,7 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
     if (type === 'none')  return setPieceContent(piece.id, null);
     if (type === 'text')  return setPieceContent(piece.id, { type: 'text',  text: content?.text || '' });
     if (type === 'image') return setPieceContent(piece.id, { type: 'image', src: content?.src || '', fit: content?.fit || 'cover' });
+    if (type === 'doxa-embed') return setPickerOpen(true);
   };
 
   const handleImageFile = (file) => {
@@ -179,9 +186,10 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
     >
       <div className="effect-chips">
         {[
-          { v: 'none',  l: 'Empty' },
-          { v: 'text',  l: 'Text'  },
-          { v: 'image', l: 'Image' },
+          { v: 'none',       l: 'Empty' },
+          { v: 'text',       l: 'Text'  },
+          { v: 'image',      l: 'Image' },
+          { v: 'doxa-embed', l: 'Doxa'  },
         ].map((t) => (
           <button key={t.v} type="button"
             className={`chip chip--sm ${(content?.type || 'none') === t.v ? 'chip--active' : ''}`}
@@ -190,6 +198,32 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
           </button>
         ))}
       </div>
+
+      {content?.type === 'doxa-embed' && (
+        <div className="content-config">
+          <p className="hint">{summarizeDoxaView(content.view)}</p>
+          <button
+            type="button"
+            className="action-btn action-btn--ghost"
+            onClick={() => setPickerOpen(true)}
+          >
+            <Icon name="upload" size={14} />
+            <span>Pick another chart</span>
+          </button>
+        </div>
+      )}
+
+      <Suspense fallback={null}>
+        {pickerOpen && (
+          <DoxaEmbedPicker
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            onPick={({ projectId, view }) => {
+              setPieceContent(piece.id, { type: 'doxa-embed', projectId, view });
+            }}
+          />
+        )}
+      </Suspense>
 
       {content?.type === 'text' && (
         <div className="content-config">
@@ -268,4 +302,13 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
       )}
     </InspectorSubcard>
   );
+}
+
+// Plain-English summary of a Doxa embed view, shown beneath the type
+// picker so the user can see at a glance what's currently embedded.
+function summarizeDoxaView(view) {
+  if (!view) return 'No chart picked yet.';
+  if (view.kind === 'chart')      return `Single chart (id ${view.chartId})`;
+  if (view.kind === 'comparison') return `Comparison of ${view.chartIds?.length || 0} charts`;
+  return `Unknown view kind: ${view.kind}`;
 }

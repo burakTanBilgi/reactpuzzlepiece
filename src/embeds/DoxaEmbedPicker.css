@@ -1,0 +1,60 @@
+.doxa-picker .modal__body {
+  max-height: 60vh;
+  gap: 10px;
+}
+
+.doxa-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.doxa-picker__row {
+  appearance: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.doxa-picker__row:hover {
+  background: var(--accent-tint);
+  border-color: var(--primary-2);
+  transform: translateY(-1px);
+}
+
+.doxa-picker__row-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doxa-picker__row-meta {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.doxa-picker__row--comparison {
+  border-style: dashed;
+  border-color: var(--primary-2);
+  background: var(--accent-tint);
+}
+
+.doxa-picker__row--comparison .doxa-picker__row-title {
+  color: var(--primary-3);
+}
