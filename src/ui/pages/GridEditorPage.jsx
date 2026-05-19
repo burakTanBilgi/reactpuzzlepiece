@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { MAX_GRID, MIN_GRID, isRectangular } from '../../grid/grid.js';
 import { importTableText } from '../../grid/import.js';
 import GridCanvas from '../components/GridCanvas.jsx';
@@ -33,6 +33,10 @@ export default function GridEditorPage({ project }) {
   // Phone layout: same accordion-card tools, but hosted in a draggable
   // BottomSheet so the canvas above stays fully usable.
   const isPhone = useMediaQuery('(max-width: 640px)');
+  // Sheet snap follows selection: the moment the user picks cells we
+  // expand to the working size; clearing snaps it back to a peek.
+  const [sheetSnap, setSheetSnap] = useState('collapsed');
+  const prevHadSelectionRef = useRef(false);
 
   // Bounding rect of the current selection in cell coordinates, or null.
   const selectionRect = useMemo(() => {
@@ -87,6 +91,18 @@ export default function GridEditorPage({ project }) {
     if (selection.length === 0) return;
     setOpenCard((cur) => (PASSIVE_CARDS.has(cur) ? 'selection' : cur));
   }, [selection.length]);
+
+  // Drive the phone sheet snap from selection state. Manual drags
+  // still override — we only push on the *transition* between
+  // "has selection" and "no selection".
+  useEffect(() => {
+    if (!isPhone) return;
+    const hadBefore = prevHadSelectionRef.current;
+    const hasNow    = selection.length > 0;
+    if (hasNow && !hadBefore) setSheetSnap('default');
+    else if (!hasNow && hadBefore) setSheetSnap('collapsed');
+    prevHadSelectionRef.current = hasNow;
+  }, [selection.length, isPhone]);
 
   const handleImportText = (text, opts) => {
     try {
@@ -344,7 +360,13 @@ export default function GridEditorPage({ project }) {
       {isPhone ? (
         <>
           {canvas}
-          <BottomSheet open title="Grid tools" defaultSnap="collapsed">
+          <BottomSheet
+            open
+            title="Grid tools"
+            snap={sheetSnap}
+            onSnapChange={setSheetSnap}
+            defaultSnap="collapsed"
+          >
             <div className="page-grid__mobile-tools">{tools}</div>
           </BottomSheet>
         </>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { listOuterEdges } from '../../grid/compile.js';
 import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
 import ViewPanel       from '../components/ViewPanel.jsx';
@@ -327,6 +327,13 @@ function LayersShell(props) {
 // bottom sheet the user can drag between snap points. Same Inspector
 // tree as desktop — the sheet is itself a query container so subcards
 // adapt to the sheet's width via the same `@container editui` rules.
+//
+// Selection-driven snap: the sheet auto-expands to 'default' the
+// moment the user picks a piece or edge (they clearly want the editor)
+// and snaps back to 'collapsed' when they clear the selection. Manual
+// drags still win — `snap` is just pushed when the *toggle* itself
+// changes, so a user who drags the sheet down to peek the canvas
+// keeps it there until they make another selection change.
 function MobileShell(props) {
   const { canvas, project, pieces, sharedEdges,
     selectedEdges, selectedPieceId,
@@ -339,10 +346,41 @@ function MobileShell(props) {
     setDefaultCellEffects, setCellEffects,
   } = props;
 
+  const hasSelection = !!selectedPieceId || (selectedEdges?.size ?? 0) > 0;
+  const [snap, setSnap] = useState('collapsed');
+  const prevHadSelectionRef = useRef(hasSelection);
+
+  useEffect(() => {
+    const had = prevHadSelectionRef.current;
+    if (hasSelection && !had) setSnap('default');
+    else if (!hasSelection && had) setSnap('collapsed');
+    prevHadSelectionRef.current = hasSelection;
+  }, [hasSelection]);
+
   return (
     <>
       <div className="page-edit__mobile-canvas">{canvas}</div>
-      <BottomSheet open title="Edit" defaultSnap="collapsed">
+      <BottomSheet
+        open
+        title="Edit"
+        snap={snap}
+        onSnapChange={setSnap}
+        defaultSnap="collapsed"
+      >
+        {!hasSelection && (
+          <div className="mobile-edit-hint" role="note">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                d="M5 4 L5 19 L9 15 L11 19 L13 18 L11 14.5 L16 14 Z"
+                fill="currentColor"
+              />
+            </svg>
+            <div className="mobile-edit-hint__text">
+              <strong>Tap a piece or edge</strong>
+              <span>to edit it. Or tweak project defaults below.</span>
+            </div>
+          </div>
+        )}
         <Inspector
           project={project}
           pieces={pieces}

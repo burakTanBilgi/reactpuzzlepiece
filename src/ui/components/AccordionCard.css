@@ -61,8 +61,17 @@
 }
 
 .acc-card__head:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 2px var(--primary-tint, rgba(214, 139, 84, 0.4));
+  outline: 2px solid var(--primary-2);
+  outline-offset: -2px;
+  background: var(--surface-2);
+  color: var(--primary-3);
+}
+
+/* Bigger tappable header on touch devices — 28 px is fine with a mouse
+   but cramped with thumbs. */
+@media (pointer: coarse) {
+  .acc-card__head { height: 38px; font-size: 11px; padding: 0 12px; }
+  .acc-card__body { padding: 10px 12px; gap: 8px; }
 }
 
 .acc-card--open .acc-card__head {

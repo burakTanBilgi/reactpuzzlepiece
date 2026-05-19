@@ -2,7 +2,9 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
+  /* Honour iPhone notch / Dynamic Island safe areas on the top edge
+     while keeping the desktop padding stable. */
+  padding: max(10px, env(safe-area-inset-top, 10px)) 20px 10px;
   background: color-mix(in srgb, var(--bg-elev) 85%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -91,6 +93,11 @@
   transform: rotate(20deg);
 }
 
+.page-nav__theme:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
 .page-nav__tabs {
   display: flex;
   gap: 4px;
@@ -130,6 +137,11 @@
 }
 
 .page-nav__tab:hover { color: var(--text); background: var(--surface-2); }
+.page-nav__tab:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: -2px;
+  color: var(--text);
+}
 
 .page-nav__tab--active {
   background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
@@ -165,4 +177,14 @@
   .page-nav__theme { width: 28px; height: 28px; font-size: 13px; }
   .page-nav__tabs { height: 30px; gap: 2px; padding: 2px; }
   .page-nav__tab { padding: 0 7px; height: 24px; }
+}
+
+/* Touch devices get bigger tap targets regardless of viewport (matches
+   the Apple HIG / Material 44 px guideline). Phone-narrow rules still
+   apply on top — the widths shrink but the heights stay finger-friendly. */
+@media (pointer: coarse) {
+  .page-nav__tab { height: 34px; padding: 0 12px; }
+  .page-nav__tab .page-nav__icon { font-size: 15px; }
+  .page-nav__tabs { height: 40px; padding: 3px; }
+  .page-nav__theme { width: 36px; height: 36px; font-size: 15px; }
 }

@@ -150,6 +150,12 @@
 }
 
 .link-btn:hover { color: var(--primary-3); }
+.link-btn:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 3px;
+  border-radius: 3px;
+  color: var(--primary-3);
+}
 
 /* === Slider === */
 .slider-control {
@@ -305,6 +311,10 @@
 }
 
 .chip:hover { color: var(--text); background: var(--surface-2); }
+.chip:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
 
 .chip:active {
   transform: scale(0.94);
@@ -471,6 +481,11 @@
 .chip--pick:hover:not(.chip--on) {
   color: var(--text);
   background: var(--surface-2);
+}
+
+.chip--pick:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
 }
 
 .chip--pick:active {

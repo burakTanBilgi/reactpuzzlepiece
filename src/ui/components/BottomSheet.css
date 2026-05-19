@@ -94,10 +94,15 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 12px 18px;
+  /* Honour the iPhone home-indicator inset so the final row of controls
+     doesn't sit under the gesture bar. Falls back to a sane default on
+     devices without env() insets. */
+  padding: 6px 12px max(18px, env(safe-area-inset-bottom, 18px));
   display: flex;
   flex-direction: column;
   gap: 6px;
+  /* iOS momentum scroll inside the sheet feels natural */
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes bottom-sheet-fade-in {

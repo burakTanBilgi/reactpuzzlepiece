@@ -15,13 +15,16 @@ import './BottomSheet.css';
 //   modal       — when true, render a tap-to-dismiss backdrop + Esc handler.
 //                 When false (default), the sheet is a persistent surface;
 //                 the area of the viewport above it stays interactive.
-//   defaultSnap — which snap to mount at: 'collapsed' | 'default' | 'expanded'.
-//                 Persistent sheets typically want 'collapsed' so the
-//                 canvas behind stays visible until the user reaches for
-//                 controls.
+//   defaultSnap — initial snap for the uncontrolled case: 'collapsed' |
+//                 'default' | 'expanded'.
+//   snap        — controlled snap. When present, drives the sheet height
+//                 from the outside (e.g. EditPage auto-expanding on
+//                 selection).
+//   onSnapChange — fired when the user (drag or tap) picks a new snap.
+//                  Required when `snap` is controlled.
 //   children    — body content (rendered inside an overflow-y: auto pane)
-const SNAP_HEIGHTS   = { collapsed: '30vh', default: '65vh', expanded: '96vh' };
-const SNAP_FRACTIONS = { collapsed: 0.30,   default: 0.65,   expanded: 0.96   };
+const SNAP_HEIGHTS   = { collapsed: '30dvh', default: '65dvh', expanded: '96dvh' };
+const SNAP_FRACTIONS = { collapsed: 0.30,    default: 0.65,    expanded: 0.96   };
 const SNAPS = ['collapsed', 'default', 'expanded'];
 const DRAG_THRESHOLD_PX = 6;
 
@@ -32,8 +35,15 @@ export default function BottomSheet({
   children,
   modal = false,
   defaultSnap = 'default',
+  snap: snapProp,
+  onSnapChange,
 }) {
-  const [snap, setSnap] = useState(defaultSnap);
+  const [internalSnap, setInternalSnap] = useState(defaultSnap);
+  const snap = snapProp !== undefined ? snapProp : internalSnap;
+  const setSnap = (next) => {
+    if (snapProp === undefined) setInternalSnap(next);
+    onSnapChange?.(next);
+  };
   const dragRef = useRef({ active: false, moved: false, startY: 0, startSnap: defaultSnap });
 
   useEffect(() => {
