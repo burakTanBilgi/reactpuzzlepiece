@@ -4,12 +4,15 @@ import EdgeEditorCanvas from '../components/EdgeEditorCanvas.jsx';
 import ViewPanel       from '../components/ViewPanel.jsx';
 import Tooltip         from '../components/Tooltip.jsx';
 import ConfirmDialog   from '../components/ConfirmDialog.jsx';
+import BottomSheet     from '../components/BottomSheet.jsx';
+import Inspector       from '../components/inspector/Inspector.jsx';
 import CanvasEditUi    from '../components/edit-ui/CanvasEditUi.jsx';
 import LayersEditUi    from '../components/edit-ui/LayersEditUi.jsx';
 import FlatEditUi      from '../components/edit-ui/FlatEditUi.jsx';
 import WorkflowEditUi  from '../components/edit-ui/WorkflowEditUi.jsx';
 import EditModePicker  from '../components/edit-ui/EditModePicker.jsx';
 import { useEditUiMode } from '../hooks/useEditUiMode.js';
+import { useMediaQuery } from '../hooks/useMediaQuery.js';
 import { TilesContext } from '../hooks/TilesContext.jsx';
 
 const DEFAULT_WAVE = { frequency: 0.025, amplitude: 12, phase: 0 };
@@ -59,6 +62,11 @@ export default function EditPage({ project }) {
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const { mode, setMode, tiles, setTiles } = useEditUiMode();
+  // Mobile-viewport detection: at phone widths the four desktop UI shells
+  // are bypassed in favour of a canvas-fills-screen layout with the
+  // Inspector hosted in a BottomSheet. This is the groundwork piece —
+  // shape/snap behaviour stays minimal until a dedicated mobile pass.
+  const isPhone = useMediaQuery('(max-width: 640px)');
 
   const handleSelectEdge = useCallback((pairKey, evt) => {
     setSelectedPieceId(null);
@@ -183,16 +191,22 @@ export default function EditPage({ project }) {
 
   return (
     <TilesContext.Provider value={tiles}>
-    <div className="page-edit">
-      {mode === 'canvas' && <CanvasEditUi {...sharedProps} canvas={canvas} />}
-      {mode === 'layers' && (
-        <LayersShell {...sharedProps} canvas={canvas} />
-      )}
-      {mode === 'flat' && (
-        <RailShell {...sharedProps} canvas={canvas} body={<FlatEditUi {...sharedProps} />} />
-      )}
-      {mode === 'modes' && (
-        <RailShell {...sharedProps} canvas={canvas} body={<WorkflowEditUi {...sharedProps} />} />
+    <div className={`page-edit${isPhone ? ' page-edit--phone' : ''}`}>
+      {isPhone ? (
+        <MobileShell {...sharedProps} canvas={canvas} />
+      ) : (
+        <>
+          {mode === 'canvas' && <CanvasEditUi {...sharedProps} canvas={canvas} />}
+          {mode === 'layers' && (
+            <LayersShell {...sharedProps} canvas={canvas} />
+          )}
+          {mode === 'flat' && (
+            <RailShell {...sharedProps} canvas={canvas} body={<FlatEditUi {...sharedProps} />} />
+          )}
+          {mode === 'modes' && (
+            <RailShell {...sharedProps} canvas={canvas} body={<WorkflowEditUi {...sharedProps} />} />
+          )}
+        </>
       )}
 
       {confirmClearOpen && (
@@ -305,6 +319,59 @@ function LayersShell(props) {
         <LayersEditUi {...rest} />
       </aside>
       {canvas}
+    </>
+  );
+}
+
+// Phone shell: canvas fills the viewport; the Inspector lives in a
+// bottom sheet the user can drag between snap points. Same Inspector
+// tree as desktop — the sheet is itself a query container so subcards
+// adapt to the sheet's width via the same `@container editui` rules.
+function MobileShell(props) {
+  const { canvas, project, pieces, sharedEdges,
+    selectedEdges, selectedPieceId,
+    onClearEdgeSelection, onClearPieceSelection,
+    setDefaultEdgeEffect, setDefaultEdgeConfig, setDefaultEdgeEffects,
+    setLayerEffect, setLayerConfig, clearLayer, setLayerEffects,
+    setPieceEdgeEffect, setPieceEdgeConfig, setPieceEdgeEffects, clearPieceEdgeOverride,
+    setEdgeEffect, setEdgeConfig, clearEdgeOverride, setEdgeEffects,
+    setPieceContent, updatePieceContent,
+    setDefaultCellEffects, setCellEffects,
+  } = props;
+
+  return (
+    <>
+      <div className="page-edit__mobile-canvas">{canvas}</div>
+      <BottomSheet open title="Edit">
+        <Inspector
+          project={project}
+          pieces={pieces}
+          sharedEdges={sharedEdges}
+          selectedEdges={selectedEdges}
+          selectedPieceId={selectedPieceId}
+          onClearEdgeSelection={onClearEdgeSelection}
+          onClearPieceSelection={onClearPieceSelection}
+          setDefaultEdgeEffect={setDefaultEdgeEffect}
+          setDefaultEdgeConfig={setDefaultEdgeConfig}
+          setDefaultEdgeEffects={setDefaultEdgeEffects}
+          setLayerEffect={setLayerEffect}
+          setLayerConfig={setLayerConfig}
+          clearLayer={clearLayer}
+          setLayerEffects={setLayerEffects}
+          setPieceEdgeEffect={setPieceEdgeEffect}
+          setPieceEdgeConfig={setPieceEdgeConfig}
+          setPieceEdgeEffects={setPieceEdgeEffects}
+          clearPieceEdgeOverride={clearPieceEdgeOverride}
+          setEdgeEffect={setEdgeEffect}
+          setEdgeConfig={setEdgeConfig}
+          clearEdgeOverride={clearEdgeOverride}
+          setEdgeEffects={setEdgeEffects}
+          setPieceContent={setPieceContent}
+          updatePieceContent={updatePieceContent}
+          setDefaultCellEffects={setDefaultCellEffects}
+          setCellEffects={setCellEffects}
+        />
+      </BottomSheet>
     </>
   );
 }

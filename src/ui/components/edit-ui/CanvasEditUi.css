@@ -17,6 +17,11 @@
   overflow: hidden;
 }
 
+/* Floating panels are the actual narrow container for any subcards they
+   host (Inspector tree). Tag them as a query container so subcards can
+   adapt to the panel's own width regardless of viewport. */
+.floating-panel { container-type: inline-size; container-name: editui; }
+
 /* ViewPanel + EdgeEditorCanvas fill the viewport. */
 .canvas-edit-ui__viewport > .view-panel {
   flex: 1;

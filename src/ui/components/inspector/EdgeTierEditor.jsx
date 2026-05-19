@@ -53,6 +53,7 @@ export default function EdgeTierEditor({
     <>
       {!strokeHidden && (
         <InspectorSubcard
+          id="shape-stroke"
           title="Shape & stroke"
           accent={accent}
           actions={onClear ? <ResetButton onClick={onClear} /> : null}
@@ -130,6 +131,7 @@ export default function EdgeTierEditor({
       )}
 
       <InspectorSubcard
+        id="animations"
         title="Animations"
         accent={accent}
         actions={onResetEffects ? <ResetButton onClick={onResetEffects} /> : null}

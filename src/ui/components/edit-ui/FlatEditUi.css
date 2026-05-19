@@ -13,6 +13,8 @@
   border-radius: 10px;
   box-shadow: 0 0 0 1px rgba(214, 139, 84, 0.18);
   overflow-y: auto;
+  container-type: inline-size;
+  container-name: editui;
 }
 
 .flat-edit-ui__head {

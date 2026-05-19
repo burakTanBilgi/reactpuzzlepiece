@@ -4,6 +4,20 @@
   min-height: 0;
 }
 
+/* Phone shell: canvas fills the page; the BottomSheet sits above it on
+   the z-axis. No side rail, no mode picker — the four desktop UI modes
+   are bypassed entirely at this viewport. */
+.page-edit--phone {
+  flex-direction: column;
+  position: relative;
+}
+
+.page-edit__mobile-canvas {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .inspector {
   display: flex;
   flex-direction: column;

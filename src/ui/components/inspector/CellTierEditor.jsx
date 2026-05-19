@@ -16,6 +16,7 @@ export default function CellTierEditor({
 }) {
   return (
     <InspectorSubcard
+      id="body-animations"
       title="Body animations"
       accent={accent}
       actions={onReset ? (

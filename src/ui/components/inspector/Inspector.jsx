@@ -4,6 +4,7 @@ import ProjectDefaultsCard from './ProjectDefaultsCard.jsx';
 import PieceInspector from './PieceInspector.jsx';
 import EdgeInspector from './EdgeInspector.jsx';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
+import { SubcardAccordion } from './SubcardAccordionContext.jsx';
 import { computeTierStates } from './cascade-source.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 
@@ -122,35 +123,39 @@ export default function Inspector({
         )}
 
         {openTier === 'inner' && tierStates.inner.applicable && (
-          <EdgeTierEditor
-            title="Inner edges"
-            accent
-            effect={edges.inner?.effect ?? defaultEdgeEffect}
-            config={edges.inner?.config ?? defaultEdgeConfig}
-            ownEffects={edges.inner?.effects || {}}
-            inheritedEffects={defaultEdgeEffects}
-            onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave'
-              ? (edges.inner?.config ?? defaultEdgeConfig) : undefined)}
-            onPatchConfig={(patch) => setLayerConfig('inner', patch)}
-            onChangeEffects={(map) => setLayerEffects('inner', map)}
-            onClear={edges.inner ? () => clearLayer('inner') : null}
-          />
+          <SubcardAccordion id="inner" defaultOpenId="shape-stroke">
+            <EdgeTierEditor
+              title="Inner edges"
+              accent
+              effect={edges.inner?.effect ?? defaultEdgeEffect}
+              config={edges.inner?.config ?? defaultEdgeConfig}
+              ownEffects={edges.inner?.effects || {}}
+              inheritedEffects={defaultEdgeEffects}
+              onSetEffect={(name) => setLayerEffect('inner', name, name === 'wave'
+                ? (edges.inner?.config ?? defaultEdgeConfig) : undefined)}
+              onPatchConfig={(patch) => setLayerConfig('inner', patch)}
+              onChangeEffects={(map) => setLayerEffects('inner', map)}
+              onClear={edges.inner ? () => clearLayer('inner') : null}
+            />
+          </SubcardAccordion>
         )}
 
         {openTier === 'outer' && tierStates.outer.applicable && (
-          <EdgeTierEditor
-            title="Outer edges"
-            accent
-            effect={edges.outer?.effect ?? defaultEdgeEffect}
-            config={edges.outer?.config ?? defaultEdgeConfig}
-            ownEffects={edges.outer?.effects || {}}
-            inheritedEffects={defaultEdgeEffects}
-            onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave'
-              ? (edges.outer?.config ?? defaultEdgeConfig) : undefined)}
-            onPatchConfig={(patch) => setLayerConfig('outer', patch)}
-            onChangeEffects={(map) => setLayerEffects('outer', map)}
-            onClear={edges.outer ? () => clearLayer('outer') : null}
-          />
+          <SubcardAccordion id="outer" defaultOpenId="shape-stroke">
+            <EdgeTierEditor
+              title="Outer edges"
+              accent
+              effect={edges.outer?.effect ?? defaultEdgeEffect}
+              config={edges.outer?.config ?? defaultEdgeConfig}
+              ownEffects={edges.outer?.effects || {}}
+              inheritedEffects={defaultEdgeEffects}
+              onSetEffect={(name) => setLayerEffect('outer', name, name === 'wave'
+                ? (edges.outer?.config ?? defaultEdgeConfig) : undefined)}
+              onPatchConfig={(patch) => setLayerConfig('outer', patch)}
+              onChangeEffects={(map) => setLayerEffects('outer', map)}
+              onClear={edges.outer ? () => clearLayer('outer') : null}
+            />
+          </SubcardAccordion>
         )}
       </div>
     </div>
