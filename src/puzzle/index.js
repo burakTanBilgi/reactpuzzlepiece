@@ -35,3 +35,5 @@ export {
 } from './effects-catalog.js';
 
 export { cellEffectAttrs, edgeEffectAttrs } from './effect-attrs.js';
+
+export { EmbedContext } from './EmbedContext.js';

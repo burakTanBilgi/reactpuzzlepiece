@@ -1,0 +1,64 @@
+/* Doxa embed frame. Sits inside an SVG <foreignObject> matching the
+   piece's bounding box, so the surrounding sizing is dictated by the
+   piece geometry — everything below is purely the chrome the embed
+   renders inside that box. Theme tokens use safe fallbacks because
+   this CSS also has to render correctly inside exported standalone
+   bundles, which don't carry the host app's variables. */
+
+.doxa-embed {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface, #1c1c1c);
+  color: var(--text, #e6edf3);
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.doxa-embed__title {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  background: var(--bg-elev, rgba(0, 0, 0, 0.25));
+  border-bottom: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
+  font-family: var(--font-display, inherit);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim, #9aa0a6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doxa-embed__body {
+  flex: 1;
+  min-height: 0;
+  padding: 4px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.doxa-embed__body > * { width: 100%; }
+
+.doxa-embed__loading,
+.doxa-embed__error {
+  align-self: center;
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim, #9aa0a6);
+}
+
+.doxa-embed__error { color: var(--danger-2, #c87070); }
+
+.doxa-embed__footer {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-top: 1px solid var(--stroke-idle, rgba(255, 255, 255, 0.08));
+  font-size: 9px;
+  color: var(--text-dim, #9aa0a6);
+}
