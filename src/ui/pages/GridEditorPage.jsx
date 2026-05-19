@@ -7,9 +7,11 @@ import ImportDialog from '../components/ImportDialog.jsx';
 import SliderRow from '../components/SliderRow.jsx';
 import ViewPanel from '../components/ViewPanel.jsx';
 import AccordionCard from '../components/AccordionCard.jsx';
+import BottomSheet from '../components/BottomSheet.jsx';
 import Icon from '../components/Icon.jsx';
 import Tooltip from '../components/Tooltip.jsx';
 import { useFileInput } from '../hooks/useFileInput.js';
+import { useMediaQuery } from '../hooks/useMediaQuery.js';
 
 const PASSIVE_CARDS = new Set(['dimensions', 'tips', 'import']);
 
@@ -28,6 +30,9 @@ export default function GridEditorPage({ project }) {
   const [selection, setSelection] = useState([]);
   const [showImport, setShowImport] = useState(false);
   const [openCard, setOpenCard] = useState('selection');
+  // Phone layout: same accordion-card tools, but hosted in a draggable
+  // BottomSheet so the canvas above stays fully usable.
+  const isPhone = useMediaQuery('(max-width: 640px)');
 
   // Bounding rect of the current selection in cell coordinates, or null.
   const selectionRect = useMemo(() => {
@@ -146,10 +151,9 @@ export default function GridEditorPage({ project }) {
 
   const clearSel = () => setSelection([]);
 
-  return (
-    <div className="page-grid">
-      <aside className="side-tools">
-        <AccordionCard
+  const tools = (
+    <>
+      <AccordionCard
           id="selection"
           title="Selection"
           badge={selection.length > 0 ? selection.length : null}
@@ -314,23 +318,42 @@ export default function GridEditorPage({ project }) {
             <li><strong>Click a row/column number</strong> to delete it. Drag across multiple to delete in bulk.</li>
             <li>Merged groups show their dimensions.</li>
             <li>Click any number value to type it directly.</li>
-            <li><strong>Scroll</strong> to zoom; middle-drag or Ctrl+drag to pan.</li>
+            <li><strong>Scroll</strong> to zoom; middle-drag or Ctrl+drag to pan. On touch, pinch and drag.</li>
             <li>Select cells, then <strong>paste an image</strong> (Ctrl+V) to span it across them.</li>
           </ul>
         </AccordionCard>
-      </aside>
+    </>
+  );
 
-      <ViewPanel>
-        <GridCanvas
-          grid={p.grid}
-          selection={selection}
-          onSelectionChange={setSelection}
-          pieceColors={p.pieceColors}
-          backgrounds={p.backgrounds}
-          onDeleteRows={(idxs) => { removeRows(idxs); setSelection([]); }}
-          onDeleteCols={(idxs) => { removeCols(idxs); setSelection([]); }}
-        />
-      </ViewPanel>
+  const canvas = (
+    <ViewPanel>
+      <GridCanvas
+        grid={p.grid}
+        selection={selection}
+        onSelectionChange={setSelection}
+        pieceColors={p.pieceColors}
+        backgrounds={p.backgrounds}
+        onDeleteRows={(idxs) => { removeRows(idxs); setSelection([]); }}
+        onDeleteCols={(idxs) => { removeCols(idxs); setSelection([]); }}
+      />
+    </ViewPanel>
+  );
+
+  return (
+    <div className={`page-grid${isPhone ? ' page-grid--phone' : ''}`}>
+      {isPhone ? (
+        <>
+          {canvas}
+          <BottomSheet open title="Grid tools" defaultSnap="collapsed">
+            <div className="page-grid__mobile-tools">{tools}</div>
+          </BottomSheet>
+        </>
+      ) : (
+        <>
+          <aside className="side-tools">{tools}</aside>
+          {canvas}
+        </>
+      )}
 
       {showImport && (
         <ImportDialog

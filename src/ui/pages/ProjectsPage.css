@@ -5,6 +5,14 @@
   padding: 32px 40px 60px;
 }
 
+@media (max-width: 720px) {
+  .page-projects { padding: 20px 14px 48px; }
+}
+
+@media (max-width: 480px) {
+  .page-projects { padding: 14px 10px 40px; }
+}
+
 .projects-section {
   max-width: 1100px;
   margin: 0 auto;
@@ -48,6 +56,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
+}
+
+@media (max-width: 480px) {
+  .project-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .project-tile__preview { height: 110px; }
+  .project-tile__name { font-size: 12px; }
 }
 
 .project-tile {
@@ -135,6 +149,17 @@
 .project-tile:hover .project-tile__del {
   display: inline-flex;
   animation: slideIn 150ms ease-out;
+}
+
+/* Touch devices can't hover — show the delete control persistently
+   (slightly faded) so it's still reachable on phones / tablets. */
+@media (hover: none) {
+  .project-tile__del {
+    display: inline-flex;
+    opacity: 0.55;
+    animation: none;
+  }
+  .project-tile__del:active { opacity: 1; }
 }
 
 .project-tile__del:hover {
