@@ -660,9 +660,26 @@
   transition: border-color 120ms ease;
 }
 
-.modal__textarea:focus {
+.modal__textarea:focus,
+.modal__textarea:focus-visible {
   border-color: var(--primary-2);
   box-shadow: 0 0 0 2px var(--primary-tint);
+  outline: none;
+}
+
+/* Touch: modals get a bit more breathing room so the close button +
+   confirm/cancel CTAs don't crowd the screen edges. */
+@media (pointer: coarse) {
+  .modal__head { padding: 16px 18px; }
+  .modal__close {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal__foot { padding: 14px 18px; gap: 10px; }
 }
 
 .modal__check {

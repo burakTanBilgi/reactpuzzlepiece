@@ -242,6 +242,11 @@
   background: var(--surface-2);
 }
 
+.inspector-tabs__btn:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
 .inspector-tabs__btn--active {
   background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
   color: white;
@@ -251,6 +256,12 @@
 
 .inspector-tabs__btn--active:hover {
   color: white;
+}
+
+/* Touch: bump tab height + spacing so the three Content/Body/Edges
+   tabs are comfortably tappable on phones. */
+@media (pointer: coarse) {
+  .inspector-tabs__btn { padding: 9px 12px; font-size: 12.5px; }
 }
 
 /* === Source pill (tiny "(from Default)" badge next to a control) === */

@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hakoniwa</title>
+    <!-- viewport-fit=cover lets env(safe-area-inset-*) take effect on
+         iPhone notch / Dynamic Island so our nav + bottom sheet honour
+         the system gesture areas. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#15121b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8f3ec" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="Hakoniwa — design grid-based layouts with stylised connectors. A small artisan tool for shaping pieces, edges, and palettes." />
+    <title>Hakoniwa — grid layouts with stylised connectors</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

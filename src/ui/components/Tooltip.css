@@ -136,9 +136,30 @@
   transition-duration: 60ms;
 }
 
+.icon-action-btn:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+  color: var(--primary-3);
+}
+
 .icon-action-btn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Touch: 22 px is plenty for a mouse but cramped under a thumb. Bump
+   the hit area without growing the visible footprint by extending an
+   invisible after-pseudo-element. Keeps the inspector dense visually
+   while staying comfortably tappable. */
+@media (pointer: coarse) {
+  .icon-action-btn {
+    position: relative;
+  }
+  .icon-action-btn::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
 }
 
 .icon-action-btn--danger:hover:not(:disabled) {
