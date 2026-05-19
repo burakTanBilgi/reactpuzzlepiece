@@ -42,16 +42,19 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
 
       <UserMenu />
 
-      <nav className="page-nav__tabs">
+      <nav className="page-nav__tabs" aria-label="Pages">
         {PAGES.map((p) => (
           <button
             key={p.id}
             type="button"
             className={`page-nav__tab ${page === p.id ? 'page-nav__tab--active' : ''}`}
             onClick={() => onNav(p.id)}
+            aria-label={p.label}
+            aria-current={page === p.id ? 'page' : undefined}
+            title={p.label}
           >
             <span className="page-nav__icon" aria-hidden>{p.icon}</span>
-            <span>{p.label}</span>
+            <span className="page-nav__tab-label">{p.label}</span>
           </button>
         ))}
       </nav>

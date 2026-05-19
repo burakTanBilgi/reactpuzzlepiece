@@ -12,7 +12,23 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+/* On narrow viewports the pill collapses to just the status dot — the
+   title attribute still carries the textual state for screen readers
+   and on hover. */
+@media (max-width: 760px) {
+  .sync-pill {
+    padding: 4px;
+    gap: 0;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    justify-content: center;
+  }
+  .sync-pill__label { display: none; }
 }
 
 .sync-pill__dot {
