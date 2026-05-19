@@ -58,13 +58,40 @@
 .app__page-loading {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  gap: 16px;
+  font-size: 11px;
   color: var(--text-dim);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   animation: fadeIn 240ms ease-out;
+}
+
+.app__page-loading::before {
+  content: '箱';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--primary-1), var(--primary-2));
+  color: white;
+  font-size: 18px;
+  font-family: var(--font-display, inherit);
+  box-shadow: 0 4px 14px rgba(184, 96, 42, 0.4);
+  animation: app-loading-pulse 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes app-loading-pulse {
+  0%, 100% { transform: scale(1);    opacity: 1;   }
+  50%      { transform: scale(0.92); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__page-loading::before { animation: none; }
 }
 
 /* Pre-auth bootstrap placeholder shown briefly while Supabase resolves
