@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useProject } from '../grid/useProject.js';
+import { useAuth } from '../auth/AuthProvider.jsx';
+import LoginScreen from '../auth/LoginScreen.jsx';
 import PageNav from './components/PageNav.jsx';
 import LandingPage from './pages/LandingPage.jsx';
 import './styles/App.css';
@@ -40,7 +42,12 @@ function loadInitialPage() {
 
 export default function App() {
   const [page, setPage] = useState(loadInitialPage);
-  const project = useProject();
+  const { user, loading: authLoading, supabaseConfigured } = useAuth();
+  // Pull the project hook unconditionally — useProject internally reads
+  // localStorage so the first paint isn't blocked on any network call.
+  // When Supabase is configured + signed-in, it also reconciles with the
+  // cloud and keeps the autosave debounced upstream.
+  const project = useProject(user?.id || null);
   const [theme, setTheme] = useState(loadTheme);
 
   useEffect(() => {
@@ -53,6 +60,16 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+
+  // Auth gate: when Supabase is wired, force a login before showing the
+  // app. When Supabase isn't configured, the gate is invisible and the
+  // app runs in localStorage-only mode.
+  if (supabaseConfigured && !authLoading && !user) {
+    return <LoginScreen />;
+  }
+  if (supabaseConfigured && authLoading) {
+    return <div className="app__bootstrap" aria-live="polite">…</div>;
+  }
 
   return (
     <div className="app">
@@ -67,6 +84,7 @@ export default function App() {
         projectName={project.project?.name}
         theme={theme}
         onToggleTheme={toggleTheme}
+        syncStatus={project.syncStatus}
       />
       <main className="app__page" id="app-main" tabIndex={-1}>
         {page === 'landing'  && <LandingPage onNav={setPage} />}

@@ -1,5 +1,7 @@
 import WaveDivider from './meta/WaveDivider.jsx';
 import Tooltip from './Tooltip.jsx';
+import SyncPill from './SyncPill.jsx';
+import UserMenu from '../../auth/UserMenu.jsx';
 
 const PAGES = [
   { id: 'landing',  label: 'Landing',  icon: '⌂' },
@@ -10,7 +12,7 @@ const PAGES = [
   { id: 'edit',     label: 'Edit',     icon: '✎' },
 ];
 
-export default function PageNav({ page, onNav, projectName, theme, onToggleTheme }) {
+export default function PageNav({ page, onNav, projectName, theme, onToggleTheme, syncStatus = 'offline' }) {
   const isDark = theme === 'dark';
   return (
     <>
@@ -24,6 +26,7 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
             <span className="page-nav__project">{projectName}</span>
           </>
         )}
+        <SyncPill status={syncStatus} />
       </div>
 
       <Tooltip label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}>
@@ -36,6 +39,8 @@ export default function PageNav({ page, onNav, projectName, theme, onToggleTheme
           <span aria-hidden>{isDark ? '☾' : '☀'}</span>
         </button>
       </Tooltip>
+
+      <UserMenu />
 
       <nav className="page-nav__tabs" aria-label="Pages">
         {PAGES.map((p) => (

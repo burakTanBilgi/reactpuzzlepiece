@@ -1,0 +1,60 @@
+.sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--stroke-idle);
+  color: var(--text-dim);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.sync-pill__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.sync-pill--offline {
+  color: var(--text-dim);
+}
+
+.sync-pill--syncing {
+  color: var(--primary-3);
+  border-color: var(--primary-2);
+  background: var(--accent-tint);
+}
+
+.sync-pill--syncing .sync-pill__dot {
+  animation: sync-pulse 1.2s ease-in-out infinite;
+}
+
+.sync-pill--synced {
+  color: var(--ok-2, #6db48f);
+  border-color: rgba(109, 180, 143, 0.45);
+  background: rgba(109, 180, 143, 0.08);
+}
+
+.sync-pill--error {
+  color: var(--danger-2, #c87070);
+  border-color: rgba(200, 112, 112, 0.45);
+  background: rgba(200, 112, 112, 0.08);
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-pill--syncing .sync-pill__dot { animation: none; }
+  .sync-pill { transition: none; }
+}

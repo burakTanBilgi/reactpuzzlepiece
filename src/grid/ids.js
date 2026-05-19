@@ -19,10 +19,16 @@ export function nextImportId() {
   return `g-im-${Date.now().toString(36)}-${++_imSeq}`;
 }
 
-// p-{timestamp}-N  — project ids; the counter keeps them unique even when
-// several projects are created in the same millisecond.
+// Project ids are uuids so they slot directly into the cloud's
+// `hakoniwa_projects.id uuid PK` column with no separate mapping. The
+// `p-{timestamp}-N` fallback only fires in environments without
+// crypto.randomUUID (very old browsers / some test runners) and gets
+// rewritten to a real uuid the first time the project is synced.
 let _pSeq = 0;
 export function nextProjectId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
   return `p-${Date.now().toString(36)}-${++_pSeq}`;
 }
 
