@@ -63,6 +63,16 @@
   background: linear-gradient(135deg, var(--primary-2), var(--accent-2));
 }
 
+.cascade-strip__pill:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: -2px;
+}
+
+/* Touch: bigger pill height so the cascade is comfortable on phones. */
+@media (pointer: coarse) {
+  .cascade-strip__pill { padding: 8px 10px; font-size: 11.5px; }
+}
+
 .cascade-strip__dot {
   display: inline-block;
   width: 7px;

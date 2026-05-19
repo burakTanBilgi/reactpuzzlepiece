@@ -237,11 +237,24 @@
   background: var(--bg);
 }
 
-.slider-control__input:focus {
+.slider-control__input:focus,
+.slider-control__input:focus-visible {
   outline: none;
   border-color: var(--primary-2);
   background: var(--bg);
   color: var(--text);
+  box-shadow: 0 0 0 2px var(--primary-tint);
+}
+
+/* Touch: the slider thumb is browser-styled (already finger-friendly);
+   the typeable text value just gets a wider hit box. */
+@media (pointer: coarse) {
+  .slider-control__input {
+    width: 56px;
+    padding: 4px 6px;
+    font-size: 12.5px;
+  }
+  .slider-control input[type='range'] { padding: 6px 0; }
 }
 
 .slider-control__input::-webkit-outer-spin-button,
