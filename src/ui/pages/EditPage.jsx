@@ -342,7 +342,7 @@ function MobileShell(props) {
   return (
     <>
       <div className="page-edit__mobile-canvas">{canvas}</div>
-      <BottomSheet open title="Edit">
+      <BottomSheet open title="Edit" defaultSnap="collapsed">
         <Inspector
           project={project}
           pieces={pieces}

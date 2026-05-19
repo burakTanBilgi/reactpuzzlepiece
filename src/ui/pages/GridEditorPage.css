@@ -4,6 +4,23 @@
   min-height: 0;
 }
 
+/* Phone shell: canvas owns the page; tools live inside a bottom sheet
+   (matching EditPage). */
+.page-grid--phone {
+  flex-direction: column;
+  position: relative;
+}
+
+.page-grid__mobile-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Closed accordion cards stack as header-only rows; the open one
+     scrolls inside its body. Same shape as the desktop side rail. */
+  height: 100%;
+  min-height: 0;
+}
+
 /* === Color picker === */
 .color-grid {
   display: grid;

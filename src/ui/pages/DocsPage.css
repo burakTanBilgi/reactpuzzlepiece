@@ -355,8 +355,49 @@
   padding: 12px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 820px) {
   .docs-nav { width: 200px; }
   .docs-body { padding: 24px 20px 60px; }
   .doc__h1 { font-size: 24px; }
+}
+
+/* Phone / small tablet: collapse the sidebar into a top scroll strip so
+   the article gets full width. The brand mark + CTA shrink — the page
+   nav already has both. */
+@media (max-width: 640px) {
+  .page-docs { flex-direction: column; }
+  .docs-nav {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--stroke-idle);
+    padding: 10px 12px;
+    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+    /* The strip is the only scrolling thing horizontally; keep it tidy. */
+    scrollbar-width: thin;
+  }
+  .docs-nav__brand,
+  .docs-nav__title,
+  .docs-nav__cta { display: none; }
+  .docs-nav nav { display: flex; }
+  .docs-nav__list {
+    flex-direction: row;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .docs-nav__item {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid var(--stroke-idle);
+  }
+  .docs-nav__item--active {
+    border-color: var(--primary-2);
+  }
+  .docs-body { padding: 18px 16px 48px; }
+  .doc__h1 { font-size: 22px; }
 }
