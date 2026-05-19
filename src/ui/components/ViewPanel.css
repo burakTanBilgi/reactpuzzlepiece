@@ -123,6 +123,14 @@
   }
 }
 
+/* Touch pointers need bigger hit targets — 32 px is comfortable for
+   thumbs without making the HUD feel oversized on desktop. */
+@media (pointer: coarse) {
+  .view-panel__zoom-btn { width: 32px; height: 32px; font-size: 18px; }
+  .view-panel__reset { padding: 6px 12px; font-size: 11.5px; }
+  .view-panel__zoom { min-width: 44px; font-size: 12.5px; }
+}
+
 .view-panel__surface {
   flex: 1;
   position: relative;

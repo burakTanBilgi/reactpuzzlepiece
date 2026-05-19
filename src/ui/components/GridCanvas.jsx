@@ -55,6 +55,12 @@ export default function GridCanvas({
   const onCellPointerDown = (e, r, c) => {
     if (e.button !== 0) return;
     e.preventDefault();
+    // Don't let ViewPanel see this — cells own the gesture (box-select,
+    // shift/ctrl toggle). Without this, single-finger drag on a cell
+    // would also fire ViewPanel's touch-pan and the user would scroll
+    // the canvas while box-selecting. Pinch-zoom still works when started
+    // from the gutter / padding outside the grid.
+    e.stopPropagation();
     if (e.shiftKey || e.ctrlKey || e.metaKey) {
       const key = `${r},${c}`;
       const next = new Set(selSet);
@@ -105,7 +111,7 @@ export default function GridCanvas({
   const onHeaderPointerDown = (e, axis, idx) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    e.stopPropagation();
+    e.stopPropagation();   // keep header drag-delete from leaking to ViewPanel
     setHdrDrag({ axis, marks: new Set([idx]) });
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
