@@ -55,6 +55,42 @@
   animation: fadeIn 200ms ease-out;
 }
 
+/* Skip link: invisible until focused, then slides into the top-left
+   corner so the keyboard user can bypass the page-nav strip. Standard
+   WCAG 2.4.1 pattern. */
+.app__skip-link {
+  position: fixed;
+  top: -100px;
+  left: 8px;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 2px solid var(--primary-2);
+  border-radius: 8px;
+  color: var(--primary-3);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  transition: top 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.app__skip-link:focus,
+.app__skip-link:focus-visible {
+  top: 12px;
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
+main.app__page:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__skip-link { transition: none; }
+}
+
 .app__page-loading {
   flex: 1;
   display: flex;

@@ -56,6 +56,11 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* Keyboard-only "skip to content" — appears only when focused, so
+          screen reader / Tab users can jump past the page-nav strip.
+          A long-standing WCAG 2.4.1 (Bypass Blocks) pattern. */}
+      <a href="#app-main" className="app__skip-link">Skip to main content</a>
+
       <PageNav
         page={page}
         onNav={setPage}
@@ -63,7 +68,7 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
       />
-      <main className="app__page">
+      <main className="app__page" id="app-main" tabIndex={-1}>
         {page === 'landing'  && <LandingPage onNav={setPage} />}
         {page !== 'landing'  && (
           <Suspense fallback={<div className="app__page-loading" aria-live="polite">Loading…</div>}>
