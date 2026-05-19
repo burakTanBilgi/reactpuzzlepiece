@@ -67,6 +67,21 @@
   animation: fadeIn 240ms ease-out;
 }
 
+/* Pre-auth bootstrap placeholder shown briefly while Supabase resolves
+   the current session. Intentionally minimal — the real LoginScreen
+   takes over the moment loading flips to false. */
+.app__bootstrap {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  background: var(--bg);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
