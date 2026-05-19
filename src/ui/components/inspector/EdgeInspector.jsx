@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import EdgeTierEditor from './EdgeTierEditor.jsx';
+import { SubcardAccordion } from './SubcardAccordionContext.jsx';
 import Icon from '../Icon.jsx';
 import Tooltip from '../Tooltip.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
@@ -143,19 +144,21 @@ export default function EdgeInspector({
         </Tooltip>
       </div>
 
-      <EdgeTierEditor
-        title="This edge"
-        accent
-        effect={combo?.effect}
-        config={combo?.cfg}
-        ownEffects={ownEffectsFirst}
-        inheritedEffects={inheritedEffectsFirst}
-        mixed={effectsMixed}
-        onSetEffect={applyEdgeEffect}
-        onPatchConfig={applyEdgeConfig}
-        onChangeEffects={applyEdgeEffects}
-        onClear={resetSelected}
-      />
+      <SubcardAccordion id="edge" defaultOpenId="shape-stroke">
+        <EdgeTierEditor
+          title="This edge"
+          accent
+          effect={combo?.effect}
+          config={combo?.cfg}
+          ownEffects={ownEffectsFirst}
+          inheritedEffects={inheritedEffectsFirst}
+          mixed={effectsMixed}
+          onSetEffect={applyEdgeEffect}
+          onPatchConfig={applyEdgeConfig}
+          onChangeEffects={applyEdgeEffects}
+          onClear={resetSelected}
+        />
+      </SubcardAccordion>
     </>
   );
 }

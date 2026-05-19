@@ -672,6 +672,35 @@
 
 .modal__foot--right { justify-content: flex-end; }
 
+/* === Container-query density tier ====================================
+   When a query container named "editui" (every Edit-UI shell root and
+   the floating panel) is < 360 px wide, primitives tighten one more
+   notch. This is the tier where three subcards must still fit in one
+   narrow rail — it works in tandem with the accordion behaviour defined
+   in Inspector.css so the user sees only one subcard body at a time
+   while keeping chip/slider rows readable. */
+@container editui (max-width: 359px) {
+  .chip--icon { width: 22px; height: 22px; }
+  .chip--pick { width: 22px; height: 22px; }
+  .picker-split { gap: 4px; }
+  .picker-split__list { flex-basis: 28px; padding: 2px; max-height: 144px; }
+  .picker-split__editor { gap: 3px; }
+  .picker-split__editor-head { min-height: 18px; gap: 3px; }
+  .picker-split__editor-name { font-size: 11px; }
+  .slider-control { min-height: 18px; gap: 5px; font-size: 10.5px; }
+  .slider-control__label { width: 16px; height: 16px; }
+  .slider-control__value { min-width: 24px; }
+  /* Horizontal saver: drop the editable numeric input; the read-only
+     value chip still shows the number (clicking it morphs to an inline
+     editor — same component, narrower idle state). */
+  .slider-control__input { width: 34px; font-size: 10.5px; }
+  .form-row { min-height: 18px; gap: 5px; }
+  .form-row__icon { width: 16px; height: 16px; }
+  .form-row__color { width: 26px; height: 22px; }
+  .effect-chips--icons { gap: 2px; }
+  .effect-chips { gap: 2px; }
+}
+
 /* === Reduced motion: collapse every transition / animation to a no-op so
    users with vestibular sensitivities don't feel the bounce. Static visuals
    (color shifts, focus rings) still work since they're not transitions. */

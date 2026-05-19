@@ -3,6 +3,7 @@ import Icon from '../Icon.jsx';
 import Tooltip from '../Tooltip.jsx';
 import EdgeTierEditor from '../inspector/EdgeTierEditor.jsx';
 import CellTierEditor from '../inspector/CellTierEditor.jsx';
+import { SubcardAccordion } from '../inspector/SubcardAccordionContext.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 import './WorkflowEditUi.css';
@@ -80,17 +81,19 @@ function ConnectTask({
     const ov = edges.byEdge?.[firstPairKey] || null;
     return (
       <EditorWrapper kicker="this edge" body={
-        <EdgeTierEditor
-          title="Edge" accent
-          effect={ov?.effect ?? defaultEdgeEffect}
-          config={ov?.config ?? defaultEdgeConfig}
-          ownEffects={ov?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setEdgeEffect(firstPairKey, name, name === 'wave' ? (ov?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setEdgeConfig(firstPairKey, patch)}
-          onChangeEffects={(map) => setEdgeEffects(firstPairKey, map)}
-          onClear={ov ? () => clearEdgeOverride(firstPairKey) : null}
-        />
+        <SubcardAccordion id="workflow-connect-edge" defaultOpenId="shape-stroke">
+          <EdgeTierEditor
+            title="Edge" accent
+            effect={ov?.effect ?? defaultEdgeEffect}
+            config={ov?.config ?? defaultEdgeConfig}
+            ownEffects={ov?.effects || {}}
+            inheritedEffects={defaultEdgeEffects}
+            onSetEffect={(name) => setEdgeEffect(firstPairKey, name, name === 'wave' ? (ov?.config ?? defaultEdgeConfig) : undefined)}
+            onPatchConfig={(patch) => setEdgeConfig(firstPairKey, patch)}
+            onChangeEffects={(map) => setEdgeEffects(firstPairKey, map)}
+            onClear={ov ? () => clearEdgeOverride(firstPairKey) : null}
+          />
+        </SubcardAccordion>
       } />
     );
   }
@@ -98,32 +101,36 @@ function ConnectTask({
     const cell = edges.byPiece?.[pieceId] || null;
     return (
       <EditorWrapper kicker="this piece's edges" body={
-        <EdgeTierEditor
-          title="Piece" accent
-          effect={cell?.effect ?? defaultEdgeEffect}
-          config={cell?.config ?? defaultEdgeConfig}
-          ownEffects={cell?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setPieceEdgeEffect(pieceId, name, name === 'wave' ? (cell?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setPieceEdgeConfig(pieceId, patch)}
-          onChangeEffects={(map) => setPieceEdgeEffects(pieceId, map)}
-          onClear={cell ? () => clearPieceEdgeOverride(pieceId) : null}
-        />
+        <SubcardAccordion id="workflow-connect-piece" defaultOpenId="shape-stroke">
+          <EdgeTierEditor
+            title="Piece" accent
+            effect={cell?.effect ?? defaultEdgeEffect}
+            config={cell?.config ?? defaultEdgeConfig}
+            ownEffects={cell?.effects || {}}
+            inheritedEffects={defaultEdgeEffects}
+            onSetEffect={(name) => setPieceEdgeEffect(pieceId, name, name === 'wave' ? (cell?.config ?? defaultEdgeConfig) : undefined)}
+            onPatchConfig={(patch) => setPieceEdgeConfig(pieceId, patch)}
+            onChangeEffects={(map) => setPieceEdgeEffects(pieceId, map)}
+            onClear={cell ? () => clearPieceEdgeOverride(pieceId) : null}
+          />
+        </SubcardAccordion>
       } />
     );
   }
   return (
     <EditorWrapper kicker="every edge by default" body={
-      <EdgeTierEditor
-        title="Default" accent
-        effect={defaultEdgeEffect}
-        config={defaultEdgeConfig}
-        ownEffects={defaultEdgeEffects}
-        inheritedEffects={{}}
-        onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultEdgeConfig : undefined)}
-        onPatchConfig={setDefaultEdgeConfig}
-        onChangeEffects={setDefaultEdgeEffects}
-      />
+      <SubcardAccordion id="workflow-connect-default" defaultOpenId="shape-stroke">
+        <EdgeTierEditor
+          title="Default" accent
+          effect={defaultEdgeEffect}
+          config={defaultEdgeConfig}
+          ownEffects={defaultEdgeEffects}
+          inheritedEffects={{}}
+          onSetEffect={(name) => setDefaultEdgeEffect(name, name === 'wave' ? defaultEdgeConfig : undefined)}
+          onPatchConfig={setDefaultEdgeConfig}
+          onChangeEffects={setDefaultEdgeEffects}
+        />
+      </SubcardAccordion>
     } hint="Pick an edge or piece on the canvas to scope these changes." />
   );
 }
@@ -204,7 +211,7 @@ function AnimateTask({
   if (selectedPieceId) {
     return (
       <EditorWrapper kicker="this piece's effects" body={
-        <>
+        <SubcardAccordion id="workflow-animate-piece" defaultOpenId="animations">
           <EdgeTierEditor
             title="Edge effects on this piece"
             accent
@@ -221,14 +228,14 @@ function AnimateTask({
             inheritedEffects={defaultCellEffects}
             onChange={(map) => setCellEffects(selectedPieceId, map)}
           />
-        </>
+        </SubcardAccordion>
       } />
     );
   }
 
   return (
     <EditorWrapper kicker="project-wide effects" body={
-      <>
+      <SubcardAccordion id="workflow-animate-default" defaultOpenId="animations">
         <EdgeTierEditor
           title="Default edges"
           accent
@@ -244,7 +251,7 @@ function AnimateTask({
           inheritedEffects={{}}
           onChange={setDefaultCellEffects}
         />
-      </>
+      </SubcardAccordion>
     } hint="Pick a piece on the canvas to scope these effects to it." />
   );
 }

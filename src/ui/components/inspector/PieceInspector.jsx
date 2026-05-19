@@ -3,6 +3,7 @@ import EdgeTierEditor from './EdgeTierEditor.jsx';
 import CellTierEditor from './CellTierEditor.jsx';
 import InspectorTabs from './InspectorTabs.jsx';
 import InspectorSubcard from './InspectorSubcard.jsx';
+import { SubcardAccordion } from './SubcardAccordionContext.jsx';
 import SliderRow from '../SliderRow.jsx';
 import Icon from '../Icon.jsx';
 import Tooltip from '../Tooltip.jsx';
@@ -67,37 +68,43 @@ export default function PieceInspector({
       <InspectorTabs tabs={TABS} active={activeTab} onPick={onChangeTab} />
 
       {activeTab === 'content' && (
-        <ContentTab
-          piece={piece}
-          setPieceContent={setPieceContent}
-          updatePieceContent={updatePieceContent}
-        />
+        <SubcardAccordion id="piece-content" defaultOpenId="content">
+          <ContentTab
+            piece={piece}
+            setPieceContent={setPieceContent}
+            updatePieceContent={updatePieceContent}
+          />
+        </SubcardAccordion>
       )}
 
       {activeTab === 'body' && (
-        <CellTierEditor
-          title="This piece's body"
-          accent
-          ownEffects={pieceCellEffects}
-          inheritedEffects={defaultCellEffects}
-          onChange={(map) => setCellEffects(piece.id, map)}
-        />
+        <SubcardAccordion id="piece-body" defaultOpenId="body-animations">
+          <CellTierEditor
+            title="This piece's body"
+            accent
+            ownEffects={pieceCellEffects}
+            inheritedEffects={defaultCellEffects}
+            onChange={(map) => setCellEffects(piece.id, map)}
+          />
+        </SubcardAccordion>
       )}
 
       {activeTab === 'edges' && (
-        <EdgeTierEditor
-          title="This piece's edges"
-          accent
-          effect={pieceEdgeEffect}
-          config={pieceEdgeConfig}
-          ownEffects={cellOverride?.effects || {}}
-          inheritedEffects={defaultEdgeEffects}
-          onSetEffect={(name) => setPieceEdgeEffect(piece.id, name, name === 'wave'
-            ? (cellOverride?.config ?? defaultEdgeConfig) : undefined)}
-          onPatchConfig={(patch) => setPieceEdgeConfig(piece.id, patch)}
-          onChangeEffects={(map) => setPieceEdgeEffects(piece.id, map)}
-          onClear={cellOverride ? () => clearPieceEdgeOverride(piece.id) : null}
-        />
+        <SubcardAccordion id="piece-edges" defaultOpenId="shape-stroke">
+          <EdgeTierEditor
+            title="This piece's edges"
+            accent
+            effect={pieceEdgeEffect}
+            config={pieceEdgeConfig}
+            ownEffects={cellOverride?.effects || {}}
+            inheritedEffects={defaultEdgeEffects}
+            onSetEffect={(name) => setPieceEdgeEffect(piece.id, name, name === 'wave'
+              ? (cellOverride?.config ?? defaultEdgeConfig) : undefined)}
+            onPatchConfig={(patch) => setPieceEdgeConfig(piece.id, patch)}
+            onChangeEffects={(map) => setPieceEdgeEffects(piece.id, map)}
+            onClear={cellOverride ? () => clearPieceEdgeOverride(piece.id) : null}
+          />
+        </SubcardAccordion>
       )}
     </>
   );
@@ -155,6 +162,7 @@ function ContentTab({ piece, setPieceContent, updatePieceContent }) {
 
   return (
     <InspectorSubcard
+      id="content"
       title="Content"
       accent
       actions={content

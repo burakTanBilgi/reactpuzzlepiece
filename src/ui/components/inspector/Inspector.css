@@ -103,6 +103,65 @@
   border-bottom: 1px solid var(--stroke-idle);
 }
 
+/* Subcard accordion mode. The title is wrapped in a transparent button
+   ("head-btn") whenever the subcard participates in an accordion. At
+   wide container widths the button looks like a static heading; at narrow
+   widths the chevron appears, hover styling kicks in, and clicking
+   another subcard swaps which body renders. */
+.inspector-subcard__head-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.inspector-subcard__head-btn:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.inspector-subcard__chev {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--text-dim);
+  transition: transform 140ms ease;
+  flex-shrink: 0;
+}
+
+.inspector-subcard__chev svg { display: block; }
+
+/* Accordion behavior — only applies when the subcard's container is
+   narrow. Wide containers keep every body visible (current behavior).
+   The JS-managed `data-open` attribute is set on every subcard inside
+   an accordion provider; this rule only acts on it at narrow widths. */
+@container editui (max-width: 359px) {
+  .inspector-subcard__chev { display: inline-flex; }
+  .inspector-subcard[data-open="false"] .inspector-subcard__chev {
+    transform: rotate(-90deg);
+  }
+  .inspector-subcard__head-btn { cursor: pointer; }
+  .inspector-subcard__head-btn:hover .inspector-subcard__title {
+    color: var(--primary-3);
+  }
+  .inspector-subcard[data-open="false"] .inspector-subcard__body {
+    display: none;
+  }
+}
+
 .inspector-subcard__title {
   margin: 0;
   font-family: var(--font-display);

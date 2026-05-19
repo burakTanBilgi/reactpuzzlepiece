@@ -1,5 +1,6 @@
 import EdgeTierEditor from './EdgeTierEditor.jsx';
 import CellTierEditor from './CellTierEditor.jsx';
+import { SubcardAccordion } from './SubcardAccordionContext.jsx';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 
 // Body of the "Default" accordion card. The Inner / Outer / Piece / Edge
@@ -18,7 +19,7 @@ export default function ProjectDefaultsCard({
   const defaultCellEffects = project?.cells?.default?.effects || {};
 
   return (
-    <>
+    <SubcardAccordion id="default" defaultOpenId="shape-stroke">
       <EdgeTierEditor
         title="Default edges"
         accent
@@ -38,6 +39,6 @@ export default function ProjectDefaultsCard({
         inheritedEffects={{}}
         onChange={setDefaultCellEffects}
       />
-    </>
+    </SubcardAccordion>
   );
 }

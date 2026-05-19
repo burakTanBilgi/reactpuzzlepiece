@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import EdgeTierEditor from '../inspector/EdgeTierEditor.jsx';
 import CellTierEditor from '../inspector/CellTierEditor.jsx';
+import { SubcardAccordion } from '../inspector/SubcardAccordionContext.jsx';
 import Icon from '../Icon.jsx';
 import Tooltip from '../Tooltip.jsx';
 import { piecesOfEdge } from '../../../grid/compile.js';
@@ -216,26 +217,28 @@ export default function FlatEditUi(props) {
       </div>
 
       <div className="flat-edit-ui__body">
-        {editorProps && (
-          <EdgeTierEditor
-            {...editorProps}
-            accent
-          />
-        )}
+        <SubcardAccordion id={`flat-${scope}`} defaultOpenId="shape-stroke">
+          {editorProps && (
+            <EdgeTierEditor
+              {...editorProps}
+              accent
+            />
+          )}
 
-        {cellEditor && (
-          <CellTierEditor
-            title="Body"
-            accent
-            ownEffects={cellEditor.ownEffects}
-            inheritedEffects={cellEditor.inheritedEffects}
-            onChange={cellEditor.onChange}
-          />
-        )}
+          {cellEditor && (
+            <CellTierEditor
+              title="Body"
+              accent
+              ownEffects={cellEditor.ownEffects}
+              inheritedEffects={cellEditor.inheritedEffects}
+              onChange={cellEditor.onChange}
+            />
+          )}
 
-        {!editorProps && (
-          <p className="hint">No applicable scope. Pick a piece or edge on the canvas.</p>
-        )}
+          {!editorProps && (
+            <p className="hint">No applicable scope. Pick a piece or edge on the canvas.</p>
+          )}
+        </SubcardAccordion>
       </div>
     </div>
   );

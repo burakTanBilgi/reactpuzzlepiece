@@ -12,6 +12,8 @@
   border-radius: 10px;
   box-shadow: 0 0 0 1px rgba(214, 139, 84, 0.18);
   overflow-y: auto;
+  container-type: inline-size;
+  container-name: editui;
 }
 
 .workflow-edit-ui__strip {
@@ -53,9 +55,12 @@
   text-overflow: ellipsis;
 }
 
-/* Narrow rails — drop the label and rely on the tooltip for the name. */
-@media (max-width: 720px) {
+/* Narrow panels — drop the label and rely on the tooltip for the name.
+   Query the panel container, not the viewport, so a 280-px rail inside a
+   1920-px viewport still collapses correctly. */
+@container editui (max-width: 360px) {
   .workflow-tab__label { display: none; }
+  .workflow-tab { padding: 6px 4px; }
 }
 
 .workflow-tab:hover { color: var(--text); background: var(--surface-2); }

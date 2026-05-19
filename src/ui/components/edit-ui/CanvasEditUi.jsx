@@ -5,6 +5,7 @@ import PieceInspector from '../inspector/PieceInspector.jsx';
 import EdgeInspector from '../inspector/EdgeInspector.jsx';
 import ProjectDefaultsCard from '../inspector/ProjectDefaultsCard.jsx';
 import EdgeTierEditor from '../inspector/EdgeTierEditor.jsx';
+import { SubcardAccordion } from '../inspector/SubcardAccordionContext.jsx';
 import { DEFAULT_WAVE } from '../edges/constants.js';
 
 const DRAWER_TIERS = [
@@ -114,19 +115,21 @@ export default function CanvasEditUi({
               const kind = defaultsTier;
               const layer = edges[kind];
               return (
-                <EdgeTierEditor
-                  title={kind === 'inner' ? 'Inner edges' : 'Outer edges'}
-                  accent
-                  effect={layer?.effect ?? defaultEdgeEffect}
-                  config={layer?.config ?? defaultEdgeConfig}
-                  ownEffects={layer?.effects || {}}
-                  inheritedEffects={defaultEdgeEffects}
-                  onSetEffect={(name) => setLayerEffect(kind, name, name === 'wave'
-                    ? (layer?.config ?? defaultEdgeConfig) : undefined)}
-                  onPatchConfig={(patch) => setLayerConfig(kind, patch)}
-                  onChangeEffects={(map) => setLayerEffects(kind, map)}
-                  onClear={layer ? () => clearLayer(kind) : null}
-                />
+                <SubcardAccordion id={kind} defaultOpenId="shape-stroke">
+                  <EdgeTierEditor
+                    title={kind === 'inner' ? 'Inner edges' : 'Outer edges'}
+                    accent
+                    effect={layer?.effect ?? defaultEdgeEffect}
+                    config={layer?.config ?? defaultEdgeConfig}
+                    ownEffects={layer?.effects || {}}
+                    inheritedEffects={defaultEdgeEffects}
+                    onSetEffect={(name) => setLayerEffect(kind, name, name === 'wave'
+                      ? (layer?.config ?? defaultEdgeConfig) : undefined)}
+                    onPatchConfig={(patch) => setLayerConfig(kind, patch)}
+                    onChangeEffects={(map) => setLayerEffects(kind, map)}
+                    onClear={layer ? () => clearLayer(kind) : null}
+                  />
+                </SubcardAccordion>
               );
             })()}
           </FloatingPanel>
