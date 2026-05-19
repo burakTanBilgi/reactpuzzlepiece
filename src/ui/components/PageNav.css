@@ -7,6 +7,10 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   z-index: 10;
+  /* On narrow viewports the nav has to host the brand, sync pill,
+     theme toggle, user menu, AND the page tabs — let the tab strip
+     overflow into a horizontal scroll rather than wrap. */
+  min-width: 0;
 }
 
 /* Wave seam under the nav — replaces the old 1px border with a real
@@ -24,6 +28,7 @@
   font-weight: 600;
   font-size: 14px;
   margin-right: auto;
+  min-width: 0;
 }
 
 .page-nav__mark {
@@ -50,7 +55,15 @@
 }
 
 .page-nav__sep { color: var(--text-dim); margin: 0 4px; }
-.page-nav__project { color: var(--text-muted); font-weight: 400; font-size: 13px; }
+.page-nav__project {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
 
 /* Theme toggle — standalone button next to the tab strip */
 .page-nav__theme {
@@ -87,7 +100,14 @@
   border-radius: 8px;
   height: 32px;
   align-items: center;
+  flex-shrink: 0;
+  /* If the strip still overflows past every responsive cut below, let
+     it scroll horizontally rather than spill out of the bar. */
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.page-nav__tabs::-webkit-scrollbar { display: none; }
 
 .page-nav__tab {
   appearance: none;
@@ -105,6 +125,8 @@
   cursor: pointer;
   transition: all 150ms ease;
   font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .page-nav__tab:hover { color: var(--text); background: var(--surface-2); }
@@ -117,3 +139,30 @@
 }
 
 .page-nav__icon { font-size: 14px; }
+
+.page-nav__tab-label { display: inline; }
+
+/* === Responsive cuts ================================================= */
+
+/* Compact (~ tablet portrait): drop tab labels, drop the project name +
+   separator, keep the brand title. Tabs become icon-only chips so all
+   six still fit comfortably. */
+@media (max-width: 760px) {
+  .page-nav { gap: 8px; padding: 8px 14px; }
+  .page-nav__sep,
+  .page-nav__project { display: none; }
+  .page-nav__tab { padding: 0 8px; }
+  .page-nav__tab-label { display: none; }
+  .page-nav__tab .page-nav__icon { font-size: 15px; }
+}
+
+/* Narrow (phone): brand collapses to the mark; the page title hides;
+   theme + user shrink. The tab strip is still horizontally scrollable
+   if needed but at icon size it fits ~360 px easily. */
+@media (max-width: 520px) {
+  .page-nav { padding: 7px 10px; gap: 6px; }
+  .page-nav__title { display: none; }
+  .page-nav__theme { width: 28px; height: 28px; font-size: 13px; }
+  .page-nav__tabs { height: 30px; gap: 2px; padding: 2px; }
+  .page-nav__tab { padding: 0 7px; height: 24px; }
+}

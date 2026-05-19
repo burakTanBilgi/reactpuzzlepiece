@@ -17,23 +17,54 @@
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 10px;
-  background: color-mix(in srgb, var(--bg-elev) 70%, transparent);
+  gap: 4px;
+  padding: 4px 6px;
+  background: color-mix(in srgb, var(--bg-elev) 80%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--stroke-idle);
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 11px;
   color: var(--text-dim);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
 }
+
+.view-panel__zoom-btn {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 120ms ease;
+}
+
+.view-panel__zoom-btn:hover {
+  color: var(--primary-3);
+  background: var(--accent-tint);
+  border-color: var(--primary-2);
+}
+
+.view-panel__zoom-btn:active { transform: scale(0.92); }
 
 .view-panel__zoom {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--primary-3);
-  min-width: 38px;
-  text-align: right;
+  min-width: 40px;
+  text-align: center;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
 }
 
 .view-panel__reset {
@@ -47,6 +78,7 @@
   cursor: pointer;
   transition: all 150ms ease;
   font-family: inherit;
+  margin-left: 2px;
 }
 
 .view-panel__reset:hover {
@@ -58,6 +90,37 @@
 .view-panel__hint {
   font-size: 10px;
   color: var(--text-dim);
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--stroke-idle);
+  white-space: nowrap;
+}
+
+/* Show the right hint per pointer type: coarse pointers (touch
+   screens) get the gesture hint; fine pointers (mouse/trackpad) get
+   the keyboard hint. */
+@media (pointer: coarse) {
+  .view-panel__hint--desktop { display: none; }
+}
+@media (pointer: fine), (pointer: none) {
+  .view-panel__hint--touch { display: none; }
+}
+
+/* The HUD shrinks aggressively on phones — keep zoom controls and the
+   readout, drop the keyboard hint and the Reset label. */
+@container editui (max-width: 480px),
+@media (max-width: 480px) {
+  .view-panel__hud {
+    top: 8px;
+    right: 8px;
+    gap: 2px;
+    padding: 3px 4px;
+  }
+  .view-panel__hint { display: none; }
+  .view-panel__reset {
+    padding: 4px 8px;
+    font-size: 10.5px;
+  }
 }
 
 .view-panel__surface {
@@ -66,6 +129,15 @@
   overflow: hidden;
   cursor: default;
   min-height: 0;
+  /* Disable browser-native gestures so our pointer handlers own
+     pinch / pan / wheel without competing with native scroll-pan. */
+  touch-action: none;
+  /* iOS Safari + Android Chrome: prevent the long-press callout +
+     selection highlight on the canvas surface. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .view-panel__surface::before {
@@ -87,4 +159,8 @@
   left: 0;
   display: inline-block;
   padding: 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view-panel__zoom-btn { transition: none; transform: none !important; }
 }
